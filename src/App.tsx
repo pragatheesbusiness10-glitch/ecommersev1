@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminWallet from "./pages/admin/AdminWallet";
 
 // User Pages
 import UserDashboard from "./pages/user/UserDashboard";
@@ -80,6 +81,7 @@ const AppRoutes = () => {
       <Route path="/admin/products" element={<ProtectedRoute allowedRoles={['admin']}><AdminProducts /></ProtectedRoute>} />
       <Route path="/admin/users" element={<ProtectedRoute allowedRoles={['admin']}><AdminUsers /></ProtectedRoute>} />
       <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['admin']}><AdminOrders /></ProtectedRoute>} />
+      <Route path="/admin/wallet" element={<ProtectedRoute allowedRoles={['admin']}><AdminWallet /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
       
       {/* User Routes */}

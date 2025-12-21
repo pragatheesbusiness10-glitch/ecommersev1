@@ -2,6 +2,7 @@ import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
+import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { 
   ShoppingCart, 
@@ -20,7 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard: React.FC = () => {
   const { toast } = useToast();
-  const { recentOrders, affiliates, stats, isLoading, refetchOrders } = useAdminDashboard();
+  const { orders, recentOrders, affiliates, stats, isLoading, refetchOrders } = useAdminDashboard();
 
   const handleCompleteOrder = async (order: typeof recentOrders[0]) => {
     try {
@@ -174,39 +175,20 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-xs text-muted-foreground">{affiliate.storefront_name || 'No storefront'}</p>
                       </div>
                     </div>
-                    <Badge variant={affiliate.is_active ? 'active' : 'inactive'}>
+                    <Badge variant={affiliate.is_active ? 'default' : 'secondary'}>
                       {affiliate.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>
                 ))
               )}
             </div>
-
-            {/* Quick Actions */}
-            <div className="dashboard-card">
-              <h3 className="font-semibold text-foreground mb-4">Quick Actions</h3>
-              <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/admin/users">
-                    <UsersIcon className="w-4 h-4 mr-2" />
-                    Add New Affiliate
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/admin/products">
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add New Product
-                  </Link>
-                </Button>
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/admin/orders">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Process Pending Orders
-                  </Link>
-                </Button>
-              </div>
-            </div>
           </div>
+        </div>
+
+        {/* Analytics Charts */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold text-foreground">Analytics</h2>
+          <AnalyticsCharts orders={orders} affiliates={affiliates} />
         </div>
       </div>
     </DashboardLayout>
