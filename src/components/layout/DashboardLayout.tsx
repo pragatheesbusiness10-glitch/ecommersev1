@@ -28,6 +28,7 @@ const adminNavItems: NavItem[] = [
   { icon: Users, label: 'Users', href: '/admin/users' },
   { icon: Package, label: 'Products', href: '/admin/products' },
   { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
+  { icon: Wallet, label: 'Wallet', href: '/admin/wallet' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
 
