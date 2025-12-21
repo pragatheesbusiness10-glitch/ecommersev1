@@ -18,6 +18,7 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminWallet from "./pages/admin/AdminWallet";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminPayouts from "./pages/admin/AdminPayouts";
 
 // User Pages
 import UserDashboard from "./pages/user/UserDashboard";
@@ -85,6 +86,7 @@ const AppRoutes = () => {
       <Route path="/admin/orders" element={<ProtectedRoute allowedRoles={['admin']}><AdminOrders /></ProtectedRoute>} />
       <Route path="/admin/wallet" element={<ProtectedRoute allowedRoles={['admin']}><AdminWallet /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
+      <Route path="/admin/payouts" element={<ProtectedRoute allowedRoles={['admin']}><AdminPayouts /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
       
       {/* User Routes */}

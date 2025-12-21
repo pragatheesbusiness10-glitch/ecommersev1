@@ -1,0 +1,294 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+export interface PayoutRequest {
+  id: string;
+  user_id: string;
+  amount: number;
+  payment_method: string;
+  payment_details: Record<string, string>;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  admin_notes: string | null;
+  created_at: string;
+  processed_at: string | null;
+  processed_by: string | null;
+  user_name?: string;
+  user_email?: string;
+}
+
+export const usePayoutRequests = () => {
+  const { user, session } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch user's own payout requests
+  const userPayoutsQuery = useQuery({
+    queryKey: ['user-payout-requests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payout_requests')
+        .select('*')
+        .eq('user_id', user?.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching payout requests:', error);
+        throw error;
+      }
+
+      return (data || []).map((p): PayoutRequest => ({
+        id: p.id,
+        user_id: p.user_id,
+        amount: Number(p.amount),
+        payment_method: p.payment_method,
+        payment_details: p.payment_details as Record<string, string>,
+        status: p.status as PayoutRequest['status'],
+        admin_notes: p.admin_notes,
+        created_at: p.created_at,
+        processed_at: p.processed_at,
+        processed_by: p.processed_by,
+      }));
+    },
+    enabled: !!user && user.role === 'user' && !!session,
+  });
+
+  // Create payout request mutation
+  const createPayoutMutation = useMutation({
+    mutationFn: async ({ 
+      amount, 
+      paymentMethod, 
+      paymentDetails 
+    }: { 
+      amount: number; 
+      paymentMethod: string; 
+      paymentDetails: Record<string, string>;
+    }) => {
+      // Check current wallet balance
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('wallet_balance')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      const currentBalance = Number(profile.wallet_balance);
+      if (amount > currentBalance) {
+        throw new Error('Insufficient wallet balance');
+      }
+
+      // Check minimum payout amount from settings
+      const { data: settings } = await supabase
+        .from('platform_settings')
+        .select('value')
+        .eq('key', 'min_payout_amount')
+        .single();
+
+      const minPayout = settings ? parseFloat(settings.value) : 50;
+      if (amount < minPayout) {
+        throw new Error(`Minimum payout amount is $${minPayout}`);
+      }
+
+      // Create payout request
+      const { data, error } = await supabase
+        .from('payout_requests')
+        .insert({
+          user_id: user?.id,
+          amount,
+          payment_method: paymentMethod,
+          payment_details: paymentDetails,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Deduct from wallet balance (hold funds)
+      const newBalance = currentBalance - amount;
+      await supabase
+        .from('profiles')
+        .update({ wallet_balance: newBalance })
+        .eq('user_id', user?.id);
+
+      // Create transaction record
+      await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user?.id,
+          amount: -amount,
+          type: 'payout_request',
+          description: `Payout request - ${paymentMethod}`,
+        });
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-payout-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
+      toast({
+        title: 'Payout Requested',
+        description: 'Your payout request has been submitted for review.',
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Error creating payout request:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create payout request.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  return {
+    payoutRequests: userPayoutsQuery.data || [],
+    isLoading: userPayoutsQuery.isLoading,
+    error: userPayoutsQuery.error,
+    refetch: userPayoutsQuery.refetch,
+    createPayout: createPayoutMutation.mutate,
+    isCreatingPayout: createPayoutMutation.isPending,
+  };
+};
+
+// Admin hook for managing all payout requests
+export const useAdminPayouts = () => {
+  const { user, session } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const payoutsQuery = useQuery({
+    queryKey: ['admin-payout-requests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('payout_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching payout requests:', error);
+        throw error;
+      }
+
+      // Fetch user profiles
+      const userIds = [...new Set((data || []).map(p => p.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, name, email')
+        .in('user_id', userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      return (data || []).map((p): PayoutRequest => {
+        const profile = profileMap.get(p.user_id);
+        return {
+          id: p.id,
+          user_id: p.user_id,
+          amount: Number(p.amount),
+          payment_method: p.payment_method,
+          payment_details: p.payment_details as Record<string, string>,
+          status: p.status as PayoutRequest['status'],
+          admin_notes: p.admin_notes,
+          created_at: p.created_at,
+          processed_at: p.processed_at,
+          processed_by: p.processed_by,
+          user_name: profile?.name,
+          user_email: profile?.email,
+        };
+      });
+    },
+    enabled: user?.role === 'admin' && !!session,
+  });
+
+  const processPayoutMutation = useMutation({
+    mutationFn: async ({ 
+      payoutId, 
+      status, 
+      adminNotes,
+      userId,
+      amount
+    }: { 
+      payoutId: string; 
+      status: 'approved' | 'rejected' | 'completed';
+      adminNotes?: string;
+      userId: string;
+      amount: number;
+    }) => {
+      // Update payout request
+      const { error } = await supabase
+        .from('payout_requests')
+        .update({
+          status,
+          admin_notes: adminNotes || null,
+          processed_at: new Date().toISOString(),
+          processed_by: user?.id,
+        })
+        .eq('id', payoutId);
+
+      if (error) throw error;
+
+      // If rejected, refund the amount back to wallet
+      if (status === 'rejected') {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('wallet_balance')
+          .eq('user_id', userId)
+          .single();
+
+        if (profile) {
+          const newBalance = Number(profile.wallet_balance) + amount;
+          await supabase
+            .from('profiles')
+            .update({ wallet_balance: newBalance })
+            .eq('user_id', userId);
+
+          await supabase
+            .from('wallet_transactions')
+            .insert({
+              user_id: userId,
+              amount: amount,
+              type: 'payout_refund',
+              description: 'Payout request rejected - funds returned',
+            });
+        }
+      }
+
+      return { status };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-payout-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'] });
+      toast({
+        title: result.status === 'rejected' ? 'Payout Rejected' : 'Payout Processed',
+        description: result.status === 'rejected' 
+          ? 'The payout has been rejected and funds returned to the affiliate.'
+          : 'The payout has been processed successfully.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error processing payout:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to process payout request.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const pendingCount = payoutsQuery.data?.filter(p => p.status === 'pending').length || 0;
+  const totalPending = payoutsQuery.data?.filter(p => p.status === 'pending').reduce((sum, p) => sum + p.amount, 0) || 0;
+
+  return {
+    payoutRequests: payoutsQuery.data || [],
+    pendingCount,
+    totalPending,
+    isLoading: payoutsQuery.isLoading,
+    error: payoutsQuery.error,
+    refetch: payoutsQuery.refetch,
+    processPayout: processPayoutMutation.mutate,
+    isProcessingPayout: processPayoutMutation.isPending,
+  };
+};

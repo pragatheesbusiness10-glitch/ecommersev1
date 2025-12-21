@@ -114,6 +114,36 @@ export const useUserDashboard = () => {
     enabled: !!user?.id && !!session,
   });
 
+  const transactionsQuery = useQuery({
+    queryKey: ['wallet-transactions', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+
+      const { data, error } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
+
+      return (data || []).map(tx => ({
+        id: tx.id,
+        user_id: tx.user_id,
+        amount: Number(tx.amount),
+        type: tx.type,
+        description: tx.description,
+        order_id: tx.order_id,
+        created_at: tx.created_at,
+      }));
+    },
+    enabled: !!user?.id && !!session,
+  });
+
   const storefrontProductsQuery = useQuery({
     queryKey: ['user-storefront-products', user?.id],
     queryFn: async () => {
@@ -166,9 +196,10 @@ export const useUserDashboard = () => {
     orders: ordersQuery.data || [],
     recentOrders: (ordersQuery.data || []).slice(0, 5),
     profile: profileQuery.data,
+    transactions: transactionsQuery.data || [],
     storefrontProducts: storefrontProductsQuery.data || [],
     stats,
-    isLoading: ordersQuery.isLoading || profileQuery.isLoading,
+    isLoading: ordersQuery.isLoading || profileQuery.isLoading || transactionsQuery.isLoading,
     error: ordersQuery.error || profileQuery.error,
     refetchOrders: ordersQuery.refetch,
   };

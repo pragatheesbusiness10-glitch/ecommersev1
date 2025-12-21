@@ -14,7 +14,8 @@ import {
   X,
   ChevronRight,
   Wallet,
-  FileText
+  FileText,
+  Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,7 @@ const adminNavItems: NavItem[] = [
   { icon: Package, label: 'Products', href: '/admin/products' },
   { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
   { icon: Wallet, label: 'Wallet', href: '/admin/wallet' },
+  { icon: Send, label: 'Payouts', href: '/admin/payouts' },
   { icon: FileText, label: 'Reports', href: '/admin/reports' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
