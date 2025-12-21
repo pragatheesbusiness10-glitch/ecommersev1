@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { usePlatformSettings, calculateCommission } from '@/hooks/usePlatformSettings';
 
 export interface AdminOrder {
   id: string;
@@ -37,6 +38,7 @@ export const useAdminOrders = () => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { settingsMap } = usePlatformSettings();
 
   const ordersQuery = useQuery({
     queryKey: ['admin-orders'],
@@ -110,7 +112,7 @@ export const useAdminOrders = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: AdminOrder['status'] }) => {
+    mutationFn: async ({ orderId, status, order }: { orderId: string; status: AdminOrder['status']; order?: AdminOrder }) => {
       const updates: Record<string, unknown> = { status };
       
       if (status === 'completed') {
@@ -123,13 +125,68 @@ export const useAdminOrders = () => {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Auto-credit commission to affiliate wallet when order is completed
+      if (status === 'completed' && settingsMap.auto_credit_on_complete && order) {
+        const commission = calculateCommission(
+          order.selling_price,
+          order.base_price,
+          order.quantity,
+          settingsMap.commission_type,
+          settingsMap.commission_rate
+        );
+
+        if (commission > 0) {
+          // Get current balance
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('wallet_balance')
+            .eq('user_id', order.affiliate_user_id)
+            .single();
+
+          if (!profileError && profile) {
+            const newBalance = Number(profile.wallet_balance) + commission;
+
+            // Update wallet balance
+            await supabase
+              .from('profiles')
+              .update({ wallet_balance: newBalance })
+              .eq('user_id', order.affiliate_user_id);
+
+            // Create transaction record
+            await supabase
+              .from('wallet_transactions')
+              .insert({
+                user_id: order.affiliate_user_id,
+                amount: commission,
+                type: 'commission',
+                description: `Commission for order ${order.order_number}`,
+                order_id: orderId,
+              });
+          }
+        }
+
+        return { commissioned: true, amount: commission };
+      }
+
+      return { commissioned: false };
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-      toast({
-        title: 'Order Updated',
-        description: `Order status changed to ${variables.status.replace(/_/g, ' ')}.`,
-      });
+      queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'] });
+      
+      if (result.commissioned && result.amount) {
+        toast({
+          title: 'Order Completed',
+          description: `Status updated. $${result.amount.toFixed(2)} commission credited to affiliate.`,
+        });
+      } else {
+        toast({
+          title: 'Order Updated',
+          description: `Order status changed to ${variables.status.replace(/_/g, ' ')}.`,
+        });
+      }
     },
     onError: (error) => {
       console.error('Error updating order status:', error);
