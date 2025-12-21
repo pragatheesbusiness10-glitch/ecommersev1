@@ -1,0 +1,277 @@
+import React, { useState, useEffect } from 'react';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { 
+  Settings,
+  Percent,
+  DollarSign,
+  Wallet,
+  Zap,
+  Loader2,
+  Save
+} from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+
+const AdminSettings: React.FC = () => {
+  const { toast } = useToast();
+  const { settingsMap, isLoading, updateSetting, isUpdating } = usePlatformSettings();
+  
+  const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage');
+  const [commissionRate, setCommissionRate] = useState('100');
+  const [minPayoutAmount, setMinPayoutAmount] = useState('50');
+  const [autoCreditOnComplete, setAutoCreditOnComplete] = useState(true);
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Load settings on mount
+  useEffect(() => {
+    if (!isLoading) {
+      setCommissionType(settingsMap.commission_type);
+      setCommissionRate(settingsMap.commission_rate.toString());
+      setMinPayoutAmount(settingsMap.min_payout_amount.toString());
+      setAutoCreditOnComplete(settingsMap.auto_credit_on_complete);
+    }
+  }, [isLoading, settingsMap]);
+
+  // Track changes
+  useEffect(() => {
+    const changed = 
+      commissionType !== settingsMap.commission_type ||
+      commissionRate !== settingsMap.commission_rate.toString() ||
+      minPayoutAmount !== settingsMap.min_payout_amount.toString() ||
+      autoCreditOnComplete !== settingsMap.auto_credit_on_complete;
+    setHasChanges(changed);
+  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, settingsMap]);
+
+  const handleSaveAll = async () => {
+    try {
+      await Promise.all([
+        updateSetting({ key: 'commission_type', value: commissionType }),
+        updateSetting({ key: 'commission_rate', value: commissionRate }),
+        updateSetting({ key: 'min_payout_amount', value: minPayoutAmount }),
+        updateSetting({ key: 'auto_credit_on_complete', value: autoCreditOnComplete.toString() }),
+      ]);
+      setHasChanges(false);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-9 w-32" />
+          <div className="grid gap-6">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6 max-w-3xl">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+            <p className="text-muted-foreground mt-1">
+              Configure platform settings and business rules.
+            </p>
+          </div>
+          {hasChanges && (
+            <Button onClick={handleSaveAll} disabled={isUpdating} className="gap-2">
+              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Changes
+            </Button>
+          )}
+        </div>
+
+        {/* Commission Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Percent className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <CardTitle>Commission Settings</CardTitle>
+                <CardDescription>
+                  Configure how affiliate commissions are calculated.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label>Commission Type</Label>
+              <Select 
+                value={commissionType} 
+                onValueChange={(value: 'percentage' | 'fixed') => setCommissionType(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">Percentage of Profit</SelectItem>
+                  <SelectItem value="fixed">Fixed Amount per Unit</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                {commissionType === 'percentage' 
+                  ? 'Affiliates earn a percentage of their profit margin (selling price - base price).'
+                  : 'Affiliates earn a fixed amount for each unit sold.'}
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>
+                {commissionType === 'percentage' ? 'Commission Rate (%)' : 'Commission per Unit ($)'}
+              </Label>
+              <div className="relative max-w-xs">
+                {commissionType === 'percentage' ? (
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                )}
+                <Input
+                  type="number"
+                  value={commissionRate}
+                  onChange={(e) => setCommissionRate(e.target.value)}
+                  className="pl-10"
+                  min="0"
+                  max={commissionType === 'percentage' ? '100' : undefined}
+                  step={commissionType === 'percentage' ? '1' : '0.01'}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {commissionType === 'percentage' 
+                  ? `Affiliates receive ${commissionRate}% of their profit margin.`
+                  : `Affiliates receive $${(parseFloat(commissionRate) || 0).toFixed(2)} per unit sold.`}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payout Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                <Wallet className="w-5 h-5 text-emerald-600" />
+              </div>
+              <div>
+                <CardTitle>Payout Settings</CardTitle>
+                <CardDescription>
+                  Configure wallet and payout rules.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label>Minimum Payout Amount ($)</Label>
+              <div className="relative max-w-xs">
+                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  value={minPayoutAmount}
+                  onChange={(e) => setMinPayoutAmount(e.target.value)}
+                  className="pl-10"
+                  min="0"
+                  step="1"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Affiliates must have at least ${minPayoutAmount} in their wallet to request a payout.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Automation Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle>Automation</CardTitle>
+                <CardDescription>
+                  Configure automatic actions and workflows.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Auto-credit on Order Completion</Label>
+                <p className="text-sm text-muted-foreground">
+                  Automatically credit affiliate wallet when an order is marked as completed.
+                </p>
+              </div>
+              <Switch
+                checked={autoCreditOnComplete}
+                onCheckedChange={setAutoCreditOnComplete}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Commission Preview */}
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-base">Commission Preview</CardTitle>
+            <CardDescription>
+              Example calculation based on current settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Example Order:</span>
+                <span>1 unit @ $100 (base: $70)</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Profit Margin:</span>
+                <span>$30.00</span>
+              </div>
+              <div className="flex justify-between border-t border-border pt-2">
+                <span className="text-muted-foreground">Affiliate Commission:</span>
+                <span className="font-semibold text-emerald-600">
+                  {commissionType === 'percentage' 
+                    ? `$${((30 * parseFloat(commissionRate || '0')) / 100).toFixed(2)}`
+                    : `$${(parseFloat(commissionRate || '0')).toFixed(2)}`}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default AdminSettings;
