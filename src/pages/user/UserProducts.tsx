@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { ProductCard } from '@/components/dashboard/ProductCard';
-import { mockProducts, mockStorefrontProducts } from '@/data/mockData';
+import { ProductCardNew } from '@/components/dashboard/ProductCardNew';
+import { useProducts, Product } from '@/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Filter, Store } from 'lucide-react';
+import { Search, Filter, Store, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -17,41 +17,47 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Product } from '@/types';
+import { Link } from 'react-router-dom';
 
 const UserProducts: React.FC = () => {
   const { user } = useAuth();
+  const { 
+    products, 
+    storefrontProductIds, 
+    categories, 
+    isLoading, 
+    addToStorefront,
+    isAdding 
+  } = useProducts();
+  
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sellingPrice, setSellingPrice] = useState('');
   const [customDescription, setCustomDescription] = useState('');
   const { toast } = useToast();
 
-  // Products already in user's storefront
-  const userStorefrontProductIds = mockStorefrontProducts
-    .filter(sp => sp.userId === user?.id)
-    .map(sp => sp.productId);
-
-  const filteredProducts = mockProducts.filter(product =>
-    product.isActive &&
+  const filteredProducts = products.filter(product =>
+    product.is_active &&
     (product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase()))
+    (product.category?.toLowerCase() || '').includes(searchQuery.toLowerCase())) &&
+    (!selectedCategory || product.category === selectedCategory)
   );
 
   const handleAddToStorefront = (product: Product) => {
     setSelectedProduct(product);
-    setSellingPrice((product.basePrice * 1.3).toFixed(2)); // Default 30% markup
+    setSellingPrice((product.base_price * 1.3).toFixed(2)); // Default 30% markup
     setCustomDescription('');
     setIsAddDialogOpen(true);
   };
 
-  const handleConfirmAdd = (e: React.FormEvent) => {
+  const handleConfirmAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) return;
 
     const price = parseFloat(sellingPrice);
-    if (price <= selectedProduct.basePrice) {
+    if (price <= selectedProduct.base_price) {
       toast({
         title: 'Invalid Price',
         description: 'Selling price must be higher than the base price.',
@@ -60,15 +66,28 @@ const UserProducts: React.FC = () => {
       return;
     }
 
-    toast({
-      title: 'Product Added',
-      description: `${selectedProduct.name} has been added to your storefront at $${price.toFixed(2)}.`,
-    });
-    setIsAddDialogOpen(false);
-    setSelectedProduct(null);
+    try {
+      await addToStorefront({
+        productId: selectedProduct.id,
+        sellingPrice: price,
+        customDescription: customDescription || undefined,
+      });
+      setIsAddDialogOpen(false);
+      setSelectedProduct(null);
+    } catch (error) {
+      // Error handled in hook
+    }
   };
 
-  const categories = [...new Set(mockProducts.map(p => p.category))];
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -81,9 +100,11 @@ const UserProducts: React.FC = () => {
               Add products from the main catalog to your storefront with custom pricing.
             </p>
           </div>
-          <Button variant="outline" className="gap-2">
-            <Store className="w-4 h-4" />
-            View My Storefront
+          <Button variant="outline" className="gap-2" asChild>
+            <Link to="/dashboard/storefront">
+              <Store className="w-4 h-4" />
+              View My Storefront
+            </Link>
           </Button>
         </div>
 
@@ -107,12 +128,22 @@ const UserProducts: React.FC = () => {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button 
+              variant={selectedCategory === null ? 'default' : 'outline'} 
+              size="sm" 
+              className="gap-2"
+              onClick={() => setSelectedCategory(null)}
+            >
               <Filter className="w-4 h-4" />
               All
             </Button>
             {categories.map(category => (
-              <Button key={category} variant="ghost" size="sm">
+              <Button 
+                key={category} 
+                variant={selectedCategory === category ? 'default' : 'ghost'} 
+                size="sm"
+                onClick={() => setSelectedCategory(category as string)}
+              >
                 {category}
               </Button>
             ))}
@@ -122,30 +153,27 @@ const UserProducts: React.FC = () => {
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product, index) => {
-            const isInStorefront = userStorefrontProductIds.includes(product.id);
+            const isInStorefront = storefrontProductIds.has(product.id);
             return (
-              <div key={product.id} className="relative">
-                {isInStorefront && (
-                  <div className="absolute top-3 left-3 z-10">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      ✓ In Storefront
-                    </span>
-                  </div>
-                )}
-                <ProductCard
-                  product={product}
-                  mode="user"
-                  onAddToStorefront={isInStorefront ? undefined : handleAddToStorefront}
-                  delay={index * 50}
-                />
-              </div>
+              <ProductCardNew
+                key={product.id}
+                product={product}
+                mode="user"
+                isInStorefront={isInStorefront}
+                onAddToStorefront={isInStorefront ? undefined : handleAddToStorefront}
+                delay={index * 50}
+              />
             );
           })}
         </div>
 
         {filteredProducts.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No products found matching your search.</p>
+            <p className="text-muted-foreground">
+              {products.length === 0 
+                ? 'No products available in the catalog yet.'
+                : 'No products found matching your search.'}
+            </p>
           </div>
         )}
 
@@ -162,18 +190,24 @@ const UserProducts: React.FC = () => {
               {selectedProduct && (
                 <div className="py-4 space-y-4">
                   <div className="flex gap-4 p-4 rounded-xl bg-muted/50">
-                    <img 
-                      src={selectedProduct.image} 
-                      alt={selectedProduct.name}
-                      className="w-20 h-20 rounded-lg object-cover"
-                    />
+                    {selectedProduct.image_url ? (
+                      <img 
+                        src={selectedProduct.image_url} 
+                        alt={selectedProduct.name}
+                        className="w-20 h-20 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg bg-muted flex items-center justify-center">
+                        <span className="text-xs text-muted-foreground">No image</span>
+                      </div>
+                    )}
                     <div>
                       <h3 className="font-semibold">{selectedProduct.name}</h3>
                       <p className="text-sm text-muted-foreground line-clamp-2">
-                        {selectedProduct.description}
+                        {selectedProduct.description || 'No description'}
                       </p>
                       <p className="text-sm font-medium text-accent mt-1">
-                        Base Price: ${selectedProduct.basePrice.toFixed(2)}
+                        Base Price: ${selectedProduct.base_price.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -184,14 +218,14 @@ const UserProducts: React.FC = () => {
                       id="selling-price"
                       type="number"
                       step="0.01"
-                      min={selectedProduct.basePrice + 0.01}
+                      min={selectedProduct.base_price + 0.01}
                       value={sellingPrice}
                       onChange={(e) => setSellingPrice(e.target.value)}
                       className="text-lg font-semibold"
                     />
-                    {parseFloat(sellingPrice) > selectedProduct.basePrice && (
+                    {parseFloat(sellingPrice) > selectedProduct.base_price && (
                       <p className="text-sm text-green-600">
-                        Your profit: ${(parseFloat(sellingPrice) - selectedProduct.basePrice).toFixed(2)} per sale
+                        Your profit: ${(parseFloat(sellingPrice) - selectedProduct.base_price).toFixed(2)} per sale
                       </p>
                     )}
                   </div>
@@ -211,7 +245,16 @@ const UserProducts: React.FC = () => {
                 <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit">Add to Storefront</Button>
+                <Button type="submit" disabled={isAdding}>
+                  {isAdding ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    'Add to Storefront'
+                  )}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
