@@ -1,24 +1,64 @@
 import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { OrdersTable } from '@/components/dashboard/OrdersTable';
-import { mockOrders, mockUsers, getAdminStats } from '@/data/mockData';
+import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
+import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { 
   ShoppingCart, 
   Clock, 
   CheckCircle, 
   DollarSign,
   AlertCircle,
-  Users as UsersIcon
+  Users as UsersIcon,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminDashboard: React.FC = () => {
-  const stats = getAdminStats();
-  const recentOrders = mockOrders.slice(0, 5);
-  const activeUsers = mockUsers.filter(u => u.role === 'user' && u.isActive);
+  const { toast } = useToast();
+  const { recentOrders, affiliates, stats, isLoading, refetchOrders } = useAdminDashboard();
+
+  const handleCompleteOrder = async (order: typeof recentOrders[0]) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Order Completed',
+        description: `Order ${order.order_number} has been marked as completed.`,
+      });
+      
+      refetchOrders();
+    } catch (error) {
+      console.error('Complete order error:', error);
+      toast({
+        title: 'Error',
+        description: 'Could not complete order. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -47,7 +87,6 @@ const AdminDashboard: React.FC = () => {
             title="Total Orders"
             value={stats.totalOrders}
             icon={ShoppingCart}
-            trend={{ value: 12, isPositive: true }}
             delay={0}
           />
           <StatCard
@@ -80,7 +119,7 @@ const AdminDashboard: React.FC = () => {
           />
           <StatCard
             title="Active Affiliates"
-            value={activeUsers.length}
+            value={stats.activeAffiliates}
             icon={UsersIcon}
             delay={250}
           />
@@ -96,11 +135,11 @@ const AdminDashboard: React.FC = () => {
                 <Link to="/admin/orders">View all →</Link>
               </Button>
             </div>
-            <OrdersTable 
+            <OrdersTableNew 
               orders={recentOrders} 
               userRole="admin"
               onViewOrder={(order) => console.log('View order:', order.id)}
-              onCompleteOrder={(order) => console.log('Complete order:', order.id)}
+              onCompleteOrder={handleCompleteOrder}
             />
           </div>
 
@@ -113,28 +152,34 @@ const AdminDashboard: React.FC = () => {
               </Button>
             </div>
             <div className="dashboard-card space-y-4">
-              {mockUsers.filter(u => u.role === 'user').map((user, index) => (
-                <div 
-                  key={user.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors opacity-0 animate-slide-up"
-                  style={{ animationDelay: `${300 + index * 50}ms`, animationFillMode: 'forwards' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-primary font-semibold">
-                        {user.name.charAt(0)}
-                      </span>
+              {affiliates.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">
+                  No affiliates yet
+                </p>
+              ) : (
+                affiliates.slice(0, 5).map((affiliate, index) => (
+                  <div 
+                    key={affiliate.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors opacity-0 animate-slide-up"
+                    style={{ animationDelay: `${300 + index * 50}ms`, animationFillMode: 'forwards' }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-primary font-semibold">
+                          {affiliate.name.charAt(0)}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{affiliate.name}</p>
+                        <p className="text-xs text-muted-foreground">{affiliate.storefront_name || 'No storefront'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">{user.storefrontName}</p>
-                    </div>
+                    <Badge variant={affiliate.is_active ? 'active' : 'inactive'}>
+                      {affiliate.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
                   </div>
-                  <Badge variant={user.isActive ? 'active' : 'inactive'}>
-                    {user.isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* Quick Actions */}

@@ -1,35 +1,67 @@
 import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { OrdersTable } from '@/components/dashboard/OrdersTable';
+import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockOrders, getUserStats } from '@/data/mockData';
+import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { 
   ShoppingCart, 
   Clock, 
   CheckCircle, 
   DollarSign,
   Wallet,
-  TrendingUp
+  TrendingUp,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const stats = user ? getUserStats(user.id) : null;
-  const userOrders = user ? mockOrders.filter(o => o.userId === user.id).slice(0, 5) : [];
+  const { recentOrders, stats, profile, isLoading, refetchOrders } = useUserDashboard();
 
-  const handlePayOrder = (order: typeof mockOrders[0]) => {
-    toast({
-      title: 'Payment Initiated',
-      description: `Processing payment of $${(order.basePrice * order.quantity).toFixed(2)} for order ${order.id}`,
-    });
+  const handlePayOrder = async (order: typeof recentOrders[0]) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          status: 'paid_by_user',
+          paid_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Payment Successful',
+        description: `Payment of $${(order.base_price * order.quantity).toFixed(2)} confirmed for order ${order.order_number}`,
+      });
+      
+      refetchOrders();
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: 'Payment Failed',
+        description: 'Could not process payment. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
-  if (!stats || !user) return null;
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (!user) return null;
 
   return (
     <DashboardLayout>
@@ -46,11 +78,13 @@ const UserDashboard: React.FC = () => {
             <Button variant="outline" asChild>
               <Link to="/dashboard/products">Browse Products</Link>
             </Button>
-            <Button asChild>
-              <Link to={`/store/${user.storefrontSlug}`} target="_blank">
-                View My Store
-              </Link>
-            </Button>
+            {user.storefrontSlug && (
+              <Button asChild>
+                <Link to={`/store/${user.storefrontSlug}`} target="_blank">
+                  View My Store
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -61,9 +95,11 @@ const UserDashboard: React.FC = () => {
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold">{user.storefrontName}</h2>
+              <h2 className="text-xl font-semibold">{user.storefrontName || 'My Storefront'}</h2>
               <p className="text-primary-foreground/80 text-sm mt-1">
-                Your storefront URL: <span className="font-mono">/store/{user.storefrontSlug}</span>
+                {user.storefrontSlug 
+                  ? <>Your storefront URL: <span className="font-mono">/store/{user.storefrontSlug}</span></>
+                  : 'Set up your storefront to start selling'}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -133,8 +169,8 @@ const UserDashboard: React.FC = () => {
                 <Link to="/dashboard/orders">View all →</Link>
               </Button>
             </div>
-            <OrdersTable 
-              orders={userOrders} 
+            <OrdersTableNew 
+              orders={recentOrders} 
               userRole="user"
               onViewOrder={(order) => console.log('View order:', order.id)}
               onPayOrder={handlePayOrder}
@@ -167,7 +203,7 @@ const UserDashboard: React.FC = () => {
 
             {/* Tips Card */}
             <div className="dashboard-card bg-accent/5 border-accent/20">
-              <h3 className="font-semibold text-foreground mb-2">💡 Pro Tip</h3>
+              <h3 className="font-semibold text-foreground mb-2">Pro Tip</h3>
               <p className="text-sm text-muted-foreground">
                 Keep your wallet funded to ensure quick order fulfillment. Orders are processed as soon as you pay the base amount to admin.
               </p>
@@ -175,9 +211,9 @@ const UserDashboard: React.FC = () => {
 
             {/* Pending Payments Alert */}
             {stats.pendingPayments > 0 && (
-              <div className="dashboard-card bg-amber-50 border-amber-200">
-                <h3 className="font-semibold text-amber-800 mb-2">⚠️ Pending Payments</h3>
-                <p className="text-sm text-amber-700 mb-3">
+              <div className="dashboard-card bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
+                <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Pending Payments</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
                   You have ${stats.pendingPayments.toFixed(2)} in pending payments. Pay now to fulfill orders.
                 </p>
                 <Button variant="accent" size="sm" asChild>
