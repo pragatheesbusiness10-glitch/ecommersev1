@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { ProductCard } from '@/components/dashboard/ProductCard';
-import { mockProducts } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  MoreVertical,
+  Edit,
+  Power,
+  Trash2,
+  Package,
+  Loader2
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -14,31 +23,173 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { useAdminProducts, Product } from '@/hooks/useAdminProducts';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const AdminProducts: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const { toast } = useToast();
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  
+  const [addForm, setAddForm] = useState({
+    name: '',
+    description: '',
+    sku: '',
+    category: '',
+    base_price: '',
+    stock: '',
+    image_url: '',
+  });
+  
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    sku: '',
+    category: '',
+    base_price: '',
+    stock: '',
+    image_url: '',
+  });
 
-  const filteredProducts = mockProducts.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.sku.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const {
+    products,
+    categories,
+    isLoading,
+    addProduct,
+    isAddingProduct,
+    updateProduct,
+    isUpdatingProduct,
+    toggleProductStatus,
+    isTogglingStatus,
+    deleteProduct,
+    isDeletingProduct,
+  } = useAdminProducts();
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = !selectedCategory || product.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
 
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: 'Product Added',
-      description: 'The new product has been added to the catalog.',
+    addProduct({
+      name: addForm.name,
+      description: addForm.description,
+      sku: addForm.sku,
+      category: addForm.category,
+      base_price: parseFloat(addForm.base_price) || 0,
+      stock: parseInt(addForm.stock) || 0,
+      image_url: addForm.image_url,
     });
     setIsAddDialogOpen(false);
+    setAddForm({
+      name: '',
+      description: '',
+      sku: '',
+      category: '',
+      base_price: '',
+      stock: '',
+      image_url: '',
+    });
   };
 
-  const categories = [...new Set(mockProducts.map(p => p.category))];
+  const handleEditProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setEditForm({
+      name: product.name,
+      description: product.description || '',
+      sku: product.sku,
+      category: product.category || '',
+      base_price: product.base_price.toString(),
+      stock: product.stock.toString(),
+      image_url: product.image_url || '',
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+    
+    updateProduct({
+      id: selectedProduct.id,
+      name: editForm.name,
+      description: editForm.description || null,
+      sku: editForm.sku,
+      category: editForm.category || null,
+      base_price: parseFloat(editForm.base_price) || 0,
+      stock: parseInt(editForm.stock) || 0,
+      image_url: editForm.image_url || null,
+    });
+    setIsEditDialogOpen(false);
+  };
+
+  const handleDeleteClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedProduct) {
+      deleteProduct(selectedProduct.id);
+    }
+    setIsDeleteDialogOpen(false);
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <Skeleton className="h-9 w-32 mb-2" />
+              <Skeleton className="h-5 w-48" />
+            </div>
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Skeleton className="h-10 w-full max-w-md" />
+            <div className="flex gap-2">
+              <Skeleton className="h-8 w-32" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+              <Skeleton key={i} className="h-80 w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -48,7 +199,7 @@ const AdminProducts: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Products</h1>
             <p className="text-muted-foreground mt-1">
-              Manage your product catalog. {mockProducts.length} products total.
+              Manage your product catalog. {products.length} products total.
             </p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -69,42 +220,87 @@ const AdminProducts: React.FC = () => {
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Product Name</Label>
-                    <Input id="name" placeholder="Enter product name" />
+                    <Input 
+                      id="name" 
+                      value={addForm.name}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter product name" 
+                      required
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" placeholder="Enter product description" />
+                    <Textarea 
+                      id="description" 
+                      value={addForm.description}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter product description" 
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="price">Base Price ($)</Label>
-                      <Input id="price" type="number" step="0.01" placeholder="0.00" />
+                      <Input 
+                        id="price" 
+                        type="number" 
+                        step="0.01" 
+                        value={addForm.base_price}
+                        onChange={(e) => setAddForm(prev => ({ ...prev, base_price: e.target.value }))}
+                        placeholder="0.00" 
+                        required
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="stock">Stock</Label>
-                      <Input id="stock" type="number" placeholder="0" />
+                      <Input 
+                        id="stock" 
+                        type="number" 
+                        value={addForm.stock}
+                        onChange={(e) => setAddForm(prev => ({ ...prev, stock: e.target.value }))}
+                        placeholder="0" 
+                        required
+                      />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="sku">SKU</Label>
-                      <Input id="sku" placeholder="PRD-001" />
+                      <Input 
+                        id="sku" 
+                        value={addForm.sku}
+                        onChange={(e) => setAddForm(prev => ({ ...prev, sku: e.target.value }))}
+                        placeholder="PRD-001" 
+                        required
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="category">Category</Label>
-                      <Input id="category" placeholder="Electronics" />
+                      <Input 
+                        id="category" 
+                        value={addForm.category}
+                        onChange={(e) => setAddForm(prev => ({ ...prev, category: e.target.value }))}
+                        placeholder="Electronics" 
+                      />
                     </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="image">Image URL</Label>
-                    <Input id="image" placeholder="https://..." />
+                    <Input 
+                      id="image" 
+                      value={addForm.image_url}
+                      onChange={(e) => setAddForm(prev => ({ ...prev, image_url: e.target.value }))}
+                      placeholder="https://..." 
+                    />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">Add Product</Button>
+                  <Button type="submit" disabled={isAddingProduct}>
+                    {isAddingProduct && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Add Product
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
@@ -123,12 +319,22 @@ const AdminProducts: React.FC = () => {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button 
+              variant={selectedCategory === null ? "default" : "outline"} 
+              size="sm" 
+              className="gap-2"
+              onClick={() => setSelectedCategory(null)}
+            >
               <Filter className="w-4 h-4" />
               All Categories
             </Button>
             {categories.map(category => (
-              <Button key={category} variant="ghost" size="sm">
+              <Button 
+                key={category} 
+                variant={selectedCategory === category ? "default" : "ghost"} 
+                size="sm"
+                onClick={() => setSelectedCategory(category as string)}
+              >
                 {category}
               </Button>
             ))}
@@ -138,22 +344,203 @@ const AdminProducts: React.FC = () => {
         {/* Products Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product, index) => (
-            <ProductCard
+            <div
               key={product.id}
-              product={product}
-              mode="admin"
-              onEdit={(p) => toast({ title: 'Edit Product', description: `Editing ${p.name}` })}
-              onView={(p) => toast({ title: 'View Product', description: `Viewing ${p.name}` })}
-              delay={index * 50}
-            />
+              className="dashboard-card opacity-0 animate-slide-up overflow-hidden"
+              style={{ animationDelay: `${index * 50}ms`, animationFillMode: 'forwards' }}
+            >
+              <div className="aspect-square relative bg-muted/50 rounded-lg mb-4 overflow-hidden">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="w-12 h-12 text-muted-foreground" />
+                  </div>
+                )}
+                <div className="absolute top-2 right-2">
+                  <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                    {product.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-foreground truncate">{product.name}</h3>
+                    <p className="text-sm text-muted-foreground">{product.category || 'Uncategorized'}</p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEditProduct(product)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => toggleProductStatus({ id: product.id, isActive: product.is_active })}
+                        disabled={isTogglingStatus}
+                      >
+                        <Power className="w-4 h-4 mr-2" />
+                        {product.is_active ? 'Deactivate' : 'Activate'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        className="text-destructive"
+                        onClick={() => handleDeleteClick(product)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">SKU: {product.sku}</span>
+                  <span className="font-medium text-foreground">${product.base_price.toFixed(2)}</span>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Stock</span>
+                  <Badge variant={product.stock > 10 ? 'default' : product.stock > 0 ? 'secondary' : 'destructive'}>
+                    {product.stock} units
+                  </Badge>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
 
-        {filteredProducts.length === 0 && (
+        {filteredProducts.length === 0 && !isLoading && (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No products found matching your search.</p>
+            <p className="text-muted-foreground">
+              {searchQuery || selectedCategory ? 'No products found matching your filters.' : 'No products in catalog yet.'}
+            </p>
           </div>
         )}
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <form onSubmit={handleSaveEdit}>
+              <DialogHeader>
+                <DialogTitle>Edit Product</DialogTitle>
+                <DialogDescription>
+                  Update the product details.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-name">Product Name</Label>
+                  <Input 
+                    id="edit-name" 
+                    value={editForm.name}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea 
+                    id="edit-description" 
+                    value={editForm.description}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-price">Base Price ($)</Label>
+                    <Input 
+                      id="edit-price" 
+                      type="number" 
+                      step="0.01" 
+                      value={editForm.base_price}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, base_price: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-stock">Stock</Label>
+                    <Input 
+                      id="edit-stock" 
+                      type="number" 
+                      value={editForm.stock}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, stock: e.target.value }))}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-sku">SKU</Label>
+                    <Input 
+                      id="edit-sku" 
+                      value={editForm.sku}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, sku: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-category">Category</Label>
+                    <Input 
+                      id="edit-category" 
+                      value={editForm.category}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-image">Image URL</Label>
+                  <Input 
+                    id="edit-image" 
+                    value={editForm.image_url}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, image_url: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isUpdatingProduct}>
+                  {isUpdatingProduct && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Product</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{selectedProduct?.name}"? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleConfirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeletingProduct && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );
