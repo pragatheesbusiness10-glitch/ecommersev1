@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   LayoutDashboard, 
   Package, 
@@ -53,6 +56,21 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Fetch pending KYC count for admin
+  const { data: pendingKYCCount = 0 } = useQuery({
+    queryKey: ['pending-kyc-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('kyc_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'submitted');
+
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: user?.role === 'admin',
+  });
+
   const navItems = user?.role === 'admin' ? adminNavItems : userNavItems;
 
   const handleLogout = () => {
@@ -103,6 +121,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
+              const showKYCBadge = item.href === '/admin/kyc' && pendingKYCCount > 0;
               return (
                 <Link
                   key={item.href}
@@ -117,7 +136,12 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 >
                   <item.icon className="w-5 h-5" />
                   <span>{item.label}</span>
-                  {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
+                  {showKYCBadge && (
+                    <Badge className="ml-auto bg-amber-500 text-white text-xs px-1.5 py-0.5 h-5">
+                      {pendingKYCCount}
+                    </Badge>
+                  )}
+                  {isActive && !showKYCBadge && <ChevronRight className="w-4 h-4 ml-auto" />}
                 </Link>
               );
             })}
