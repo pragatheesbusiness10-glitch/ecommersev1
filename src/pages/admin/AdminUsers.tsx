@@ -13,7 +13,12 @@ import {
   Calendar,
   Store,
   Wallet,
-  Loader2
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Trash2,
+  Percent
 } from 'lucide-react';
 import {
   Dialog,
@@ -30,20 +35,54 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
-import { useAdminUsers, AffiliateUser } from '@/hooks/useAdminUsers';
+import { useAdminUsers, AffiliateUser, UserStatus } from '@/hooks/useAdminUsers';
+import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+
+const statusConfig: Record<UserStatus, { label: string; color: string; icon: React.ReactNode }> = {
+  pending: { 
+    label: 'Pending', 
+    color: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
+    icon: <Clock className="w-3 h-3" />
+  },
+  approved: { 
+    label: 'Approved', 
+    color: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+    icon: <CheckCircle className="w-3 h-3" />
+  },
+  disabled: { 
+    label: 'Disabled', 
+    color: 'bg-red-500/10 text-red-600 border-red-500/20',
+    icon: <XCircle className="w-3 h-3" />
+  },
+};
 
 const AdminUsers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isCommissionDialogOpen, setIsCommissionDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AffiliateUser | null>(null);
   const [editForm, setEditForm] = useState({
     name: '',
     storefrontName: '',
     storefrontSlug: '',
   });
+  const [commissionOverride, setCommissionOverride] = useState('');
+  const [useDefaultCommission, setUseDefaultCommission] = useState(true);
   
   const { 
     affiliates, 
@@ -52,7 +91,15 @@ const AdminUsers: React.FC = () => {
     isTogglingStatus,
     updateProfile,
     isUpdatingProfile,
+    updateUserStatus,
+    isUpdatingUserStatus,
+    updateCommission,
+    isUpdatingCommission,
+    deleteUser,
+    isDeletingUser,
   } = useAdminUsers();
+
+  const { settingsMap } = usePlatformSettings();
 
   const filteredUsers = affiliates.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -70,6 +117,13 @@ const AdminUsers: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
+  const handleOpenCommission = (user: AffiliateUser) => {
+    setSelectedUser(user);
+    setUseDefaultCommission(user.commission_override === null);
+    setCommissionOverride(user.commission_override?.toString() || settingsMap.commission_rate.toString());
+    setIsCommissionDialogOpen(true);
+  };
+
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -83,8 +137,24 @@ const AdminUsers: React.FC = () => {
     setIsEditDialogOpen(false);
   };
 
-  const handleToggleStatus = (user: AffiliateUser) => {
-    toggleStatus({ userId: user.user_id, isActive: user.is_active });
+  const handleSaveCommission = () => {
+    if (!selectedUser) return;
+    
+    updateCommission({
+      userId: selectedUser.user_id,
+      commissionOverride: useDefaultCommission ? null : parseFloat(commissionOverride),
+    });
+    setIsCommissionDialogOpen(false);
+  };
+
+  const handleUpdateStatus = (user: AffiliateUser, status: UserStatus) => {
+    updateUserStatus({ userId: user.user_id, status });
+  };
+
+  const handleDeleteUser = () => {
+    if (!selectedUser) return;
+    deleteUser({ userId: selectedUser.user_id });
+    setIsDeleteDialogOpen(false);
   };
 
   const handleViewStorefront = (user: AffiliateUser) => {
@@ -92,6 +162,9 @@ const AdminUsers: React.FC = () => {
       window.open(`/store/${user.storefront_slug}`, '_blank');
     }
   };
+
+  const pendingCount = affiliates.filter(u => u.user_status === 'pending').length;
+  const approvedCount = affiliates.filter(u => u.user_status === 'approved').length;
 
   if (isLoading) {
     return (
@@ -122,8 +195,20 @@ const AdminUsers: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground">Affiliates</h1>
             <p className="text-muted-foreground mt-1">
-              Manage your affiliate resellers. {affiliates.length} affiliates total.
+              Manage your affiliate resellers. {affiliates.length} total.
             </p>
+          </div>
+          <div className="flex gap-2">
+            {pendingCount > 0 && (
+              <Badge variant="outline" className="border-amber-500/50 text-amber-600">
+                <Clock className="w-3 h-3 mr-1" />
+                {pendingCount} Pending
+              </Badge>
+            )}
+            <Badge variant="outline" className="border-emerald-500/50 text-emerald-600">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              {approvedCount} Approved
+            </Badge>
           </div>
         </div>
 
@@ -171,6 +256,10 @@ const AdminUsers: React.FC = () => {
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Details
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleOpenCommission(user)}>
+                      <Percent className="w-4 h-4 mr-2" />
+                      Set Commission
+                    </DropdownMenuItem>
                     {user.storefront_slug && (
                       <DropdownMenuItem onClick={() => handleViewStorefront(user)}>
                         <ExternalLink className="w-4 h-4 mr-2" />
@@ -178,12 +267,43 @@ const AdminUsers: React.FC = () => {
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
+                    {user.user_status === 'pending' && (
+                      <DropdownMenuItem 
+                        onClick={() => handleUpdateStatus(user, 'approved')}
+                        className="text-emerald-600"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Approve User
+                      </DropdownMenuItem>
+                    )}
+                    {user.user_status !== 'disabled' && (
+                      <DropdownMenuItem 
+                        onClick={() => handleUpdateStatus(user, 'disabled')}
+                        className="text-red-600"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Disable User
+                      </DropdownMenuItem>
+                    )}
+                    {user.user_status === 'disabled' && (
+                      <DropdownMenuItem 
+                        onClick={() => handleUpdateStatus(user, 'approved')}
+                        className="text-emerald-600"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Re-enable User
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem 
-                      onClick={() => handleToggleStatus(user)}
-                      disabled={isTogglingStatus}
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setIsDeleteDialogOpen(true);
+                      }}
+                      className="text-red-600"
                     >
-                      <Power className="w-4 h-4 mr-2" />
-                      {user.is_active ? 'Deactivate' : 'Activate'}
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Permanently
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -204,17 +324,24 @@ const AdminUsers: React.FC = () => {
                   <Calendar className="w-4 h-4" />
                   Joined {format(new Date(user.created_at), 'MMM dd, yyyy')}
                 </div>
+                {user.commission_override !== null && (
+                  <div className="flex items-center gap-2 text-sm text-violet-600">
+                    <Percent className="w-4 h-4" />
+                    Custom: {user.commission_override}%
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-border">
-                <Badge variant={user.is_active ? 'default' : 'secondary'}>
-                  {user.is_active ? 'Active' : 'Inactive'}
+                <Badge className={cn("gap-1 border", statusConfig[user.user_status].color)}>
+                  {statusConfig[user.user_status].icon}
+                  {statusConfig[user.user_status].label}
                 </Badge>
                 <div className="flex items-center gap-1 text-right">
                   <Wallet className="w-4 h-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm font-medium text-foreground">
-                      ${user.wallet_balance.toFixed(2)}
+                      {CURRENCY_SYMBOLS[settingsMap.default_currency]}{user.wallet_balance.toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -286,6 +413,75 @@ const AdminUsers: React.FC = () => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Commission Dialog */}
+        <Dialog open={isCommissionDialogOpen} onOpenChange={setIsCommissionDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Set Commission Rate</DialogTitle>
+              <DialogDescription>
+                Override the default commission for {selectedUser?.name}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-4">
+                <input
+                  type="checkbox"
+                  id="use-default"
+                  checked={useDefaultCommission}
+                  onChange={(e) => setUseDefaultCommission(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="use-default">Use default commission ({settingsMap.commission_rate}%)</Label>
+              </div>
+              {!useDefaultCommission && (
+                <div className="grid gap-2">
+                  <Label>Custom Commission Rate (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={commissionOverride}
+                    onChange={(e) => setCommissionOverride(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCommissionDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveCommission} disabled={isUpdatingCommission}>
+                {isUpdatingCommission && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Commission
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation */}
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete User Permanently?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete {selectedUser?.name} and all their data including orders, 
+                storefront products, and wallet transactions. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handleDeleteUser}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={isDeletingUser}
+              >
+                {isDeletingUser && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Delete Permanently
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </DashboardLayout>
   );

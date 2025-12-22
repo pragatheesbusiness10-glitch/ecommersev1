@@ -17,7 +17,23 @@ export interface SettingsMap {
   commission_rate: number;
   min_payout_amount: number;
   auto_credit_on_complete: boolean;
+  auto_user_approval: boolean;
+  default_currency: string;
+  display_currencies: string[];
 }
+
+export const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  INR: '₹',
+  AUD: 'A$',
+  CAD: 'C$',
+  JPY: '¥',
+  CNY: '¥',
+  AED: 'د.إ',
+  SGD: 'S$',
+};
 
 export const usePlatformSettings = () => {
   const { user, session } = useAuth();
@@ -47,6 +63,9 @@ export const usePlatformSettings = () => {
     commission_rate: 100,
     min_payout_amount: 50,
     auto_credit_on_complete: true,
+    auto_user_approval: false,
+    default_currency: 'USD',
+    display_currencies: ['USD', 'EUR', 'GBP', 'INR', 'AUD', 'CAD', 'JPY', 'CNY', 'AED', 'SGD'],
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -62,6 +81,19 @@ export const usePlatformSettings = () => {
         break;
       case 'auto_credit_on_complete':
         settingsMap.auto_credit_on_complete = setting.value === 'true';
+        break;
+      case 'auto_user_approval':
+        settingsMap.auto_user_approval = setting.value === 'true';
+        break;
+      case 'default_currency':
+        settingsMap.default_currency = setting.value || 'USD';
+        break;
+      case 'display_currencies':
+        try {
+          settingsMap.display_currencies = JSON.parse(setting.value);
+        } catch {
+          settingsMap.display_currencies = ['USD'];
+        }
         break;
     }
   });
@@ -119,4 +151,10 @@ export const calculateCommission = (
     // Fixed commission per unit (rate is in cents)
     return (commissionRate / 100) * quantity;
   }
+};
+
+// Helper to format currency
+export const formatCurrency = (amount: number, currency: string = 'USD'): string => {
+  const symbol = CURRENCY_SYMBOLS[currency] || '$';
+  return `${symbol}${amount.toFixed(2)}`;
 };

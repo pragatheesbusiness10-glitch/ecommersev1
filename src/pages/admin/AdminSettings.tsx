@@ -11,7 +11,9 @@ import {
   Wallet,
   Zap,
   Loader2,
-  Save
+  Save,
+  Users,
+  Globe
 } from 'lucide-react';
 import {
   Select,
@@ -27,9 +29,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 const AdminSettings: React.FC = () => {
   const { toast } = useToast();
@@ -39,6 +42,8 @@ const AdminSettings: React.FC = () => {
   const [commissionRate, setCommissionRate] = useState('100');
   const [minPayoutAmount, setMinPayoutAmount] = useState('50');
   const [autoCreditOnComplete, setAutoCreditOnComplete] = useState(true);
+  const [autoUserApproval, setAutoUserApproval] = useState(false);
+  const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [hasChanges, setHasChanges] = useState(false);
 
   // Load settings on mount
@@ -48,6 +53,8 @@ const AdminSettings: React.FC = () => {
       setCommissionRate(settingsMap.commission_rate.toString());
       setMinPayoutAmount(settingsMap.min_payout_amount.toString());
       setAutoCreditOnComplete(settingsMap.auto_credit_on_complete);
+      setAutoUserApproval(settingsMap.auto_user_approval);
+      setDefaultCurrency(settingsMap.default_currency);
     }
   }, [isLoading, settingsMap]);
 
@@ -57,9 +64,11 @@ const AdminSettings: React.FC = () => {
       commissionType !== settingsMap.commission_type ||
       commissionRate !== settingsMap.commission_rate.toString() ||
       minPayoutAmount !== settingsMap.min_payout_amount.toString() ||
-      autoCreditOnComplete !== settingsMap.auto_credit_on_complete;
+      autoCreditOnComplete !== settingsMap.auto_credit_on_complete ||
+      autoUserApproval !== settingsMap.auto_user_approval ||
+      defaultCurrency !== settingsMap.default_currency;
     setHasChanges(changed);
-  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, settingsMap]);
+  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, autoUserApproval, defaultCurrency, settingsMap]);
 
   const handleSaveAll = async () => {
     try {
@@ -68,6 +77,8 @@ const AdminSettings: React.FC = () => {
         updateSetting({ key: 'commission_rate', value: commissionRate }),
         updateSetting({ key: 'min_payout_amount', value: minPayoutAmount }),
         updateSetting({ key: 'auto_credit_on_complete', value: autoCreditOnComplete.toString() }),
+        updateSetting({ key: 'auto_user_approval', value: autoUserApproval.toString() }),
+        updateSetting({ key: 'default_currency', value: defaultCurrency }),
       ]);
       setHasChanges(false);
     } catch (error) {
@@ -81,7 +92,7 @@ const AdminSettings: React.FC = () => {
         <div className="space-y-6">
           <Skeleton className="h-9 w-32" />
           <div className="grid gap-6">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+            {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
           </div>
         </div>
       </DashboardLayout>
@@ -107,6 +118,91 @@ const AdminSettings: React.FC = () => {
           )}
         </div>
 
+        {/* User Approval Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-violet-600" />
+              </div>
+              <div>
+                <CardTitle>User Approval</CardTitle>
+                <CardDescription>
+                  Control how new users are onboarded to the platform.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Auto-Approve New Users</Label>
+                <p className="text-sm text-muted-foreground">
+                  {autoUserApproval 
+                    ? 'New users are automatically approved and can use all features immediately.'
+                    : 'New users require manual approval before they can add products or receive orders.'}
+                </p>
+              </div>
+              <Switch
+                checked={autoUserApproval}
+                onCheckedChange={setAutoUserApproval}
+              />
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-sm">
+              <p className="font-medium mb-2">When auto-approval is OFF, pending users cannot:</p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-1">
+                <li>Add products to their storefront</li>
+                <li>Activate their storefront</li>
+                <li>Receive customer orders</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Currency Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div>
+                <CardTitle>Currency Settings</CardTitle>
+                <CardDescription>
+                  Set the default currency for the platform.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label>Default Currency</Label>
+              <Select value={defaultCurrency} onValueChange={setDefaultCurrency}>
+                <SelectTrigger className="max-w-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CURRENCY_SYMBOLS).map(([code, symbol]) => (
+                    <SelectItem key={code} value={code}>
+                      {symbol} {code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                This currency will be used across all dashboards, orders, and wallet balances.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {settingsMap.display_currencies.map(code => (
+                <Badge key={code} variant="secondary">
+                  {CURRENCY_SYMBOLS[code]} {code}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Commission Settings */}
         <Card>
           <CardHeader>
@@ -117,7 +213,7 @@ const AdminSettings: React.FC = () => {
               <div>
                 <CardTitle>Commission Settings</CardTitle>
                 <CardDescription>
-                  Configure how affiliate commissions are calculated.
+                  Configure default affiliate commissions. Can be overridden per user.
                 </CardDescription>
               </div>
             </div>
@@ -146,7 +242,7 @@ const AdminSettings: React.FC = () => {
 
             <div className="grid gap-2">
               <Label>
-                {commissionType === 'percentage' ? 'Commission Rate (%)' : 'Commission per Unit ($)'}
+                {commissionType === 'percentage' ? 'Default Commission Rate (%)' : 'Commission per Unit'}
               </Label>
               <div className="relative max-w-xs">
                 {commissionType === 'percentage' ? (
@@ -166,8 +262,8 @@ const AdminSettings: React.FC = () => {
               </div>
               <p className="text-sm text-muted-foreground">
                 {commissionType === 'percentage' 
-                  ? `Affiliates receive ${commissionRate}% of their profit margin.`
-                  : `Affiliates receive $${(parseFloat(commissionRate) || 0).toFixed(2)} per unit sold.`}
+                  ? `Affiliates receive ${commissionRate}% of their profit margin by default.`
+                  : `Affiliates receive ${CURRENCY_SYMBOLS[defaultCurrency]}${(parseFloat(commissionRate) || 0).toFixed(2)} per unit sold.`}
               </p>
             </div>
           </CardContent>
@@ -190,9 +286,11 @@ const AdminSettings: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-2">
-              <Label>Minimum Payout Amount ($)</Label>
+              <Label>Minimum Payout Amount</Label>
               <div className="relative max-w-xs">
-                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  {CURRENCY_SYMBOLS[defaultCurrency]}
+                </span>
                 <Input
                   type="number"
                   value={minPayoutAmount}
@@ -203,7 +301,7 @@ const AdminSettings: React.FC = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                Affiliates must have at least ${minPayoutAmount} in their wallet to request a payout.
+                Affiliates must have at least {CURRENCY_SYMBOLS[defaultCurrency]}{minPayoutAmount} in their wallet to request a payout.
               </p>
             </div>
           </CardContent>
@@ -252,18 +350,18 @@ const AdminSettings: React.FC = () => {
             <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Example Order:</span>
-                <span>1 unit @ $100 (base: $70)</span>
+                <span>1 unit @ {CURRENCY_SYMBOLS[defaultCurrency]}100 (base: {CURRENCY_SYMBOLS[defaultCurrency]}70)</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Profit Margin:</span>
-                <span>$30.00</span>
+                <span>{CURRENCY_SYMBOLS[defaultCurrency]}30.00</span>
               </div>
               <div className="flex justify-between border-t border-border pt-2">
                 <span className="text-muted-foreground">Affiliate Commission:</span>
                 <span className="font-semibold text-emerald-600">
                   {commissionType === 'percentage' 
-                    ? `$${((30 * parseFloat(commissionRate || '0')) / 100).toFixed(2)}`
-                    : `$${(parseFloat(commissionRate || '0')).toFixed(2)}`}
+                    ? `${CURRENCY_SYMBOLS[defaultCurrency]}${((30 * parseFloat(commissionRate || '0')) / 100).toFixed(2)}`
+                    : `${CURRENCY_SYMBOLS[defaultCurrency]}${(parseFloat(commissionRate || '0')).toFixed(2)}`}
                 </span>
               </div>
             </div>
