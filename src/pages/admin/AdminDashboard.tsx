@@ -4,6 +4,9 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useAdminKYC } from '@/hooks/useAdminKYC';
+import { useAdminPayouts } from '@/hooks/usePayoutRequests';
+import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { 
   ShoppingCart, 
   Clock, 
@@ -11,7 +14,9 @@ import {
   DollarSign,
   AlertCircle,
   Users as UsersIcon,
-  Loader2
+  Loader2,
+  Shield,
+  Wallet
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -22,6 +27,12 @@ import { supabase } from '@/integrations/supabase/client';
 const AdminDashboard: React.FC = () => {
   const { toast } = useToast();
   const { orders, recentOrders, affiliates, stats, isLoading, refetchOrders } = useAdminDashboard();
+  const { kycSubmissions } = useAdminKYC();
+  const { pendingCount: pendingPayouts, totalPending: totalPendingPayouts } = useAdminPayouts();
+  const { settingsMap } = usePlatformSettings();
+  
+  const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
+  const pendingKYC = kycSubmissions.filter(k => k.status === 'submitted').length;
 
   const handleCompleteOrder = async (order: typeof recentOrders[0]) => {
     try {
@@ -83,7 +94,7 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
           <StatCard
             title="Total Orders"
             value={stats.totalOrders}
@@ -95,6 +106,8 @@ const AdminDashboard: React.FC = () => {
             value={stats.pendingOrders}
             icon={Clock}
             variant="warning"
+            badge={stats.pendingOrders}
+            badgeVariant="warning"
             delay={50}
           />
           <StatCard
@@ -106,14 +119,14 @@ const AdminDashboard: React.FC = () => {
           />
           <StatCard
             title="Revenue"
-            value={`$${stats.totalRevenue.toFixed(2)}`}
+            value={`${currencySymbol}${stats.totalRevenue.toFixed(2)}`}
             icon={DollarSign}
             variant="accent"
             delay={150}
           />
           <StatCard
             title="Pending Payments"
-            value={`$${stats.pendingPayments.toFixed(2)}`}
+            value={`${currencySymbol}${stats.pendingPayments.toFixed(2)}`}
             icon={AlertCircle}
             variant="warning"
             delay={200}
@@ -123,6 +136,24 @@ const AdminDashboard: React.FC = () => {
             value={stats.activeAffiliates}
             icon={UsersIcon}
             delay={250}
+          />
+          <StatCard
+            title="KYC Reviews"
+            value={pendingKYC}
+            icon={Shield}
+            variant="warning"
+            badge={pendingKYC}
+            badgeVariant="warning"
+            delay={300}
+          />
+          <StatCard
+            title="Payout Requests"
+            value={pendingPayouts}
+            icon={Wallet}
+            variant="warning"
+            badge={pendingPayouts}
+            badgeVariant="destructive"
+            delay={350}
           />
         </div>
 

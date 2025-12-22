@@ -45,6 +45,8 @@ const storefrontSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers, and hyphens'),
 });
 
+const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1920&h=400&fit=crop';
+
 const UserStorefront: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -54,13 +56,28 @@ const UserStorefront: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [storefrontName, setStorefrontName] = useState(user?.storefrontName || '');
   const [storefrontSlug, setStorefrontSlug] = useState(user?.storefrontSlug || '');
+  const [storefrontBanner, setStorefrontBanner] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setStorefrontName(user?.storefrontName || '');
     setStorefrontSlug(user?.storefrontSlug || '');
-  }, [user?.storefrontName, user?.storefrontSlug]);
+    // Fetch banner from profile
+    const fetchBanner = async () => {
+      if (user?.id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('storefront_banner')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        if (data?.storefront_banner) {
+          setStorefrontBanner(data.storefront_banner);
+        }
+      }
+    };
+    fetchBanner();
+  }, [user?.storefrontName, user?.storefrontSlug, user?.id]);
 
   const filteredProducts = storefrontProducts.filter(sp =>
     sp.product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -128,6 +145,7 @@ const UserStorefront: React.FC = () => {
         .update({
           storefront_name: validated.storefrontName,
           storefront_slug: validated.storefrontSlug,
+          storefront_banner: storefrontBanner || DEFAULT_BANNER,
         })
         .eq('user_id', user?.id || '');
 
@@ -383,7 +401,7 @@ const UserStorefront: React.FC = () => {
                 Configure your storefront name and URL. This is how customers will find your store.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-4">
+            <div className="py-4 space-y-4 max-h-[60vh] overflow-y-auto">
               <div className="grid gap-2">
                 <Label htmlFor="storefront-name">Storefront Name</Label>
                 <Input
@@ -421,6 +439,33 @@ const UserStorefront: React.FC = () => {
                 <p className="text-xs text-muted-foreground">
                   Only lowercase letters, numbers, and hyphens. This will be your public store URL.
                 </p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="storefront-banner">Banner Image URL</Label>
+                <Input
+                  id="storefront-banner"
+                  placeholder="https://example.com/banner.jpg"
+                  value={storefrontBanner}
+                  onChange={(e) => setStorefrontBanner(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter a URL for your store's hero banner image. Leave empty to use the default banner.
+                </p>
+                {storefrontBanner && (
+                  <div className="relative mt-2 rounded-lg overflow-hidden border border-border">
+                    <img 
+                      src={storefrontBanner} 
+                      alt="Banner preview" 
+                      className="w-full h-24 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = DEFAULT_BANNER;
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
+                    <p className="absolute bottom-2 left-2 text-xs text-muted-foreground">Preview</p>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
