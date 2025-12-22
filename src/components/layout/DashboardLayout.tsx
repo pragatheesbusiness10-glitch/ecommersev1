@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Wallet,
   FileText,
-  Send
+  Send,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +33,7 @@ const adminNavItems: NavItem[] = [
   { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
   { icon: Wallet, label: 'Wallet', href: '/admin/wallet' },
   { icon: Send, label: 'Payouts', href: '/admin/payouts' },
+  { icon: Shield, label: 'KYC', href: '/admin/kyc' },
   { icon: FileText, label: 'Reports', href: '/admin/reports' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
@@ -42,6 +44,7 @@ const userNavItems: NavItem[] = [
   { icon: Package, label: 'Browse Products', href: '/dashboard/products' },
   { icon: ShoppingCart, label: 'Orders', href: '/dashboard/orders' },
   { icon: Wallet, label: 'Payments', href: '/dashboard/payments' },
+  { icon: Shield, label: 'KYC Verification', href: '/dashboard/kyc' },
 ];
 
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
