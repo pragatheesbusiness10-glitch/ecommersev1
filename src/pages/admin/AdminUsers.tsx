@@ -51,6 +51,7 @@ import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { useAdminUsers, AffiliateUser, UserStatus } from '@/hooks/useAdminUsers';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
+import { useAdminKYC } from '@/hooks/useAdminKYC';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -102,6 +103,10 @@ const AdminUsers: React.FC = () => {
   } = useAdminUsers();
 
   const { settingsMap } = usePlatformSettings();
+  const { kycSubmissions } = useAdminKYC();
+
+  // Create a map of user_id to KYC status
+  const kycStatusMap = new Map(kycSubmissions.map(k => [k.user_id, k.status]));
 
   const filteredUsers = affiliates.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -341,10 +346,49 @@ const AdminUsers: React.FC = () => {
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-border">
-                <Badge className={cn("gap-1 border", statusConfig[user.user_status].color)}>
-                  {statusConfig[user.user_status].icon}
-                  {statusConfig[user.user_status].label}
-                </Badge>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge className={cn("gap-1 border", statusConfig[user.user_status].color)}>
+                    {statusConfig[user.user_status].icon}
+                    {statusConfig[user.user_status].label}
+                  </Badge>
+                  {/* KYC Status Badge */}
+                  {(() => {
+                    const kycStatus = kycStatusMap.get(user.user_id);
+                    if (!kycStatus || kycStatus === 'not_submitted') {
+                      return (
+                        <Badge variant="outline" className="gap-1 text-xs border-gray-300 text-gray-500">
+                          <Shield className="w-3 h-3" />
+                          No KYC
+                        </Badge>
+                      );
+                    }
+                    if (kycStatus === 'submitted') {
+                      return (
+                        <Badge className="gap-1 text-xs bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                          <Shield className="w-3 h-3" />
+                          KYC Pending
+                        </Badge>
+                      );
+                    }
+                    if (kycStatus === 'approved') {
+                      return (
+                        <Badge className="gap-1 text-xs bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                          <Shield className="w-3 h-3" />
+                          KYC Verified
+                        </Badge>
+                      );
+                    }
+                    if (kycStatus === 'rejected') {
+                      return (
+                        <Badge className="gap-1 text-xs bg-red-500/10 text-red-600 border border-red-500/20">
+                          <Shield className="w-3 h-3" />
+                          KYC Rejected
+                        </Badge>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
                 <div className="flex items-center gap-1 text-right">
                   <Wallet className="w-4 h-4 text-muted-foreground" />
                   <div>
