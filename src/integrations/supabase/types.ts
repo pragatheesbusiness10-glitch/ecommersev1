@@ -297,6 +297,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          storefront_banner: string | null
           storefront_name: string | null
           storefront_slug: string | null
           updated_at: string
@@ -311,6 +312,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          storefront_banner?: string | null
           storefront_name?: string | null
           storefront_slug?: string | null
           updated_at?: string
@@ -325,6 +327,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          storefront_banner?: string | null
           storefront_name?: string | null
           storefront_slug?: string | null
           updated_at?: string

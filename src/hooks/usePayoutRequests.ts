@@ -212,40 +212,57 @@ export const useAdminPayouts = () => {
       amount
     }: { 
       payoutId: string; 
-      status: 'approved' | 'rejected' | 'completed';
+      status: 'approved' | 'rejected' | 'completed' | 'pending';
       adminNotes?: string;
       userId: string;
       amount: number;
     }) => {
+      if (!payoutId || !userId) {
+        throw new Error('Invalid payout data');
+      }
+
       // Update payout request
       const { error } = await supabase
         .from('payout_requests')
         .update({
           status,
           admin_notes: adminNotes || null,
-          processed_at: new Date().toISOString(),
-          processed_by: user?.id,
+          processed_at: status === 'pending' ? null : new Date().toISOString(),
+          processed_by: status === 'pending' ? null : user?.id,
         })
         .eq('id', payoutId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw error;
+      }
 
       // If rejected, refund the amount back to wallet
       if (status === 'rejected') {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('wallet_balance')
           .eq('user_id', userId)
           .single();
 
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          throw profileError;
+        }
+
         if (profile) {
           const newBalance = Number(profile.wallet_balance) + amount;
-          await supabase
+          const { error: updateError } = await supabase
             .from('profiles')
             .update({ wallet_balance: newBalance })
             .eq('user_id', userId);
 
-          await supabase
+          if (updateError) {
+            console.error('Balance update error:', updateError);
+            throw updateError;
+          }
+
+          const { error: txError } = await supabase
             .from('wallet_transactions')
             .insert({
               user_id: userId,
@@ -253,6 +270,11 @@ export const useAdminPayouts = () => {
               type: 'payout_refund',
               description: 'Payout request rejected - funds returned',
             });
+
+          if (txError) {
+            console.error('Transaction insert error:', txError);
+            throw txError;
+          }
         }
       }
 
@@ -261,18 +283,20 @@ export const useAdminPayouts = () => {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-payout-requests'] });
       queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'] });
-      toast({
-        title: result.status === 'rejected' ? 'Payout Rejected' : 'Payout Processed',
-        description: result.status === 'rejected' 
-          ? 'The payout has been rejected and funds returned to the affiliate.'
-          : 'The payout has been processed successfully.',
-      });
+      const statusMessages: Record<string, { title: string; description: string }> = {
+        approved: { title: 'Payout Approved', description: 'The payout has been approved for processing.' },
+        rejected: { title: 'Payout Rejected', description: 'The payout has been rejected and funds returned to the affiliate.' },
+        completed: { title: 'Payout Completed', description: 'The payout has been marked as completed.' },
+        pending: { title: 'Payout Reverted', description: 'The payout status has been reverted to pending.' },
+      };
+      const msg = statusMessages[result.status] || { title: 'Payout Updated', description: 'The payout status has been updated.' };
+      toast({ title: msg.title, description: msg.description });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error processing payout:', error);
       toast({
         title: 'Error',
-        description: 'Failed to process payout request.',
+        description: error.message || 'Failed to process payout request.',
         variant: 'destructive',
       });
     },
