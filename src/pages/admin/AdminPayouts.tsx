@@ -13,7 +13,8 @@ import {
   DollarSign,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  RotateCcw
 } from 'lucide-react';
 import {
   Dialog,
@@ -31,9 +32,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAdminPayouts, PayoutRequest } from '@/hooks/usePayoutRequests';
+import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -50,7 +59,9 @@ const AdminPayouts: React.FC = () => {
   const [selectedPayout, setSelectedPayout] = useState<PayoutRequest | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isProcessDialogOpen, setIsProcessDialogOpen] = useState(false);
-  const [processAction, setProcessAction] = useState<'approved' | 'rejected' | 'completed'>('approved');
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [processAction, setProcessAction] = useState<'approved' | 'rejected' | 'completed' | 'pending'>('approved');
+  const [newStatus, setNewStatus] = useState<'pending' | 'approved' | 'rejected' | 'completed'>('pending');
   const [adminNotes, setAdminNotes] = useState('');
   
   const { 
@@ -61,6 +72,9 @@ const AdminPayouts: React.FC = () => {
     processPayout,
     isProcessingPayout 
   } = useAdminPayouts();
+
+  const { settingsMap } = usePlatformSettings();
+  const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
 
   const filteredPayouts = payoutRequests.filter(payout =>
     payout.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -73,15 +87,25 @@ const AdminPayouts: React.FC = () => {
     setIsViewDialogOpen(true);
   };
 
-  const handleOpenProcess = (payout: PayoutRequest, action: 'approved' | 'rejected' | 'completed') => {
+  const handleOpenProcess = (payout: PayoutRequest, action: 'approved' | 'rejected' | 'completed' | 'pending') => {
     setSelectedPayout(payout);
     setProcessAction(action);
     setAdminNotes('');
     setIsProcessDialogOpen(true);
   };
 
+  const handleOpenStatusChange = (payout: PayoutRequest) => {
+    setSelectedPayout(payout);
+    setNewStatus(payout.status as 'pending' | 'approved' | 'rejected' | 'completed');
+    setAdminNotes(payout.admin_notes || '');
+    setIsStatusDialogOpen(true);
+  };
+
   const handleProcessPayout = () => {
-    if (!selectedPayout) return;
+    if (!selectedPayout || !selectedPayout.id || !selectedPayout.user_id) {
+      console.error('Invalid payout selection');
+      return;
+    }
     
     processPayout({
       payoutId: selectedPayout.id,
@@ -91,6 +115,22 @@ const AdminPayouts: React.FC = () => {
       amount: selectedPayout.amount,
     });
     setIsProcessDialogOpen(false);
+  };
+
+  const handleStatusChange = () => {
+    if (!selectedPayout || !selectedPayout.id || !selectedPayout.user_id) {
+      console.error('Invalid payout selection');
+      return;
+    }
+    
+    processPayout({
+      payoutId: selectedPayout.id,
+      status: newStatus,
+      adminNotes,
+      userId: selectedPayout.user_id,
+      amount: selectedPayout.amount,
+    });
+    setIsStatusDialogOpen(false);
   };
 
   if (isLoading) {
@@ -141,7 +181,7 @@ const AdminPayouts: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Pending</p>
-                <p className="text-xl font-bold text-foreground">${totalPending.toFixed(2)}</p>
+                <p className="text-xl font-bold text-foreground">{currencySymbol}{totalPending.toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -181,7 +221,7 @@ const AdminPayouts: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="font-semibold">${payout.amount.toFixed(2)}</span>
+                    <span className="font-semibold">{currencySymbol}{payout.amount.toFixed(2)}</span>
                   </TableCell>
                   <TableCell>
                     <span className="capitalize">{payout.payment_method.replace(/_/g, ' ')}</span>
@@ -204,6 +244,14 @@ const AdminPayouts: React.FC = () => {
                         onClick={() => handleViewPayout(payout)}
                       >
                         <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenStatusChange(payout)}
+                        title="Change Status"
+                      >
+                        <RotateCcw className="w-4 h-4" />
                       </Button>
                       {payout.status === 'pending' && (
                         <>
@@ -264,7 +312,7 @@ const AdminPayouts: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Amount</p>
-                    <p className="font-semibold text-lg">${selectedPayout.amount.toFixed(2)}</p>
+                    <p className="font-semibold text-lg">{currencySymbol}{selectedPayout.amount.toFixed(2)}</p>
                   </div>
                 </div>
                 
@@ -320,7 +368,7 @@ const AdminPayouts: React.FC = () => {
                 <div className="bg-muted/50 rounded-lg p-4">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Amount:</span>
-                    <span className="font-bold text-lg">${selectedPayout.amount.toFixed(2)}</span>
+                    <span className="font-bold text-lg">{currencySymbol}{selectedPayout.amount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-muted-foreground">Affiliate:</span>
@@ -359,6 +407,80 @@ const AdminPayouts: React.FC = () => {
                 {processAction === 'approved' && 'Approve'}
                 {processAction === 'rejected' && 'Reject'}
                 {processAction === 'completed' && 'Complete'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Status Dialog */}
+        <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Change Payout Status</DialogTitle>
+              <DialogDescription>
+                Manually change the status of this payout request.
+              </DialogDescription>
+            </DialogHeader>
+            {selectedPayout && (
+              <div className="space-y-4">
+                <div className="bg-muted/50 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Amount:</span>
+                    <span className="font-bold text-lg">{currencySymbol}{selectedPayout.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-muted-foreground">Affiliate:</span>
+                    <span className="font-medium">{selectedPayout.user_name}</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-muted-foreground">Current Status:</span>
+                    <Badge className={cn("border", statusColors[selectedPayout.status])}>
+                      {selectedPayout.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>New Status</Label>
+                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v as typeof newStatus)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="status-notes">Admin Notes (optional)</Label>
+                  <Textarea
+                    id="status-notes"
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Add a note about this status change..."
+                    rows={2}
+                  />
+                </div>
+
+                {newStatus === 'rejected' && selectedPayout.status !== 'rejected' && (
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 text-sm text-amber-700">
+                    Note: Rejecting this payout will refund {currencySymbol}{selectedPayout.amount.toFixed(2)} to the affiliate's wallet.
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleStatusChange} disabled={isProcessingPayout}>
+                {isProcessingPayout && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Update Status
               </Button>
             </DialogFooter>
           </DialogContent>

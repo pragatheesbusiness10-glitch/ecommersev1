@@ -44,7 +44,7 @@ import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { usePayoutRequests } from '@/hooks/usePayoutRequests';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
-import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { useKYC } from '@/hooks/useKYC';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -81,6 +81,7 @@ const UserPayments: React.FC = () => {
   const walletBalance = profile?.wallet_balance || 0;
   const minPayoutAmount = settingsMap.min_payout_amount;
   const canRequestPayout = isKYCApproved && walletBalance >= minPayoutAmount;
+  const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
 
   const handleRequestPayout = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,19 +174,19 @@ const UserPayments: React.FC = () => {
                 <DialogHeader>
                   <DialogTitle>Request Payout</DialogTitle>
                   <DialogDescription>
-                    Withdraw your earnings to your bank account. Minimum: ${minPayoutAmount}
+                    Withdraw your earnings to your bank account. Minimum: {currencySymbol}{minPayoutAmount}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                   <div className="bg-muted/50 rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Available Balance:</span>
-                      <span className="font-bold text-lg">${walletBalance.toFixed(2)}</span>
+                      <span className="font-bold text-lg">{currencySymbol}{walletBalance.toFixed(2)}</span>
                     </div>
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="payout-amount">Amount ($)</Label>
+                    <Label htmlFor="payout-amount">Amount ({currencySymbol})</Label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                       <Input
@@ -201,7 +202,7 @@ const UserPayments: React.FC = () => {
                       />
                     </div>
                     <div className="flex gap-2">
-                      {[50, 100, 250].filter(v => v <= walletBalance).map(preset => (
+                      {[500, 1000, 2500].filter(v => v <= walletBalance).map(preset => (
                         <Button
                           key={preset}
                           type="button"
@@ -209,7 +210,7 @@ const UserPayments: React.FC = () => {
                           size="sm"
                           onClick={() => setPayoutAmount(preset.toString())}
                         >
-                          ${preset}
+                          {currencySymbol}{preset}
                         </Button>
                       ))}
                       <Button
@@ -293,12 +294,12 @@ const UserPayments: React.FC = () => {
               </div>
               <div>
                 <p className="text-primary-foreground/70 text-sm">Available Balance</p>
-                <p className="text-4xl font-bold">${walletBalance.toFixed(2)}</p>
+                <p className="text-4xl font-bold">{currencySymbol}{walletBalance.toFixed(2)}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-amber-300">${totalPendingPayout.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-amber-300">{currencySymbol}{totalPendingPayout.toFixed(2)}</p>
                 <p className="text-xs text-primary-foreground/70">Pending Payouts</p>
               </div>
               <div className="text-center">
@@ -317,7 +318,7 @@ const UserPayments: React.FC = () => {
 
         {isKYCApproved && walletBalance < minPayoutAmount && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm text-amber-700">
-            You need at least ${minPayoutAmount} in your wallet to request a payout. Current balance: ${walletBalance.toFixed(2)}
+            You need at least {currencySymbol}{minPayoutAmount} in your wallet to request a payout. Current balance: {currencySymbol}{walletBalance.toFixed(2)}
           </div>
         )}
 
@@ -342,7 +343,7 @@ const UserPayments: React.FC = () => {
                         {format(new Date(payout.created_at), 'MMM d, yyyy')}
                       </TableCell>
                       <TableCell className="font-semibold">
-                        ${payout.amount.toFixed(2)}
+                        {currencySymbol}{payout.amount.toFixed(2)}
                       </TableCell>
                       <TableCell className="capitalize">
                         {payout.payment_method.replace(/_/g, ' ')}
@@ -397,7 +398,7 @@ const UserPayments: React.FC = () => {
                       "font-semibold",
                       tx.amount > 0 ? 'text-emerald-600' : 'text-red-600'
                     )}>
-                      {tx.amount > 0 ? '+' : ''}${Math.abs(tx.amount).toFixed(2)}
+                      {tx.amount > 0 ? '+' : ''}{currencySymbol}{Math.abs(tx.amount).toFixed(2)}
                     </p>
                     <Badge variant="secondary" className="mt-1 capitalize">
                       {tx.type.replace(/_/g, ' ')}
