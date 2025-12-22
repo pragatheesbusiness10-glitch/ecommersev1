@@ -19,6 +19,7 @@ import AdminWallet from "./pages/admin/AdminWallet";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminPayouts from "./pages/admin/AdminPayouts";
+import AdminKYC from "./pages/admin/AdminKYC";
 
 // User Pages
 import UserDashboard from "./pages/user/UserDashboard";
@@ -26,6 +27,7 @@ import UserProducts from "./pages/user/UserProducts";
 import UserOrders from "./pages/user/UserOrders";
 import UserStorefront from "./pages/user/UserStorefront";
 import UserPayments from "./pages/user/UserPayments";
+import UserKYC from "./pages/user/UserKYC";
 
 // Storefront
 import Storefront from "./pages/storefront/Storefront";
@@ -87,6 +89,7 @@ const AppRoutes = () => {
       <Route path="/admin/wallet" element={<ProtectedRoute allowedRoles={['admin']}><AdminWallet /></ProtectedRoute>} />
       <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
       <Route path="/admin/payouts" element={<ProtectedRoute allowedRoles={['admin']}><AdminPayouts /></ProtectedRoute>} />
+      <Route path="/admin/kyc" element={<ProtectedRoute allowedRoles={['admin']}><AdminKYC /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
       
       {/* User Routes */}
@@ -95,6 +98,7 @@ const AppRoutes = () => {
       <Route path="/dashboard/orders" element={<ProtectedRoute allowedRoles={['user']}><UserOrders /></ProtectedRoute>} />
       <Route path="/dashboard/storefront" element={<ProtectedRoute allowedRoles={['user']}><UserStorefront /></ProtectedRoute>} />
       <Route path="/dashboard/payments" element={<ProtectedRoute allowedRoles={['user']}><UserPayments /></ProtectedRoute>} />
+      <Route path="/dashboard/kyc" element={<ProtectedRoute allowedRoles={['user']}><UserKYC /></ProtectedRoute>} />
       
       {/* Catch All */}
       <Route path="*" element={<NotFound />} />

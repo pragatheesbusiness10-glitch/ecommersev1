@@ -2,6 +2,7 @@ import React from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
+import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { 
@@ -87,6 +88,9 @@ const UserDashboard: React.FC = () => {
             )}
           </div>
         </div>
+
+        {/* KYC Status Banner */}
+        <KYCStatusBanner compact />
 
         {/* Storefront Info Banner */}
         <div 

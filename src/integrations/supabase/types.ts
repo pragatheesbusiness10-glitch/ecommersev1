@@ -56,6 +56,66 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_submissions: {
+        Row: {
+          aadhaar_back_url: string
+          aadhaar_front_url: string
+          aadhaar_number: string
+          created_at: string
+          date_of_birth: string
+          first_name: string
+          id: string
+          last_name: string
+          pan_document_url: string
+          pan_number: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          submitted_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aadhaar_back_url: string
+          aadhaar_front_url: string
+          aadhaar_number: string
+          created_at?: string
+          date_of_birth: string
+          first_name: string
+          id?: string
+          last_name: string
+          pan_document_url: string
+          pan_number: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aadhaar_back_url?: string
+          aadhaar_front_url?: string
+          aadhaar_number?: string
+          created_at?: string
+          date_of_birth?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          pan_document_url?: string
+          pan_number?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          submitted_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           affiliate_user_id: string
@@ -393,6 +453,10 @@ export type Database = {
         }
         Returns: string
       }
+      get_kyc_status: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["kyc_status"]
+      }
       get_user_commission_rate: { Args: { _user_id: string }; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
@@ -405,10 +469,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_kyc_approved: { Args: { _user_id: string }; Returns: boolean }
       is_user_approved: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
+      kyc_status: "not_submitted" | "submitted" | "approved" | "rejected"
       order_status:
         | "pending_payment"
         | "paid_by_user"
@@ -544,6 +610,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      kyc_status: ["not_submitted", "submitted", "approved", "rejected"],
       order_status: [
         "pending_payment",
         "paid_by_user",

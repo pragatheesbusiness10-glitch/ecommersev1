@@ -45,6 +45,7 @@ import { format } from 'date-fns';
 import { usePayoutRequests } from '@/hooks/usePayoutRequests';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { useKYC } from '@/hooks/useKYC';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -75,9 +76,11 @@ const UserPayments: React.FC = () => {
   const { profile, transactions, isLoading: dashboardLoading } = useUserDashboard();
   const { payoutRequests, isLoading: payoutsLoading, createPayout, isCreatingPayout } = usePayoutRequests();
   const { settingsMap } = usePlatformSettings();
+  const { isKYCApproved, kycStatus } = useKYC();
 
   const walletBalance = profile?.wallet_balance || 0;
   const minPayoutAmount = settingsMap.min_payout_amount;
+  const canRequestPayout = isKYCApproved && walletBalance >= minPayoutAmount;
 
   const handleRequestPayout = (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +163,7 @@ const UserPayments: React.FC = () => {
           </div>
           <Dialog open={isPayoutDialogOpen} onOpenChange={setIsPayoutDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2" disabled={walletBalance < minPayoutAmount}>
+              <Button className="gap-2" disabled={!canRequestPayout}>
                 <Send className="w-4 h-4" />
                 Request Payout
               </Button>
@@ -306,7 +309,13 @@ const UserPayments: React.FC = () => {
           </div>
         </div>
 
-        {walletBalance < minPayoutAmount && (
+        {!isKYCApproved && (
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm text-amber-700">
+            KYC verification is required to request payouts. Please complete your KYC verification first.
+          </div>
+        )}
+
+        {isKYCApproved && walletBalance < minPayoutAmount && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm text-amber-700">
             You need at least ${minPayoutAmount} in your wallet to request a payout. Current balance: ${walletBalance.toFixed(2)}
           </div>
