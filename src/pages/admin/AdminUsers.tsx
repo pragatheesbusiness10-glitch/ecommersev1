@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Link } from 'react-router-dom';
 import { 
   Search, 
   MoreVertical, 
@@ -18,7 +19,8 @@ import {
   XCircle,
   Clock,
   Trash2,
-  Percent
+  Percent,
+  Shield
 } from 'lucide-react';
 import {
   Dialog,
@@ -266,6 +268,12 @@ const AdminUsers: React.FC = () => {
                         View Storefront
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem asChild>
+                      <Link to={`/admin/kyc?user=${user.user_id}`}>
+                        <Shield className="w-4 h-4 mr-2" />
+                        View KYC
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     {user.user_status === 'pending' && (
                       <DropdownMenuItem 
