@@ -5,6 +5,7 @@ import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
 import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
+import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { 
   ShoppingCart, 
   Clock, 
@@ -23,6 +24,9 @@ const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { recentOrders, stats, profile, isLoading, refetchOrders } = useUserDashboard();
+  const { settingsMap } = usePlatformSettings();
+  
+  const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
 
   const handlePayOrder = async (order: typeof recentOrders[0]) => {
     try {
@@ -38,7 +42,7 @@ const UserDashboard: React.FC = () => {
 
       toast({
         title: 'Payment Successful',
-        description: `Payment of $${(order.base_price * order.quantity).toFixed(2)} confirmed for order ${order.order_number}`,
+        description: `Payment of ${currencySymbol}${(order.base_price * order.quantity).toFixed(2)} confirmed for order ${order.order_number}`,
       });
       
       refetchOrders();
@@ -108,7 +112,7 @@ const UserDashboard: React.FC = () => {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-2xl font-bold">${user.walletBalance.toFixed(2)}</p>
+                <p className="text-2xl font-bold">{currencySymbol}{user.walletBalance.toFixed(2)}</p>
                 <p className="text-xs text-primary-foreground/70">Wallet Balance</p>
               </div>
               <Button variant="secondary" size="sm" asChild>
@@ -142,21 +146,23 @@ const UserDashboard: React.FC = () => {
           />
           <StatCard
             title="Total Profit"
-            value={`$${stats.totalRevenue.toFixed(2)}`}
+            value={`${currencySymbol}${stats.totalRevenue.toFixed(2)}`}
             icon={TrendingUp}
             variant="accent"
             delay={150}
           />
           <StatCard
             title="Payable to Admin"
-            value={`$${stats.pendingPayments.toFixed(2)}`}
+            value={`${currencySymbol}${stats.pendingPayments.toFixed(2)}`}
             icon={DollarSign}
             variant="warning"
+            badge={stats.pendingOrders > 0 ? stats.pendingOrders : undefined}
+            badgeVariant="warning"
             delay={200}
           />
           <StatCard
             title="Paid to Admin"
-            value={`$${stats.paidAmount.toFixed(2)}`}
+            value={`${currencySymbol}${stats.paidAmount.toFixed(2)}`}
             icon={Wallet}
             variant="success"
             delay={250}
@@ -218,7 +224,7 @@ const UserDashboard: React.FC = () => {
               <div className="dashboard-card bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800">
                 <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Pending Payments</h3>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                  You have ${stats.pendingPayments.toFixed(2)} in pending payments. Pay now to fulfill orders.
+                  You have {currencySymbol}{stats.pendingPayments.toFixed(2)} in pending payments. Pay now to fulfill orders.
                 </p>
                 <Button variant="accent" size="sm" asChild>
                   <Link to="/dashboard/orders">View Pending Orders</Link>
