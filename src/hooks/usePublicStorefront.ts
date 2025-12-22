@@ -22,6 +22,7 @@ export interface StoreOwner {
   name: string;
   storefront_name: string | null;
   storefront_slug: string | null;
+  storefront_banner: string | null;
 }
 
 export const usePublicStorefront = (slug: string | undefined) => {
@@ -33,7 +34,7 @@ export const usePublicStorefront = (slug: string | undefined) => {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, name, storefront_name, storefront_slug')
+        .select('user_id, name, storefront_name, storefront_slug, storefront_banner')
         .eq('storefront_slug', slug)
         .maybeSingle();
 
