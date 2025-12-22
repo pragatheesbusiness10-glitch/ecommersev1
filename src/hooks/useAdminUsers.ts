@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+export type UserStatus = 'pending' | 'approved' | 'disabled';
+
 export interface AffiliateUser {
   id: string;
   user_id: string;
@@ -11,7 +13,9 @@ export interface AffiliateUser {
   storefront_name: string | null;
   storefront_slug: string | null;
   is_active: boolean;
+  user_status: UserStatus;
   wallet_balance: number;
+  commission_override: number | null;
   created_at: string;
 }
 
@@ -60,7 +64,9 @@ export const useAdminUsers = () => {
         storefront_name: p.storefront_name,
         storefront_slug: p.storefront_slug,
         is_active: p.is_active,
+        user_status: (p.user_status as UserStatus) || 'pending',
         wallet_balance: Number(p.wallet_balance),
+        commission_override: p.commission_override ? Number(p.commission_override) : null,
         created_at: p.created_at,
       }));
     },
@@ -89,6 +95,50 @@ export const useAdminUsers = () => {
       toast({
         title: 'Error',
         description: 'Failed to update affiliate status.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateUserStatusMutation = useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: UserStatus }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ user_status: status })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      
+      // Log the action
+      await supabase.rpc('create_audit_log', {
+        _action_type: 'user_status_change',
+        _entity_type: 'profile',
+        _entity_id: userId,
+        _user_id: userId,
+        _admin_id: user?.id,
+        _new_value: { status },
+        _reason: `Status changed to ${status}`,
+      });
+      
+      return status;
+    },
+    onSuccess: (status) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
+      const messages: Record<UserStatus, string> = {
+        approved: 'User has been approved and can now use all features.',
+        pending: 'User has been set to pending status.',
+        disabled: 'User has been disabled.',
+      };
+      toast({
+        title: `User ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        description: messages[status],
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating user status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update user status.',
         variant: 'destructive',
       });
     },
@@ -134,6 +184,96 @@ export const useAdminUsers = () => {
     },
   });
 
+  const updateCommissionMutation = useMutation({
+    mutationFn: async ({ 
+      userId, 
+      commissionOverride 
+    }: { 
+      userId: string; 
+      commissionOverride: number | null;
+    }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ commission_override: commissionOverride })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      
+      // Log the action
+      await supabase.rpc('create_audit_log', {
+        _action_type: 'commission_change',
+        _entity_type: 'profile',
+        _entity_id: userId,
+        _user_id: userId,
+        _admin_id: user?.id,
+        _new_value: { commission_override: commissionOverride },
+        _reason: commissionOverride !== null 
+          ? `Custom commission set to ${commissionOverride}%` 
+          : 'Commission reset to default',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
+      toast({
+        title: 'Commission Updated',
+        description: 'The affiliate commission has been updated.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating commission:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update commission.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async ({ userId }: { userId: string }) => {
+      // Delete user role first
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (roleError) throw roleError;
+
+      // Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (profileError) throw profileError;
+      
+      // Log the action
+      await supabase.rpc('create_audit_log', {
+        _action_type: 'user_deleted',
+        _entity_type: 'profile',
+        _entity_id: userId,
+        _user_id: userId,
+        _admin_id: user?.id,
+        _reason: 'User permanently deleted by admin',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
+      toast({
+        title: 'User Deleted',
+        description: 'The user has been permanently deleted.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete user. They may have associated data.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     affiliates: affiliatesQuery.data || [],
     isLoading: affiliatesQuery.isLoading,
@@ -141,7 +281,13 @@ export const useAdminUsers = () => {
     refetch: affiliatesQuery.refetch,
     toggleStatus: toggleStatusMutation.mutate,
     isTogglingStatus: toggleStatusMutation.isPending,
+    updateUserStatus: updateUserStatusMutation.mutate,
+    isUpdatingUserStatus: updateUserStatusMutation.isPending,
     updateProfile: updateProfileMutation.mutate,
     isUpdatingProfile: updateProfileMutation.isPending,
+    updateCommission: updateCommissionMutation.mutate,
+    isUpdatingCommission: updateCommissionMutation.isPending,
+    deleteUser: deleteUserMutation.mutate,
+    isDeletingUser: deleteUserMutation.isPending,
   };
 };

@@ -3,17 +3,20 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 type UserRole = 'admin' | 'user';
+type UserStatus = 'pending' | 'approved' | 'disabled';
 
 interface AuthUser {
   id: string;
   email: string;
   name: string;
   role: UserRole;
+  userStatus: UserStatus;
   storefrontSlug?: string;
   storefrontName?: string;
   isActive: boolean;
   createdAt: string;
   walletBalance: number;
+  commissionOverride: number | null;
 }
 
 interface AuthContextType {
@@ -21,9 +24,11 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isApproved: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,17 +74,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: profile.email,
         name: profile.name,
         role,
+        userStatus: (profile.user_status as UserStatus) || 'pending',
         storefrontSlug: profile.storefront_slug || undefined,
         storefrontName: profile.storefront_name || undefined,
         isActive: profile.is_active,
         createdAt: profile.created_at,
         walletBalance: Number(profile.wallet_balance) || 0,
+        commissionOverride: profile.commission_override ? Number(profile.commission_override) : null,
       };
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
       return null;
     }
   };
+
+  const refreshUser = useCallback(async () => {
+    if (session?.user) {
+      const userProfile = await fetchUserProfile(session.user.id);
+      setUser(userProfile);
+    }
+  }, [session]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -131,6 +145,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         const userProfile = await fetchUserProfile(data.user.id);
+        
+        // Check if user is disabled
+        if (userProfile && userProfile.userStatus === 'disabled') {
+          await supabase.auth.signOut();
+          return { success: false, error: 'Your account has been disabled. Please contact admin.' };
+        }
         
         if (userProfile && !userProfile.isActive && userProfile.role === 'user') {
           await supabase.auth.signOut();
@@ -189,15 +209,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSession(null);
   }, []);
 
+  const isApproved = user?.role === 'admin' || user?.userStatus === 'approved';
+
   return (
     <AuthContext.Provider value={{ 
       user, 
       session,
       isAuthenticated: !!session && !!user, 
-      isLoading, 
+      isLoading,
+      isApproved,
       login, 
       signup,
-      logout 
+      logout,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

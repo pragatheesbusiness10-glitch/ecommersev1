@@ -45,7 +45,17 @@ const UserProducts: React.FC = () => {
     (!selectedCategory || product.category === selectedCategory)
   );
 
+  const { isApproved } = useAuth();
+
   const handleAddToStorefront = (product: Product) => {
+    if (!isApproved) {
+      toast({
+        title: 'Account Pending Approval',
+        description: 'Your account must be approved before you can add products to your storefront.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setSelectedProduct(product);
     setSellingPrice((product.base_price * 1.3).toFixed(2)); // Default 30% markup
     setCustomDescription('');

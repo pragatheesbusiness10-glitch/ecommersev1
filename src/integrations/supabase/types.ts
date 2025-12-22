@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action_type: string
+          admin_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+          new_value: Json | null
+          old_value: Json | null
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           affiliate_user_id: string
@@ -189,6 +231,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          commission_override: number | null
           created_at: string
           email: string
           id: string
@@ -198,9 +241,11 @@ export type Database = {
           storefront_slug: string | null
           updated_at: string
           user_id: string
+          user_status: Database["public"]["Enums"]["user_status"]
           wallet_balance: number
         }
         Insert: {
+          commission_override?: number | null
           created_at?: string
           email: string
           id?: string
@@ -210,9 +255,11 @@ export type Database = {
           storefront_slug?: string | null
           updated_at?: string
           user_id: string
+          user_status?: Database["public"]["Enums"]["user_status"]
           wallet_balance?: number
         }
         Update: {
+          commission_override?: number | null
           created_at?: string
           email?: string
           id?: string
@@ -222,6 +269,7 @@ export type Database = {
           storefront_slug?: string | null
           updated_at?: string
           user_id?: string
+          user_status?: Database["public"]["Enums"]["user_status"]
           wallet_balance?: number
         }
         Relationships: []
@@ -331,6 +379,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_audit_log: {
+        Args: {
+          _action_type: string
+          _admin_id: string
+          _entity_id: string
+          _entity_type: string
+          _metadata?: Json
+          _new_value?: Json
+          _old_value?: Json
+          _reason?: string
+          _user_id: string
+        }
+        Returns: string
+      }
+      get_user_commission_rate: { Args: { _user_id: string }; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -342,6 +405,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_user_approved: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
@@ -351,6 +415,7 @@ export type Database = {
         | "processing"
         | "completed"
         | "cancelled"
+      user_status: "pending" | "approved" | "disabled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -486,6 +551,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      user_status: ["pending", "approved", "disabled"],
     },
   },
 } as const
