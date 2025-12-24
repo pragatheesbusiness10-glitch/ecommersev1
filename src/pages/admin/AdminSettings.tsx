@@ -132,7 +132,6 @@ const AdminSettings: React.FC = () => {
       description: "Your Resend API key has been removed.",
     });
   };
-  };
 
   if (isLoading) {
     return (
