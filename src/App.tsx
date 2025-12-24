@@ -20,6 +20,7 @@ import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminPayouts from "./pages/admin/AdminPayouts";
 import AdminKYC from "./pages/admin/AdminKYC";
+import AdminChat from "./pages/admin/AdminChat";
 
 // User Pages
 import UserDashboard from "./pages/user/UserDashboard";
@@ -90,6 +91,7 @@ const AppRoutes = () => {
       <Route path="/admin/reports" element={<ProtectedRoute allowedRoles={['admin']}><AdminReports /></ProtectedRoute>} />
       <Route path="/admin/payouts" element={<ProtectedRoute allowedRoles={['admin']}><AdminPayouts /></ProtectedRoute>} />
       <Route path="/admin/kyc" element={<ProtectedRoute allowedRoles={['admin']}><AdminKYC /></ProtectedRoute>} />
+      <Route path="/admin/chat" element={<ProtectedRoute allowedRoles={['admin']}><AdminChat /></ProtectedRoute>} />
       <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><AdminSettings /></ProtectedRoute>} />
       
       {/* User Routes */}

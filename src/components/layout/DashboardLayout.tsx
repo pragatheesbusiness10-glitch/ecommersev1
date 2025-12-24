@@ -19,9 +19,11 @@ import {
   Wallet,
   FileText,
   Send,
-  Shield
+  Shield,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { UserChatWidget } from '@/components/chat/UserChatWidget';
 
 interface NavItem {
   icon: React.ElementType;
@@ -37,6 +39,7 @@ const adminNavItems: NavItem[] = [
   { icon: Wallet, label: 'Wallet', href: '/admin/wallet' },
   { icon: Send, label: 'Payouts', href: '/admin/payouts' },
   { icon: Shield, label: 'KYC', href: '/admin/kyc' },
+  { icon: MessageCircle, label: 'Chat', href: '/admin/chat' },
   { icon: FileText, label: 'Reports', href: '/admin/reports' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
 ];
@@ -71,7 +74,24 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
     enabled: user?.role === 'admin',
   });
 
+  // Fetch pending chat messages count for admin
+  const { data: pendingChatCount = 0 } = useQuery({
+    queryKey: ['pending-chat-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('chat_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('sender_role', 'user')
+        .eq('is_read', false);
+
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: user?.role === 'admin',
+  });
+
   const navItems = user?.role === 'admin' ? adminNavItems : userNavItems;
+  const isUserRole = user?.role === 'user';
 
   const handleLogout = () => {
     logout();
@@ -122,6 +142,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
               const showKYCBadge = item.href === '/admin/kyc' && pendingKYCCount > 0;
+              const showChatBadge = item.href === '/admin/chat' && pendingChatCount > 0;
               return (
                 <Link
                   key={item.href}
@@ -141,7 +162,12 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                       {pendingKYCCount}
                     </Badge>
                   )}
-                  {isActive && !showKYCBadge && <ChevronRight className="w-4 h-4 ml-auto" />}
+                  {showChatBadge && (
+                    <Badge className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 h-5">
+                      {pendingChatCount}
+                    </Badge>
+                  )}
+                  {isActive && !showKYCBadge && !showChatBadge && <ChevronRight className="w-4 h-4 ml-auto" />}
                 </Link>
               );
             })}
@@ -190,6 +216,9 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           {children}
         </div>
       </main>
+
+      {/* User Chat Widget - only show for non-admin users */}
+      {isUserRole && <UserChatWidget />}
     </div>
   );
 };

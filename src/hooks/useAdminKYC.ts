@@ -11,6 +11,14 @@ export interface KYCWithProfile extends KYCSubmission {
   };
 }
 
+export interface KYCDocumentUrls {
+  aadhaar_front: string;
+  aadhaar_back: string;
+  pan: string;
+  bank_statement: string | null;
+  face_image: string | null;
+}
+
 export const useAdminKYC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -139,11 +147,30 @@ export const useAdminKYC = () => {
   });
 
   const getDocumentUrl = async (path: string): Promise<string | null> => {
+    if (!path) return null;
     const { data } = await supabase.storage
       .from('kyc-documents')
       .createSignedUrl(path, 3600); // 1 hour expiry
 
     return data?.signedUrl || null;
+  };
+
+  const getAllDocumentUrls = async (kyc: KYCWithProfile): Promise<KYCDocumentUrls> => {
+    const [aadhaarFront, aadhaarBack, pan, bankStatement, faceImage] = await Promise.all([
+      getDocumentUrl(kyc.aadhaar_front_url),
+      getDocumentUrl(kyc.aadhaar_back_url),
+      getDocumentUrl(kyc.pan_document_url),
+      kyc.bank_statement_url ? getDocumentUrl(kyc.bank_statement_url) : Promise.resolve(null),
+      kyc.face_image_url ? getDocumentUrl(kyc.face_image_url) : Promise.resolve(null),
+    ]);
+
+    return {
+      aadhaar_front: aadhaarFront || '',
+      aadhaar_back: aadhaarBack || '',
+      pan: pan || '',
+      bank_statement: bankStatement,
+      face_image: faceImage,
+    };
   };
 
   const pendingCount = kycSubmissions.filter(k => k.status === 'submitted').length;
@@ -157,5 +184,6 @@ export const useAdminKYC = () => {
     isApproving: approveKYCMutation.isPending,
     isRejecting: rejectKYCMutation.isPending,
     getDocumentUrl,
+    getAllDocumentUrls,
   };
 };

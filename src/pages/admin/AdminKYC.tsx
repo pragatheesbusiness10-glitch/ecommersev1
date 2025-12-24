@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { useAdminKYC, type KYCWithProfile } from '@/hooks/useAdminKYC';
+import { useAdminKYC, type KYCWithProfile, type KYCDocumentUrls } from '@/hooks/useAdminKYC';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -41,10 +41,14 @@ import {
   FileText,
   User,
   Calendar,
-  ExternalLink
+  ExternalLink,
+  Download,
+  Camera,
+  Building
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { downloadCSV } from '@/lib/exportUtils';
 
 const statusColors: Record<string, string> = {
   not_submitted: 'bg-gray-500/10 text-gray-600',
@@ -73,7 +77,8 @@ const AdminKYC: React.FC = () => {
     rejectKYC,
     isApproving,
     isRejecting,
-    getDocumentUrl
+    getDocumentUrl,
+    getAllDocumentUrls
   } = useAdminKYC();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -82,7 +87,7 @@ const AdminKYC: React.FC = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [documentUrls, setDocumentUrls] = useState<Record<string, string>>({});
+  const [documentUrls, setDocumentUrls] = useState<KYCDocumentUrls | null>(null);
 
   const filteredSubmissions = kycSubmissions.filter(kyc => {
     const matchesSearch = 
@@ -99,18 +104,43 @@ const AdminKYC: React.FC = () => {
     setSelectedKYC(kyc);
     setIsViewDialogOpen(true);
 
-    // Load document URLs
-    const [aadhaarFront, aadhaarBack, pan] = await Promise.all([
-      getDocumentUrl(kyc.aadhaar_front_url),
-      getDocumentUrl(kyc.aadhaar_back_url),
-      getDocumentUrl(kyc.pan_document_url),
-    ]);
+    // Load all document URLs
+    const urls = await getAllDocumentUrls(kyc);
+    setDocumentUrls(urls);
+  };
 
-    setDocumentUrls({
-      aadhaar_front: aadhaarFront || '',
-      aadhaar_back: aadhaarBack || '',
-      pan: pan || '',
-    });
+  const handleDownloadKYC = (kyc: KYCWithProfile) => {
+    const data = [{
+      'User Name': kyc.profiles?.name || 'Unknown',
+      'User Email': kyc.profiles?.email || 'N/A',
+      'First Name': kyc.first_name,
+      'Last Name': kyc.last_name,
+      'Date of Birth': format(new Date(kyc.date_of_birth), 'yyyy-MM-dd'),
+      'Aadhaar Number': kyc.aadhaar_number,
+      'PAN Number': kyc.pan_number,
+      'Status': kyc.status,
+      'Submitted At': format(new Date(kyc.submitted_at), 'yyyy-MM-dd HH:mm'),
+      'Reviewed At': kyc.reviewed_at ? format(new Date(kyc.reviewed_at), 'yyyy-MM-dd HH:mm') : 'N/A',
+      'Rejection Reason': kyc.rejection_reason || 'N/A',
+    }];
+    downloadCSV(data, `kyc_${kyc.first_name}_${kyc.last_name}_${format(new Date(), 'yyyyMMdd')}`);
+  };
+
+  const handleDownloadAll = () => {
+    const data = filteredSubmissions.map(kyc => ({
+      'User Name': kyc.profiles?.name || 'Unknown',
+      'User Email': kyc.profiles?.email || 'N/A',
+      'First Name': kyc.first_name,
+      'Last Name': kyc.last_name,
+      'Date of Birth': format(new Date(kyc.date_of_birth), 'yyyy-MM-dd'),
+      'Aadhaar Number': kyc.aadhaar_number,
+      'PAN Number': kyc.pan_number,
+      'Status': kyc.status,
+      'Submitted At': format(new Date(kyc.submitted_at), 'yyyy-MM-dd HH:mm'),
+      'Reviewed At': kyc.reviewed_at ? format(new Date(kyc.reviewed_at), 'yyyy-MM-dd HH:mm') : 'N/A',
+      'Rejection Reason': kyc.rejection_reason || 'N/A',
+    }));
+    downloadCSV(data, `kyc_submissions_${format(new Date(), 'yyyyMMdd')}`);
   };
 
   const handleApprove = () => {
@@ -165,6 +195,10 @@ const AdminKYC: React.FC = () => {
               {pendingCount} Pending Reviews
             </Badge>
           )}
+          <Button onClick={handleDownloadAll} variant="outline" disabled={filteredSubmissions.length === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Export All
+          </Button>
         </div>
 
         {/* Filters */}
@@ -232,14 +266,23 @@ const AdminKYC: React.FC = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleViewKYC(kyc)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        View
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDownloadKYC(kyc)}
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewKYC(kyc)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -312,7 +355,7 @@ const AdminKYC: React.FC = () => {
                   <FileText className="w-4 h-4" /> Uploaded Documents
                 </Label>
                 <div className="grid gap-4 sm:grid-cols-3">
-                  {documentUrls.aadhaar_front && (
+                  {documentUrls?.aadhaar_front && (
                     <a
                       href={documentUrls.aadhaar_front}
                       target="_blank"
@@ -326,7 +369,7 @@ const AdminKYC: React.FC = () => {
                       </div>
                     </a>
                   )}
-                  {documentUrls.aadhaar_back && (
+                  {documentUrls?.aadhaar_back && (
                     <a
                       href={documentUrls.aadhaar_back}
                       target="_blank"
@@ -340,7 +383,7 @@ const AdminKYC: React.FC = () => {
                       </div>
                     </a>
                   )}
-                  {documentUrls.pan && (
+                  {documentUrls?.pan && (
                     <a
                       href={documentUrls.pan}
                       target="_blank"
@@ -350,6 +393,34 @@ const AdminKYC: React.FC = () => {
                       <div className="flex items-center gap-2 text-sm">
                         <FileText className="w-4 h-4" />
                         PAN Card
+                        <ExternalLink className="w-3 h-3 ml-auto" />
+                      </div>
+                    </a>
+                  )}
+                  {documentUrls?.bank_statement && (
+                    <a
+                      href={documentUrls.bank_statement}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-4 border rounded-lg hover:border-primary transition-colors"
+                    >
+                      <div className="flex items-center gap-2 text-sm">
+                        <Building className="w-4 h-4" />
+                        Bank Statement
+                        <ExternalLink className="w-3 h-3 ml-auto" />
+                      </div>
+                    </a>
+                  )}
+                  {documentUrls?.face_image && (
+                    <a
+                      href={documentUrls.face_image}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block p-4 border rounded-lg hover:border-primary transition-colors"
+                    >
+                      <div className="flex items-center gap-2 text-sm">
+                        <Camera className="w-4 h-4" />
+                        Face Image
                         <ExternalLink className="w-3 h-3 ml-auto" />
                       </div>
                     </a>
