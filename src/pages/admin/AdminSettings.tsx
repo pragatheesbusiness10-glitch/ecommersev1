@@ -13,7 +13,11 @@ import {
   Loader2,
   Save,
   Users,
-  Globe
+  Globe,
+  Mail,
+  Eye,
+  EyeOff,
+  Check
 } from 'lucide-react';
 import {
   Select,
@@ -45,6 +49,25 @@ const AdminSettings: React.FC = () => {
   const [autoUserApproval, setAutoUserApproval] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // Email notification settings
+  const [resendApiKey, setResendApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isApiKeySaved, setIsApiKeySaved] = useState(false);
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
+
+  // Load email settings from localStorage
+  useEffect(() => {
+    const savedKey = localStorage.getItem('resend_api_key');
+    const notificationsEnabled = localStorage.getItem('email_notifications_enabled');
+    if (savedKey) {
+      setResendApiKey(savedKey);
+      setIsApiKeySaved(true);
+    }
+    if (notificationsEnabled === 'true') {
+      setEmailNotificationsEnabled(true);
+    }
+  }, []);
 
   // Load settings on mount
   useEffect(() => {
@@ -84,6 +107,31 @@ const AdminSettings: React.FC = () => {
     } catch (error) {
       console.error('Error saving settings:', error);
     }
+  };
+
+  const handleSaveApiKey = () => {
+    if (resendApiKey.trim()) {
+      localStorage.setItem('resend_api_key', resendApiKey);
+      localStorage.setItem('email_notifications_enabled', emailNotificationsEnabled.toString());
+      setIsApiKeySaved(true);
+      toast({
+        title: "API Key Saved",
+        description: "Your Resend API key has been saved locally. You'll need to add it as a secret in the backend for it to work.",
+      });
+    }
+  };
+
+  const handleClearApiKey = () => {
+    localStorage.removeItem('resend_api_key');
+    localStorage.removeItem('email_notifications_enabled');
+    setResendApiKey('');
+    setIsApiKeySaved(false);
+    setEmailNotificationsEnabled(false);
+    toast({
+      title: "API Key Cleared",
+      description: "Your Resend API key has been removed.",
+    });
+  };
   };
 
   if (isLoading) {
@@ -335,6 +383,98 @@ const AdminSettings: React.FC = () => {
                 onCheckedChange={setAutoCreditOnComplete}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Email Notification Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle>Email Notifications</CardTitle>
+                <CardDescription>
+                  Configure email notifications for chat messages using Resend.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Enable Email Notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  Send email notifications when users send chat messages.
+                </p>
+              </div>
+              <Switch
+                checked={emailNotificationsEnabled}
+                onCheckedChange={(checked) => {
+                  setEmailNotificationsEnabled(checked);
+                  localStorage.setItem('email_notifications_enabled', checked.toString());
+                }}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label>Resend API Key</Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    type={showApiKey ? 'text' : 'password'}
+                    value={resendApiKey}
+                    onChange={(e) => {
+                      setResendApiKey(e.target.value);
+                      setIsApiKeySaved(false);
+                    }}
+                    placeholder="re_xxxxxxxxx..."
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                  >
+                    {showApiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </Button>
+                </div>
+                <Button 
+                  onClick={handleSaveApiKey} 
+                  disabled={!resendApiKey.trim() || isApiKeySaved}
+                  variant={isApiKeySaved ? "outline" : "default"}
+                  className="gap-2"
+                >
+                  {isApiKeySaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                  {isApiKeySaved ? 'Saved' : 'Save'}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Get your API key from <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">resend.com</a>. 
+                The key is stored locally for now.
+              </p>
+            </div>
+
+            {isApiKeySaved && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm">
+                <p className="font-medium text-amber-600 mb-2">⚠️ Important: Backend Configuration Required</p>
+                <p className="text-muted-foreground">
+                  To enable email notifications, you'll need to add the RESEND_API_KEY as a secret in the backend. 
+                  Contact your developer to set this up.
+                </p>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleClearApiKey}
+                  className="mt-2 text-destructive hover:text-destructive"
+                >
+                  Clear API Key
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
