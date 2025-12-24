@@ -44,7 +44,9 @@ import {
   ExternalLink,
   Download,
   Camera,
-  Building
+  Building,
+  ZoomIn,
+  X
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -88,6 +90,7 @@ const AdminKYC: React.FC = () => {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [documentUrls, setDocumentUrls] = useState<KYCDocumentUrls | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const filteredSubmissions = kycSubmissions.filter(kyc => {
     const matchesSearch = 
@@ -349,81 +352,175 @@ const AdminKYC: React.FC = () => {
                 </div>
               </div>
 
-              {/* Documents */}
+              {/* Documents with Inline Preview */}
               <div className="space-y-4">
                 <Label className="flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Uploaded Documents
                 </Label>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4">
+                  {/* Aadhaar Front */}
                   {documentUrls?.aadhaar_front && (
-                    <a
-                      href={documentUrls.aadhaar_front}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-4 border rounded-lg hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4" />
-                        Aadhaar Front
-                        <ExternalLink className="w-3 h-3 ml-auto" />
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-2 flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2">
+                          <FileText className="w-4 h-4" /> Aadhaar Front
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewImage(documentUrls.aadhaar_front!)}
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                          </Button>
+                          <a href={documentUrls.aadhaar_front} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          </a>
+                        </div>
                       </div>
-                    </a>
+                      <div className="p-2 bg-muted/20">
+                        <img 
+                          src={documentUrls.aadhaar_front} 
+                          alt="Aadhaar Front" 
+                          className="w-full h-32 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewImage(documentUrls.aadhaar_front!)}
+                        />
+                      </div>
+                    </div>
                   )}
+
+                  {/* Aadhaar Back */}
                   {documentUrls?.aadhaar_back && (
-                    <a
-                      href={documentUrls.aadhaar_back}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-4 border rounded-lg hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4" />
-                        Aadhaar Back
-                        <ExternalLink className="w-3 h-3 ml-auto" />
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-2 flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2">
+                          <FileText className="w-4 h-4" /> Aadhaar Back
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewImage(documentUrls.aadhaar_back!)}
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                          </Button>
+                          <a href={documentUrls.aadhaar_back} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          </a>
+                        </div>
                       </div>
-                    </a>
+                      <div className="p-2 bg-muted/20">
+                        <img 
+                          src={documentUrls.aadhaar_back} 
+                          alt="Aadhaar Back" 
+                          className="w-full h-32 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewImage(documentUrls.aadhaar_back!)}
+                        />
+                      </div>
+                    </div>
                   )}
+
+                  {/* PAN Card */}
                   {documentUrls?.pan && (
-                    <a
-                      href={documentUrls.pan}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-4 border rounded-lg hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-2 text-sm">
-                        <FileText className="w-4 h-4" />
-                        PAN Card
-                        <ExternalLink className="w-3 h-3 ml-auto" />
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-2 flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2">
+                          <FileText className="w-4 h-4" /> PAN Card
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewImage(documentUrls.pan!)}
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                          </Button>
+                          <a href={documentUrls.pan} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          </a>
+                        </div>
                       </div>
-                    </a>
+                      <div className="p-2 bg-muted/20">
+                        <img 
+                          src={documentUrls.pan} 
+                          alt="PAN Card" 
+                          className="w-full h-32 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewImage(documentUrls.pan!)}
+                        />
+                      </div>
+                    </div>
                   )}
+
+                  {/* Bank Statement */}
                   {documentUrls?.bank_statement && (
-                    <a
-                      href={documentUrls.bank_statement}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-4 border rounded-lg hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-2 text-sm">
-                        <Building className="w-4 h-4" />
-                        Bank Statement
-                        <ExternalLink className="w-3 h-3 ml-auto" />
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-2 flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2">
+                          <Building className="w-4 h-4" /> Bank Statement
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewImage(documentUrls.bank_statement!)}
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                          </Button>
+                          <a href={documentUrls.bank_statement} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          </a>
+                        </div>
                       </div>
-                    </a>
+                      <div className="p-2 bg-muted/20">
+                        <img 
+                          src={documentUrls.bank_statement} 
+                          alt="Bank Statement" 
+                          className="w-full h-32 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewImage(documentUrls.bank_statement!)}
+                        />
+                      </div>
+                    </div>
                   )}
+
+                  {/* Face Image */}
                   {documentUrls?.face_image && (
-                    <a
-                      href={documentUrls.face_image}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block p-4 border rounded-lg hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center gap-2 text-sm">
-                        <Camera className="w-4 h-4" />
-                        Face Image
-                        <ExternalLink className="w-3 h-3 ml-auto" />
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-2 flex items-center justify-between">
+                        <span className="text-sm font-medium flex items-center gap-2">
+                          <Camera className="w-4 h-4" /> Face Image
+                        </span>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewImage(documentUrls.face_image!)}
+                          >
+                            <ZoomIn className="w-4 h-4" />
+                          </Button>
+                          <a href={documentUrls.face_image} target="_blank" rel="noopener noreferrer">
+                            <Button variant="ghost" size="sm">
+                              <ExternalLink className="w-4 h-4" />
+                            </Button>
+                          </a>
+                        </div>
                       </div>
-                    </a>
+                      <div className="p-2 bg-muted/20">
+                        <img 
+                          src={documentUrls.face_image} 
+                          alt="Face Image" 
+                          className="w-full h-32 object-contain rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setPreviewImage(documentUrls.face_image!)}
+                        />
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -505,6 +602,29 @@ const AdminKYC: React.FC = () => {
               Confirm Rejection
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Full-screen Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl max-h-[95vh] p-0 overflow-hidden">
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background"
+              onClick={() => setPreviewImage(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+            {previewImage && (
+              <img 
+                src={previewImage} 
+                alt="Document Preview" 
+                className="w-full h-auto max-h-[90vh] object-contain"
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

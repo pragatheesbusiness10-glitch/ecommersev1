@@ -20,6 +20,9 @@ export interface SettingsMap {
   auto_user_approval: boolean;
   default_currency: string;
   display_currencies: string[];
+  resend_api_key: string;
+  email_notifications_enabled: boolean;
+  admin_email: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -66,6 +69,9 @@ export const usePlatformSettings = () => {
     auto_user_approval: false,
     default_currency: 'USD',
     display_currencies: ['USD', 'EUR', 'GBP', 'INR', 'AUD', 'CAD', 'JPY', 'CNY', 'AED', 'SGD'],
+    resend_api_key: '',
+    email_notifications_enabled: false,
+    admin_email: '',
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -94,6 +100,15 @@ export const usePlatformSettings = () => {
         } catch {
           settingsMap.display_currencies = ['USD'];
         }
+        break;
+      case 'resend_api_key':
+        settingsMap.resend_api_key = setting.value || '';
+        break;
+      case 'email_notifications_enabled':
+        settingsMap.email_notifications_enabled = setting.value === 'true';
+        break;
+      case 'admin_email':
+        settingsMap.admin_email = setting.value || '';
         break;
     }
   });

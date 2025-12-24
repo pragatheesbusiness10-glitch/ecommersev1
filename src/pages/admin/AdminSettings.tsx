@@ -55,19 +55,8 @@ const AdminSettings: React.FC = () => {
   const [showApiKey, setShowApiKey] = useState(false);
   const [isApiKeySaved, setIsApiKeySaved] = useState(false);
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
-
-  // Load email settings from localStorage
-  useEffect(() => {
-    const savedKey = localStorage.getItem('resend_api_key');
-    const notificationsEnabled = localStorage.getItem('email_notifications_enabled');
-    if (savedKey) {
-      setResendApiKey(savedKey);
-      setIsApiKeySaved(true);
-    }
-    if (notificationsEnabled === 'true') {
-      setEmailNotificationsEnabled(true);
-    }
-  }, []);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [isSavingEmailSettings, setIsSavingEmailSettings] = useState(false);
 
   // Load settings on mount
   useEffect(() => {
@@ -78,6 +67,13 @@ const AdminSettings: React.FC = () => {
       setAutoCreditOnComplete(settingsMap.auto_credit_on_complete);
       setAutoUserApproval(settingsMap.auto_user_approval);
       setDefaultCurrency(settingsMap.default_currency);
+      // Load email settings from platform_settings
+      setResendApiKey(settingsMap.resend_api_key || '');
+      setEmailNotificationsEnabled(settingsMap.email_notifications_enabled);
+      setAdminEmail(settingsMap.admin_email || '');
+      if (settingsMap.resend_api_key) {
+        setIsApiKeySaved(true);
+      }
     }
   }, [isLoading, settingsMap]);
 
@@ -109,28 +105,61 @@ const AdminSettings: React.FC = () => {
     }
   };
 
-  const handleSaveApiKey = () => {
-    if (resendApiKey.trim()) {
-      localStorage.setItem('resend_api_key', resendApiKey);
-      localStorage.setItem('email_notifications_enabled', emailNotificationsEnabled.toString());
+  const handleSaveEmailSettings = async () => {
+    if (!resendApiKey.trim()) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter a Resend API key.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsSavingEmailSettings(true);
+    try {
+      await Promise.all([
+        updateSetting({ key: 'resend_api_key', value: resendApiKey }),
+        updateSetting({ key: 'email_notifications_enabled', value: emailNotificationsEnabled.toString() }),
+        updateSetting({ key: 'admin_email', value: adminEmail }),
+      ]);
       setIsApiKeySaved(true);
       toast({
-        title: "API Key Saved",
-        description: "Your Resend API key has been saved locally. You'll need to add it as a secret in the backend for it to work.",
+        title: "Email Settings Saved",
+        description: "Your email notification settings have been saved.",
       });
+    } catch (error) {
+      console.error('Error saving email settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save email settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingEmailSettings(false);
     }
   };
 
-  const handleClearApiKey = () => {
-    localStorage.removeItem('resend_api_key');
-    localStorage.removeItem('email_notifications_enabled');
-    setResendApiKey('');
-    setIsApiKeySaved(false);
-    setEmailNotificationsEnabled(false);
-    toast({
-      title: "API Key Cleared",
-      description: "Your Resend API key has been removed.",
-    });
+  const handleClearApiKey = async () => {
+    setIsSavingEmailSettings(true);
+    try {
+      await Promise.all([
+        updateSetting({ key: 'resend_api_key', value: '' }),
+        updateSetting({ key: 'email_notifications_enabled', value: 'false' }),
+        updateSetting({ key: 'admin_email', value: '' }),
+      ]);
+      setResendApiKey('');
+      setIsApiKeySaved(false);
+      setEmailNotificationsEnabled(false);
+      setAdminEmail('');
+      toast({
+        title: "Settings Cleared",
+        description: "Email notification settings have been cleared.",
+      });
+    } catch (error) {
+      console.error('Error clearing settings:', error);
+    } finally {
+      setIsSavingEmailSettings(false);
+    }
   };
 
   if (isLoading) {
@@ -418,6 +447,20 @@ const AdminSettings: React.FC = () => {
             </div>
             
             <div className="grid gap-2">
+              <Label>Admin Email (for notifications)</Label>
+              <Input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="max-w-md"
+              />
+              <p className="text-sm text-muted-foreground">
+                Notifications will be sent to this email address.
+              </p>
+            </div>
+            
+            <div className="grid gap-2">
               <Label>Resend API Key</Label>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -442,35 +485,33 @@ const AdminSettings: React.FC = () => {
                   </Button>
                 </div>
                 <Button 
-                  onClick={handleSaveApiKey} 
-                  disabled={!resendApiKey.trim() || isApiKeySaved}
-                  variant={isApiKeySaved ? "outline" : "default"}
+                  onClick={handleSaveEmailSettings} 
+                  disabled={!resendApiKey.trim() || isSavingEmailSettings}
                   className="gap-2"
                 >
-                  {isApiKeySaved ? <Check className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                  {isApiKeySaved ? 'Saved' : 'Save'}
+                  {isSavingEmailSettings ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Save Email Settings
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                Get your API key from <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">resend.com</a>. 
-                The key is stored locally for now.
+                Get your API key from <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">resend.com</a>.
               </p>
             </div>
 
             {isApiKeySaved && (
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm">
-                <p className="font-medium text-amber-600 mb-2">⚠️ Important: Backend Configuration Required</p>
+              <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 text-sm">
+                <p className="font-medium text-emerald-600 mb-2">✓ Email Settings Configured</p>
                 <p className="text-muted-foreground">
-                  To enable email notifications, you'll need to add the RESEND_API_KEY as a secret in the backend. 
-                  Contact your developer to set this up.
+                  Email notifications are ready. When enabled, chat messages will trigger email notifications.
                 </p>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={handleClearApiKey}
+                  disabled={isSavingEmailSettings}
                   className="mt-2 text-destructive hover:text-destructive"
                 >
-                  Clear API Key
+                  Clear Settings
                 </Button>
               </div>
             )}
