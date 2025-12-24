@@ -46,7 +46,9 @@ import {
   Camera,
   Building,
   ZoomIn,
-  X
+  X,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -77,8 +79,12 @@ const AdminKYC: React.FC = () => {
     pendingCount,
     approveKYC, 
     rejectKYC,
+    deleteKYC,
+    updateKYCStatus,
     isApproving,
     isRejecting,
+    isDeleting,
+    isUpdatingStatus,
     getDocumentUrl,
     getAllDocumentUrls
   } = useAdminKYC();
@@ -88,9 +94,11 @@ const AdminKYC: React.FC = () => {
   const [selectedKYC, setSelectedKYC] = useState<KYCWithProfile | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [documentUrls, setDocumentUrls] = useState<KYCDocumentUrls | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [kycToDelete, setKycToDelete] = useState<KYCWithProfile | null>(null);
 
   const filteredSubmissions = kycSubmissions.filter(kyc => {
     const matchesSearch = 
@@ -159,6 +167,33 @@ const AdminKYC: React.FC = () => {
       setIsRejectDialogOpen(false);
       setIsViewDialogOpen(false);
       setRejectionReason('');
+    }
+  };
+
+  const handleDeleteClick = (kyc: KYCWithProfile) => {
+    setKycToDelete(kyc);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (kycToDelete) {
+      deleteKYC(kycToDelete.id);
+      setIsDeleteDialogOpen(false);
+      setKycToDelete(null);
+      if (selectedKYC?.id === kycToDelete.id) {
+        setIsViewDialogOpen(false);
+        setSelectedKYC(null);
+      }
+    }
+  };
+
+  const handleStatusChange = (status: 'submitted' | 'approved' | 'rejected') => {
+    if (selectedKYC) {
+      if (status === 'rejected') {
+        setIsRejectDialogOpen(true);
+      } else {
+        updateKYCStatus({ kycId: selectedKYC.id, status });
+      }
     }
   };
 
@@ -284,6 +319,14 @@ const AdminKYC: React.FC = () => {
                         >
                           <Eye className="w-4 h-4 mr-2" />
                           View
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteClick(kyc)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -535,31 +578,59 @@ const AdminKYC: React.FC = () => {
             </div>
           )}
 
-          <DialogFooter className="gap-2">
-            {selectedKYC?.status === 'submitted' && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsRejectDialogOpen(true)}
-                  disabled={isRejecting}
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Reject
-                </Button>
-                <Button
-                  onClick={handleApprove}
-                  disabled={isApproving}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  {isApproving ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                  )}
-                  Approve
-                </Button>
-              </>
-            )}
+          <DialogFooter className="gap-2 flex-col sm:flex-row">
+            <div className="flex items-center gap-2 flex-1">
+              <Label className="text-sm text-muted-foreground whitespace-nowrap">Change Status:</Label>
+              <Select 
+                value={selectedKYC?.status} 
+                onValueChange={(value: 'submitted' | 'approved' | 'rejected') => handleStatusChange(value)}
+                disabled={isUpdatingStatus}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="submitted">Pending</SelectItem>
+                  <SelectItem value="approved">Approved</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => selectedKYC && handleDeleteClick(selectedKYC)}
+                disabled={isDeleting}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+              {selectedKYC?.status === 'submitted' && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsRejectDialogOpen(true)}
+                    disabled={isRejecting}
+                  >
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Reject
+                  </Button>
+                  <Button
+                    onClick={handleApprove}
+                    disabled={isApproving}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {isApproving ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                    )}
+                    Approve
+                  </Button>
+                </>
+              )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -605,26 +676,43 @@ const AdminKYC: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Full-screen Image Preview Dialog */}
-      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[95vh] p-0 overflow-hidden">
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background"
-              onClick={() => setPreviewImage(null)}
-            >
-              <X className="w-4 h-4" />
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Delete KYC Submission
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this KYC submission? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {kycToDelete && (
+            <div className="bg-muted/50 rounded-lg p-4 text-sm">
+              <p><strong>User:</strong> {kycToDelete.profiles?.name || 'Unknown'}</p>
+              <p><strong>Email:</strong> {kycToDelete.profiles?.email || 'N/A'}</p>
+              <p><strong>Name:</strong> {kycToDelete.first_name} {kycToDelete.last_name}</p>
+              <p><strong>Status:</strong> {kycToDelete.status}</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
             </Button>
-            {previewImage && (
-              <img 
-                src={previewImage} 
-                alt="Document Preview" 
-                className="w-full h-auto max-h-[90vh] object-contain"
-              />
-            )}
-          </div>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4 mr-2" />
+              )}
+              Delete KYC
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>
