@@ -23,6 +23,23 @@ export interface SettingsMap {
   resend_api_key: string;
   email_notifications_enabled: boolean;
   admin_email: string;
+  // Payment gateway settings
+  payment_gateway_razorpay_enabled: boolean;
+  payment_gateway_razorpay_key_id: string;
+  payment_gateway_razorpay_key_secret: string;
+  payment_gateway_stripe_enabled: boolean;
+  payment_gateway_stripe_publishable_key: string;
+  payment_gateway_stripe_secret_key: string;
+  payment_gateway_payu_enabled: boolean;
+  payment_gateway_payu_merchant_key: string;
+  payment_gateway_payu_merchant_salt: string;
+  payment_gateway_phonepe_enabled: boolean;
+  payment_gateway_phonepe_merchant_id: string;
+  payment_gateway_phonepe_salt_key: string;
+  payment_gateway_phonepe_salt_index: string;
+  payment_gateway_paytm_enabled: boolean;
+  payment_gateway_paytm_merchant_id: string;
+  payment_gateway_paytm_merchant_key: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -72,6 +89,23 @@ export const usePlatformSettings = () => {
     resend_api_key: '',
     email_notifications_enabled: false,
     admin_email: '',
+    // Payment gateway defaults
+    payment_gateway_razorpay_enabled: false,
+    payment_gateway_razorpay_key_id: '',
+    payment_gateway_razorpay_key_secret: '',
+    payment_gateway_stripe_enabled: false,
+    payment_gateway_stripe_publishable_key: '',
+    payment_gateway_stripe_secret_key: '',
+    payment_gateway_payu_enabled: false,
+    payment_gateway_payu_merchant_key: '',
+    payment_gateway_payu_merchant_salt: '',
+    payment_gateway_phonepe_enabled: false,
+    payment_gateway_phonepe_merchant_id: '',
+    payment_gateway_phonepe_salt_key: '',
+    payment_gateway_phonepe_salt_index: '',
+    payment_gateway_paytm_enabled: false,
+    payment_gateway_paytm_merchant_id: '',
+    payment_gateway_paytm_merchant_key: '',
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -109,6 +143,55 @@ export const usePlatformSettings = () => {
         break;
       case 'admin_email':
         settingsMap.admin_email = setting.value || '';
+        break;
+      // Payment gateway settings
+      case 'payment_gateway_razorpay_enabled':
+        settingsMap.payment_gateway_razorpay_enabled = setting.value === 'true';
+        break;
+      case 'payment_gateway_razorpay_key_id':
+        settingsMap.payment_gateway_razorpay_key_id = setting.value || '';
+        break;
+      case 'payment_gateway_razorpay_key_secret':
+        settingsMap.payment_gateway_razorpay_key_secret = setting.value || '';
+        break;
+      case 'payment_gateway_stripe_enabled':
+        settingsMap.payment_gateway_stripe_enabled = setting.value === 'true';
+        break;
+      case 'payment_gateway_stripe_publishable_key':
+        settingsMap.payment_gateway_stripe_publishable_key = setting.value || '';
+        break;
+      case 'payment_gateway_stripe_secret_key':
+        settingsMap.payment_gateway_stripe_secret_key = setting.value || '';
+        break;
+      case 'payment_gateway_payu_enabled':
+        settingsMap.payment_gateway_payu_enabled = setting.value === 'true';
+        break;
+      case 'payment_gateway_payu_merchant_key':
+        settingsMap.payment_gateway_payu_merchant_key = setting.value || '';
+        break;
+      case 'payment_gateway_payu_merchant_salt':
+        settingsMap.payment_gateway_payu_merchant_salt = setting.value || '';
+        break;
+      case 'payment_gateway_phonepe_enabled':
+        settingsMap.payment_gateway_phonepe_enabled = setting.value === 'true';
+        break;
+      case 'payment_gateway_phonepe_merchant_id':
+        settingsMap.payment_gateway_phonepe_merchant_id = setting.value || '';
+        break;
+      case 'payment_gateway_phonepe_salt_key':
+        settingsMap.payment_gateway_phonepe_salt_key = setting.value || '';
+        break;
+      case 'payment_gateway_phonepe_salt_index':
+        settingsMap.payment_gateway_phonepe_salt_index = setting.value || '';
+        break;
+      case 'payment_gateway_paytm_enabled':
+        settingsMap.payment_gateway_paytm_enabled = setting.value === 'true';
+        break;
+      case 'payment_gateway_paytm_merchant_id':
+        settingsMap.payment_gateway_paytm_merchant_id = setting.value || '';
+        break;
+      case 'payment_gateway_paytm_merchant_key':
+        settingsMap.payment_gateway_paytm_merchant_key = setting.value || '';
         break;
     }
   });

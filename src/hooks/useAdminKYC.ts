@@ -54,6 +54,54 @@ export const useAdminKYC = () => {
     },
   });
 
+  const updateKYCStatusMutation = useMutation({
+    mutationFn: async ({ kycId, status, reason }: { kycId: string; status: 'submitted' | 'approved' | 'rejected'; reason?: string }) => {
+      if (!user?.id) throw new Error('Not authenticated');
+
+      const updateData: Record<string, unknown> = {
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: user.id,
+        rejection_reason: status === 'rejected' ? reason : null,
+      };
+
+      const { data, error } = await supabase
+        .from('kyc_submissions')
+        .update(updateData)
+        .eq('id', kycId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log the action
+      await supabase.rpc('create_audit_log', {
+        _action_type: `kyc_${status}`,
+        _entity_type: 'kyc_submission',
+        _entity_id: kycId,
+        _user_id: data.user_id,
+        _admin_id: user.id,
+        _new_value: { status, reason },
+      });
+
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      toast({
+        title: `KYC ${variables.status.charAt(0).toUpperCase() + variables.status.slice(1)}`,
+        description: `The KYC submission status has been updated to ${variables.status}.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-kyc-submissions'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Action Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const approveKYCMutation = useMutation({
     mutationFn: async (kycId: string) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -146,6 +194,54 @@ export const useAdminKYC = () => {
     },
   });
 
+  const deleteKYCMutation = useMutation({
+    mutationFn: async (kycId: string) => {
+      if (!user?.id) throw new Error('Not authenticated');
+
+      // Get the KYC data first for logging
+      const { data: kycData } = await supabase
+        .from('kyc_submissions')
+        .select('user_id')
+        .eq('id', kycId)
+        .single();
+
+      const { error } = await supabase
+        .from('kyc_submissions')
+        .delete()
+        .eq('id', kycId);
+
+      if (error) throw error;
+
+      // Log the action
+      if (kycData) {
+        await supabase.rpc('create_audit_log', {
+          _action_type: 'kyc_deleted',
+          _entity_type: 'kyc_submission',
+          _entity_id: kycId,
+          _user_id: kycData.user_id,
+          _admin_id: user.id,
+          _new_value: { status: 'deleted' },
+        });
+      }
+
+      return { success: true };
+    },
+    onSuccess: () => {
+      toast({
+        title: 'KYC Deleted',
+        description: 'The KYC submission has been deleted.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['admin-kyc-submissions'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const getDocumentUrl = async (path: string): Promise<string | null> => {
     if (!path) return null;
     const { data } = await supabase.storage
@@ -181,8 +277,12 @@ export const useAdminKYC = () => {
     pendingCount,
     approveKYC: approveKYCMutation.mutate,
     rejectKYC: rejectKYCMutation.mutate,
+    deleteKYC: deleteKYCMutation.mutate,
+    updateKYCStatus: updateKYCStatusMutation.mutate,
     isApproving: approveKYCMutation.isPending,
     isRejecting: rejectKYCMutation.isPending,
+    isDeleting: deleteKYCMutation.isPending,
+    isUpdatingStatus: updateKYCStatusMutation.isPending,
     getDocumentUrl,
     getAllDocumentUrls,
   };

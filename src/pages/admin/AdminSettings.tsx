@@ -37,6 +37,7 @@ import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettin
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
 
 const AdminSettings: React.FC = () => {
   const { toast } = useToast();
@@ -517,6 +518,9 @@ const AdminSettings: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Payment Gateway Settings */}
+        <PaymentGatewaySettings />
 
         {/* Commission Preview */}
         <Card className="border-dashed">
