@@ -14,6 +14,8 @@ export interface KYCSubmission {
   aadhaar_front_url: string;
   aadhaar_back_url: string;
   pan_document_url: string;
+  bank_statement_url: string | null;
+  face_image_url: string | null;
   status: 'not_submitted' | 'submitted' | 'approved' | 'rejected';
   rejection_reason: string | null;
   submitted_at: string;
@@ -32,6 +34,8 @@ export interface KYCFormData {
   aadhaar_front: File | null;
   aadhaar_back: File | null;
   pan_document: File | null;
+  bank_statement: File | null;
+  face_image: File | null;
 }
 
 export const useKYC = () => {
@@ -74,15 +78,27 @@ export const useKYC = () => {
       const aadhaarFrontPath = `${user.id}/aadhaar_front_${timestamp}`;
       const aadhaarBackPath = `${user.id}/aadhaar_back_${timestamp}`;
       const panPath = `${user.id}/pan_${timestamp}`;
+      const bankStatementPath = `${user.id}/bank_statement_${timestamp}`;
+      const faceImagePath = `${user.id}/face_image_${timestamp}`;
 
       if (!formData.aadhaar_front || !formData.aadhaar_back || !formData.pan_document) {
-        throw new Error('All documents are required');
+        throw new Error('All identity documents are required');
       }
 
-      const [aadhaarFrontUrl, aadhaarBackUrl, panUrl] = await Promise.all([
+      if (!formData.bank_statement) {
+        throw new Error('Bank statement is required');
+      }
+
+      if (!formData.face_image) {
+        throw new Error('Face image is required');
+      }
+
+      const [aadhaarFrontUrl, aadhaarBackUrl, panUrl, bankStatementUrl, faceImageUrl] = await Promise.all([
         uploadDocument(formData.aadhaar_front, aadhaarFrontPath),
         uploadDocument(formData.aadhaar_back, aadhaarBackPath),
         uploadDocument(formData.pan_document, panPath),
+        uploadDocument(formData.bank_statement, bankStatementPath),
+        uploadDocument(formData.face_image, faceImagePath),
       ]);
 
       const kycData = {
@@ -95,6 +111,8 @@ export const useKYC = () => {
         aadhaar_front_url: aadhaarFrontUrl,
         aadhaar_back_url: aadhaarBackUrl,
         pan_document_url: panUrl,
+        bank_statement_url: bankStatementUrl,
+        face_image_url: faceImageUrl,
         status: 'submitted' as const,
         submitted_at: new Date().toISOString(),
       };

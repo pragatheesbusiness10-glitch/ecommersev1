@@ -56,13 +56,42 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          sender_role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          sender_role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          sender_role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       kyc_submissions: {
         Row: {
           aadhaar_back_url: string
           aadhaar_front_url: string
           aadhaar_number: string
+          bank_statement_url: string | null
           created_at: string
           date_of_birth: string
+          face_image_url: string | null
           first_name: string
           id: string
           last_name: string
@@ -80,8 +109,10 @@ export type Database = {
           aadhaar_back_url: string
           aadhaar_front_url: string
           aadhaar_number: string
+          bank_statement_url?: string | null
           created_at?: string
           date_of_birth: string
+          face_image_url?: string | null
           first_name: string
           id?: string
           last_name: string
@@ -99,8 +130,10 @@ export type Database = {
           aadhaar_back_url?: string
           aadhaar_front_url?: string
           aadhaar_number?: string
+          bank_statement_url?: string | null
           created_at?: string
           date_of_birth?: string
+          face_image_url?: string | null
           first_name?: string
           id?: string
           last_name?: string
