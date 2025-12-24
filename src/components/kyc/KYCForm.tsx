@@ -11,10 +11,13 @@ import {
   Loader2,
   User,
   Calendar,
-  CreditCard
+  CreditCard,
+  Camera,
+  Building
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
+import { CameraCapture } from './CameraCapture';
 
 const aadhaarRegex = /^\d{12}$/;
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
@@ -39,6 +42,8 @@ export const KYCForm: React.FC = () => {
     aadhaar_front: null,
     aadhaar_back: null,
     pan_document: null,
+    bank_statement: null,
+    face_image: null,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -46,7 +51,10 @@ export const KYCForm: React.FC = () => {
     aadhaar_front: '',
     aadhaar_back: '',
     pan_document: '',
+    bank_statement: '',
+    face_image: '',
   });
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -65,6 +73,12 @@ export const KYCForm: React.FC = () => {
       setFileNames(prev => ({ ...prev, [field]: file.name }));
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
+  };
+
+  const handleCameraCapture = (file: File) => {
+    setFormData(prev => ({ ...prev, face_image: file }));
+    setFileNames(prev => ({ ...prev, face_image: file.name }));
+    setErrors(prev => ({ ...prev, face_image: '' }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -101,6 +115,14 @@ export const KYCForm: React.FC = () => {
     }
     if (!formData.pan_document) {
       setErrors(prev => ({ ...prev, pan_document: 'PAN document is required' }));
+      return;
+    }
+    if (!formData.bank_statement) {
+      setErrors(prev => ({ ...prev, bank_statement: 'Bank statement is required' }));
+      return;
+    }
+    if (!formData.face_image) {
+      setErrors(prev => ({ ...prev, face_image: 'Face image is required' }));
       return;
     }
 
@@ -353,6 +375,135 @@ export const KYCForm: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* Bank Statement */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="w-5 h-5" />
+              Bank Statement
+            </CardTitle>
+            <CardDescription>Upload your recent bank statement (max 5MB)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label>Bank Statement (PDF or Image)</Label>
+              <label className={cn(
+                "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                fileNames.bank_statement ? 'border-emerald-500 bg-emerald-500/5' : 'border-border hover:border-primary hover:bg-accent/50',
+                errors.bank_statement && 'border-red-500'
+              )}>
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  {fileNames.bank_statement ? (
+                    <>
+                      <CheckCircle className="w-8 h-8 text-emerald-500 mb-2" />
+                      <p className="text-sm text-foreground">{fileNames.bank_statement}</p>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">Click to upload bank statement</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*,.pdf"
+                  onChange={(e) => handleFileChange(e, 'bank_statement')}
+                />
+              </label>
+              {errors.bank_statement && (
+                <p className="text-sm text-red-500">{errors.bank_statement}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Face Image Capture */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Camera className="w-5 h-5" />
+              Face Verification
+            </CardTitle>
+            <CardDescription>Take a real-time photo or upload a clear image of your face</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Camera Capture Option */}
+              <div className="space-y-2">
+                <Label>Capture with Camera</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    "w-full h-32 flex flex-col items-center justify-center gap-2",
+                    fileNames.face_image && !fileNames.face_image.includes('upload') && 'border-emerald-500 bg-emerald-500/5'
+                  )}
+                  onClick={() => setIsCameraOpen(true)}
+                >
+                  {fileNames.face_image && fileNames.face_image.startsWith('face_') ? (
+                    <>
+                      <CheckCircle className="w-8 h-8 text-emerald-500" />
+                      <span className="text-sm">Photo captured</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-8 h-8 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Open Camera</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Upload Option */}
+              <div className="space-y-2">
+                <Label>Or Upload Image</Label>
+                <label className={cn(
+                  "flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+                  fileNames.face_image && fileNames.face_image.includes('upload') ? 'border-emerald-500 bg-emerald-500/5' : 'border-border hover:border-primary hover:bg-accent/50',
+                  errors.face_image && 'border-red-500'
+                )}>
+                  <div className="flex flex-col items-center justify-center">
+                    {fileNames.face_image && !fileNames.face_image.startsWith('face_') ? (
+                      <>
+                        <CheckCircle className="w-8 h-8 text-emerald-500 mb-2" />
+                        <p className="text-sm text-foreground truncate max-w-[150px]">{fileNames.face_image}</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">Click to upload</p>
+                      </>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          setErrors(prev => ({ ...prev, face_image: 'File size must be less than 5MB' }));
+                          return;
+                        }
+                        const renamedFile = new File([file], `upload_${file.name}`, { type: file.type });
+                        setFormData(prev => ({ ...prev, face_image: renamedFile }));
+                        setFileNames(prev => ({ ...prev, face_image: file.name }));
+                        setErrors(prev => ({ ...prev, face_image: '' }));
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+            {errors.face_image && (
+              <p className="text-sm text-red-500">{errors.face_image}</p>
+            )}
+          </CardContent>
+        </Card>
+
         <Button type="submit" size="lg" disabled={isSubmitting} className="w-full">
           {isSubmitting ? (
             <>
@@ -367,6 +518,13 @@ export const KYCForm: React.FC = () => {
           )}
         </Button>
       </div>
+
+      {/* Camera Dialog */}
+      <CameraCapture
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCameraCapture}
+      />
     </form>
   );
 };
