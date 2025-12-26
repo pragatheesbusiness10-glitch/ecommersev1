@@ -196,7 +196,7 @@ const AdminDashboard: React.FC = () => {
                     style={{ animationDelay: `${300 + index * 50}ms`, animationFillMode: 'forwards' }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
                         <span className="text-primary font-semibold">
                           {affiliate.name.charAt(0)}
                         </span>
@@ -206,7 +206,7 @@ const AdminDashboard: React.FC = () => {
                         <p className="text-xs text-muted-foreground">{affiliate.storefront_name || 'No storefront'}</p>
                       </div>
                     </div>
-                    <Badge variant={affiliate.is_active ? 'default' : 'secondary'}>
+                    <Badge variant={affiliate.is_active ? 'active' : 'inactive'}>
                       {affiliate.is_active ? 'Active' : 'Inactive'}
                     </Badge>
                   </div>

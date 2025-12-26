@@ -60,14 +60,14 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
-            <TableHead className="font-semibold">Order ID</TableHead>
-            <TableHead className="font-semibold">Product</TableHead>
-            {userRole === 'admin' && <TableHead className="font-semibold">Affiliate</TableHead>}
-            <TableHead className="font-semibold">Customer</TableHead>
-            <TableHead className="font-semibold text-right">Amount</TableHead>
-            <TableHead className="font-semibold">Status</TableHead>
-            <TableHead className="font-semibold">Date</TableHead>
-            <TableHead className="font-semibold text-right">Actions</TableHead>
+            <TableHead className="font-semibold text-foreground">Order ID</TableHead>
+            <TableHead className="font-semibold text-foreground">Product</TableHead>
+            {userRole === 'admin' && <TableHead className="font-semibold text-foreground">Affiliate</TableHead>}
+            <TableHead className="font-semibold text-foreground">Customer</TableHead>
+            <TableHead className="font-semibold text-foreground text-right">Amount</TableHead>
+            <TableHead className="font-semibold text-foreground">Status</TableHead>
+            <TableHead className="font-semibold text-foreground">Date</TableHead>
+            <TableHead className="font-semibold text-foreground text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -87,7 +87,7 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
                       <span className="text-xs text-muted-foreground">N/A</span>
                     </div>
                   )}
-                  <span className="font-medium truncate max-w-[150px]">
+                  <span className="font-medium text-foreground truncate max-w-[150px]">
                     {order.product?.name || 'Unknown Product'}
                   </span>
                 </div>
@@ -99,13 +99,13 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
               )}
               <TableCell>
                 <div>
-                  <p className="font-medium">{order.customer_name}</p>
+                  <p className="font-medium text-foreground">{order.customer_name}</p>
                   <p className="text-xs text-muted-foreground">{order.customer_email}</p>
                 </div>
               </TableCell>
               <TableCell className="text-right">
                 <div>
-                  <p className="font-semibold">${(order.selling_price * order.quantity).toFixed(2)}</p>
+                  <p className="font-semibold text-foreground">${(order.selling_price * order.quantity).toFixed(2)}</p>
                   {userRole === 'admin' && (
                     <p className="text-xs text-muted-foreground">
                       Base: ${(order.base_price * order.quantity).toFixed(2)}
