@@ -48,7 +48,7 @@ const Index: React.FC = () => {
         <div className="container mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-8">
             <Zap className="w-4 h-4 text-accent" />
-            <span className="text-sm text-primary-foreground/80">The Future of Affiliate Commerce</span>
+            <span className="text-sm text-primary">The Future of Affiliate Commerce</span>
           </div>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-primary text-center">
             {heroTitle.includes('Affiliate') ? <>
@@ -57,14 +57,14 @@ const Index: React.FC = () => {
                 {heroTitle.split('Affiliate')[1]}
               </> : heroTitle}
           </h1>
-          <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10">
+          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-10 text-primary">
             {heroSubtitle}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="xl" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Link to="/login">
                 Get Started
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight className="w-5 h-5 ml-2 text-secondary-foreground" />
               </Link>
             </Button>
             <Button size="xl" variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
