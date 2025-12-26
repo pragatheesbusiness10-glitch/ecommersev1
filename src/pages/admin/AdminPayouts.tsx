@@ -14,7 +14,8 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  RotateCcw
+  RotateCcw,
+  EyeOff
 } from 'lucide-react';
 import {
   Dialog,
@@ -46,6 +47,7 @@ import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettin
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { maskSensitiveField } from '@/lib/maskingUtils';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
@@ -63,6 +65,7 @@ const AdminPayouts: React.FC = () => {
   const [processAction, setProcessAction] = useState<'approved' | 'rejected' | 'completed' | 'pending'>('approved');
   const [newStatus, setNewStatus] = useState<'pending' | 'approved' | 'rejected' | 'completed'>('pending');
   const [adminNotes, setAdminNotes] = useState('');
+  const [showUnmasked, setShowUnmasked] = useState(false);
   
   const { 
     payoutRequests, 
@@ -322,12 +325,34 @@ const AdminPayouts: React.FC = () => {
                 </div>
 
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">Payment Details</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-muted-foreground">Payment Details</p>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setShowUnmasked(!showUnmasked)}
+                      className="h-7 px-2 text-xs gap-1"
+                    >
+                      {showUnmasked ? (
+                        <>
+                          <EyeOff className="w-3 h-3" />
+                          Hide
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3 h-3" />
+                          Show Full
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-sm">
                     {Object.entries(selectedPayout.payment_details).map(([key, value]) => (
                       <div key={key} className="flex justify-between">
                         <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
-                        <span className="font-medium">{value}</span>
+                        <span className="font-medium font-mono">
+                          {showUnmasked ? value : maskSensitiveField(key, String(value))}
+                        </span>
                       </div>
                     ))}
                   </div>
