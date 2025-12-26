@@ -505,6 +505,16 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["kyc_status"]
       }
+      get_public_storefront_profile: {
+        Args: { _slug: string }
+        Returns: {
+          display_name: string
+          storefront_banner: string
+          storefront_name: string
+          storefront_slug: string
+          user_id: string
+        }[]
+      }
       get_user_commission_rate: { Args: { _user_id: string }; Returns: number }
       get_user_role: {
         Args: { _user_id: string }
