@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Store, Users, ShoppingCart, Shield, Zap, BarChart3 } from 'lucide-react';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { ThemeToggle } from '@/components/ThemeToggle';
-
 const Index: React.FC = () => {
-  const { settingsMap, isLoading } = usePlatformSettings();
-  
+  const {
+    settingsMap,
+    isLoading
+  } = usePlatformSettings();
   const siteName = settingsMap.site_name || 'Afflux';
   const logoUrl = settingsMap.site_logo_url;
   const landingEnabled = settingsMap.landing_page_enabled;
@@ -18,20 +19,14 @@ const Index: React.FC = () => {
   if (!isLoading && !landingEnabled) {
     return <Navigate to="/login" replace />;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {logoUrl ? (
-              <img src={logoUrl} alt={siteName} className="w-10 h-10 rounded-xl object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+            {logoUrl ? <img src={logoUrl} alt={siteName} className="w-10 h-10 rounded-xl object-cover" /> : <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">{siteName.charAt(0)}</span>
-              </div>
-            )}
+              </div>}
             <span className="font-bold text-xl text-foreground">{siteName}</span>
           </div>
           <div className="flex items-center gap-2">
@@ -47,22 +42,20 @@ const Index: React.FC = () => {
       </header>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-4" style={{ background: 'var(--gradient-hero)' }}>
+      <section className="pt-32 pb-20 px-4" style={{
+      background: 'var(--gradient-hero)'
+    }}>
         <div className="container mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-8">
             <Zap className="w-4 h-4 text-accent" />
             <span className="text-sm text-primary-foreground/80">The Future of Affiliate Commerce</span>
           </div>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 leading-tight">
-            {heroTitle.includes('Affiliate') ? (
-              <>
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight text-primary text-center">
+            {heroTitle.includes('Affiliate') ? <>
                 {heroTitle.split('Affiliate')[0]}
                 <span className="text-accent">Affiliate</span>
                 {heroTitle.split('Affiliate')[1]}
-              </>
-            ) : (
-              heroTitle
-            )}
+              </> : heroTitle}
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10">
             {heroSubtitle}
@@ -94,50 +87,40 @@ const Index: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Store,
-                title: 'Private Main Store',
-                description: 'Your central product catalog, accessible only to you and your approved affiliates.',
-              },
-              {
-                icon: Users,
-                title: 'Affiliate Storefronts',
-                description: 'Each affiliate gets their own branded storefront with custom pricing.',
-              },
-              {
-                icon: ShoppingCart,
-                title: 'Smart Order Flow',
-                description: 'Orders are fulfilled only after affiliates pay you the base price.',
-              },
-              {
-                icon: Shield,
-                title: 'Secure Payments',
-                description: 'Built-in wallet system with transparent payment tracking.',
-              },
-              {
-                icon: BarChart3,
-                title: 'Real-time Analytics',
-                description: 'Track orders, revenue, and affiliate performance at a glance.',
-              },
-              {
-                icon: Zap,
-                title: 'Instant Setup',
-                description: 'Get your affiliate network running in minutes, not days.',
-              },
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="dashboard-card hover:border-accent/50 transition-colors opacity-0 animate-slide-up"
-                style={{ animationDelay: `${index * 100}ms`, animationFillMode: 'forwards' }}
-              >
+            {[{
+            icon: Store,
+            title: 'Private Main Store',
+            description: 'Your central product catalog, accessible only to you and your approved affiliates.'
+          }, {
+            icon: Users,
+            title: 'Affiliate Storefronts',
+            description: 'Each affiliate gets their own branded storefront with custom pricing.'
+          }, {
+            icon: ShoppingCart,
+            title: 'Smart Order Flow',
+            description: 'Orders are fulfilled only after affiliates pay you the base price.'
+          }, {
+            icon: Shield,
+            title: 'Secure Payments',
+            description: 'Built-in wallet system with transparent payment tracking.'
+          }, {
+            icon: BarChart3,
+            title: 'Real-time Analytics',
+            description: 'Track orders, revenue, and affiliate performance at a glance.'
+          }, {
+            icon: Zap,
+            title: 'Instant Setup',
+            description: 'Get your affiliate network running in minutes, not days.'
+          }].map((feature, index) => <div key={index} className="dashboard-card hover:border-accent/50 transition-colors opacity-0 animate-slide-up" style={{
+            animationDelay: `${index * 100}ms`,
+            animationFillMode: 'forwards'
+          }}>
                 <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
                   <feature.icon className="w-6 h-6 text-accent" />
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">{feature.title}</h3>
                 <p className="text-muted-foreground">{feature.description}</p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
@@ -155,31 +138,42 @@ const Index: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {[
-              { step: '01', title: 'You Add Products', desc: 'Stock your private catalog with products and set base prices.' },
-              { step: '02', title: 'Affiliates List', desc: 'Affiliates add products to their storefronts with their markup.' },
-              { step: '03', title: 'Customers Buy', desc: 'Customers purchase from affiliate storefronts.' },
-              { step: '04', title: 'You Fulfill', desc: 'After affiliate pays base price, you ship to customer.' },
-            ].map((item, index) => (
-              <div key={index} className="text-center">
+            {[{
+            step: '01',
+            title: 'You Add Products',
+            desc: 'Stock your private catalog with products and set base prices.'
+          }, {
+            step: '02',
+            title: 'Affiliates List',
+            desc: 'Affiliates add products to their storefronts with their markup.'
+          }, {
+            step: '03',
+            title: 'Customers Buy',
+            desc: 'Customers purchase from affiliate storefronts.'
+          }, {
+            step: '04',
+            title: 'You Fulfill',
+            desc: 'After affiliate pays base price, you ship to customer.'
+          }].map((item, index) => <div key={index} className="text-center">
                 <div className="w-16 h-16 rounded-full bg-accent/10 border-2 border-accent flex items-center justify-center mx-auto mb-4">
                   <span className="text-2xl font-bold text-accent">{item.step}</span>
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
                 <p className="text-sm text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
+              </div>)}
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4" style={{ background: 'var(--gradient-primary)' }}>
+      <section className="py-20 px-4" style={{
+      background: 'var(--gradient-primary)'
+    }}>
         <div className="container mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 text-primary">
             Ready to Launch Your Affiliate Network?
           </h2>
-          <p className="text-lg text-primary-foreground/70 max-w-2xl mx-auto mb-8">
+          <p className="text-lg max-w-2xl mx-auto mb-8 text-primary">
             Join hundreds of businesses growing with {siteName}.
           </p>
           <Button size="xl" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
@@ -195,13 +189,9 @@ const Index: React.FC = () => {
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {logoUrl ? (
-              <img src={logoUrl} alt={siteName} className="w-8 h-8 rounded-lg object-cover" />
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            {logoUrl ? <img src={logoUrl} alt={siteName} className="w-8 h-8 rounded-lg object-cover" /> : <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">{siteName.charAt(0)}</span>
-              </div>
-            )}
+              </div>}
             <span className="font-semibold text-foreground">{siteName}</span>
           </div>
           <p className="text-sm text-muted-foreground">
@@ -209,8 +199,6 @@ const Index: React.FC = () => {
           </p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
