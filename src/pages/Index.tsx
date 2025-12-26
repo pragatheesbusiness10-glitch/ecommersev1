@@ -1,19 +1,37 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Store, Users, ShoppingCart, Shield, Zap, BarChart3 } from 'lucide-react';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 const Index: React.FC = () => {
+  const { settingsMap, isLoading } = usePlatformSettings();
+  
+  const siteName = settingsMap.site_name || 'Afflux';
+  const logoUrl = settingsMap.site_logo_url;
+  const landingEnabled = settingsMap.landing_page_enabled;
+  const heroTitle = settingsMap.landing_page_title || 'Empower Your Affiliate Network';
+  const heroSubtitle = settingsMap.landing_page_subtitle || 'A private e-commerce platform where affiliates run their own storefronts, you control the catalog, and payments flow seamlessly.';
+
+  // If landing page is disabled, redirect to login
+  if (!isLoading && !landingEnabled) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">A</span>
-            </div>
-            <span className="font-bold text-xl text-foreground">Afflux</span>
+            {logoUrl ? (
+              <img src={logoUrl} alt={siteName} className="w-10 h-10 rounded-xl object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-lg">{siteName.charAt(0)}</span>
+              </div>
+            )}
+            <span className="font-bold text-xl text-foreground">{siteName}</span>
           </div>
           <Button asChild>
             <Link to="/login">
@@ -32,12 +50,18 @@ const Index: React.FC = () => {
             <span className="text-sm text-primary-foreground/80">The Future of Affiliate Commerce</span>
           </div>
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-primary-foreground mb-6 leading-tight">
-            Empower Your<br />
-            <span className="text-accent">Affiliate Network</span>
+            {heroTitle.includes('Affiliate') ? (
+              <>
+                {heroTitle.split('Affiliate')[0]}
+                <span className="text-accent">Affiliate</span>
+                {heroTitle.split('Affiliate')[1]}
+              </>
+            ) : (
+              heroTitle
+            )}
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10">
-            A private e-commerce platform where affiliates run their own storefronts, 
-            you control the catalog, and payments flow seamlessly.
+            {heroSubtitle}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="xl" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
@@ -152,7 +176,7 @@ const Index: React.FC = () => {
             Ready to Launch Your Affiliate Network?
           </h2>
           <p className="text-lg text-primary-foreground/70 max-w-2xl mx-auto mb-8">
-            Join hundreds of businesses growing with Afflux.
+            Join hundreds of businesses growing with {siteName}.
           </p>
           <Button size="xl" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Link to="/login">
@@ -167,13 +191,17 @@ const Index: React.FC = () => {
       <footer className="py-8 px-4 border-t border-border">
         <div className="container mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">A</span>
-            </div>
-            <span className="font-semibold text-foreground">Afflux</span>
+            {logoUrl ? (
+              <img src={logoUrl} alt={siteName} className="w-8 h-8 rounded-lg object-cover" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-bold text-sm">{siteName.charAt(0)}</span>
+              </div>
+            )}
+            <span className="font-semibold text-foreground">{siteName}</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Afflux. All rights reserved.
+            © {new Date().getFullYear()} {siteName}. All rights reserved.
           </p>
         </div>
       </footer>
