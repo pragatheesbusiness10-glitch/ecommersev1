@@ -140,23 +140,23 @@
   }
 
   .status-pending {
-    @apply bg-amber-100 text-amber-800;
+    @apply bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400;
   }
 
   .status-paid {
-    @apply bg-blue-100 text-blue-800;
+    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400;
   }
 
   .status-processing {
-    @apply bg-purple-100 text-purple-800;
+    @apply bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400;
   }
 
   .status-completed {
-    @apply bg-green-100 text-green-800;
+    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
   }
 
   .status-cancelled {
-    @apply bg-red-100 text-red-800;
+    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
   }
 
   .dashboard-card {
@@ -169,8 +169,14 @@
 
   .stat-card::before {
     content: '';
-    @apply absolute inset-0 opacity-5;
+    @apply absolute inset-0 opacity-5 dark:opacity-10;
     background: var(--gradient-primary);
+  }
+
+  /* Dark mode table text fixes */
+  .dark table th,
+  .dark table td {
+    @apply text-foreground;
   }
 }
 

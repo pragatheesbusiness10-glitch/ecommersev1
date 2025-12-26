@@ -32,16 +32,16 @@ export const StatCard: React.FC<StatCardProps> = ({
   delay = 0,
 }) => {
   const iconColors = {
-    default: 'bg-primary/10 text-primary',
-    accent: 'bg-accent/10 text-accent',
-    success: 'bg-green-100 text-green-600',
-    warning: 'bg-amber-100 text-amber-600',
+    default: 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary',
+    accent: 'bg-accent/10 text-accent dark:bg-accent/20',
+    success: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+    warning: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
   };
 
   const badgeColors = {
     default: 'bg-primary text-primary-foreground',
     warning: 'bg-amber-500 text-white animate-pulse',
-    destructive: 'bg-destructive text-destructive-foreground animate-pulse',
+    destructive: 'bg-destructive text-white animate-pulse',
   };
 
   return (

@@ -540,16 +540,16 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Preview Hero */}
-                <div className="py-16 px-4" style={{ background: 'var(--gradient-hero)' }}>
+                <div className="py-16 px-4 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
                   <div className="container mx-auto text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/30 mb-6">
                       <Zap className="w-4 h-4 text-accent" />
-                      <span className="text-sm text-primary-foreground/80">The Future of Affiliate Commerce</span>
+                      <span className="text-sm text-white/80">The Future of Affiliate Commerce</span>
                     </div>
-                    <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 leading-tight">
+                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-4 leading-tight">
                       {landingPageTitle || 'Empower Your Affiliate Network'}
                     </h1>
-                    <p className="text-lg text-primary-foreground/70 max-w-xl mx-auto mb-8">
+                    <p className="text-lg text-white/70 max-w-xl mx-auto mb-8">
                       {landingPageSubtitle || 'A private e-commerce platform where affiliates run their own storefronts.'}
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -557,7 +557,7 @@ const AdminSettings: React.FC = () => {
                         Get Started
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
-                      <Button variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+                      <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
                         View Demo Store
                       </Button>
                     </div>
