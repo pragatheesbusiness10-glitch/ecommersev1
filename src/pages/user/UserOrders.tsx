@@ -6,7 +6,7 @@ import { useUserDashboard, DashboardOrder } from '@/hooks/useUserDashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
+import { Search, CreditCard, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -207,7 +207,7 @@ const UserOrders: React.FC = () => {
         <Dialog open={isPayDialogOpen} onOpenChange={setIsPayDialogOpen}>
           <DialogContent className="sm:max-w-[450px]">
             <DialogHeader>
-              <DialogTitle>Confirm Payment</DialogTitle>
+              <DialogTitle>Pay for Order</DialogTitle>
               <DialogDescription>
                 Pay the base price to admin to enable order fulfillment.
               </DialogDescription>
@@ -245,10 +245,34 @@ const UserOrders: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CreditCard className="w-4 h-4" />
-                  <span>Payment will be deducted from your wallet balance: ${user?.walletBalance.toFixed(2)}</span>
-                </div>
+                {/* Payment Link Section */}
+                {selectedOrder.payment_link ? (
+                  <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3">
+                    <p className="text-sm font-medium flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-primary" />
+                      Payment Link from Admin
+                    </p>
+                    <a 
+                      href={selectedOrder.payment_link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors w-full justify-center"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Open Payment Link
+                    </a>
+                    <p className="text-xs text-muted-foreground text-center">
+                      After payment, click "Confirm Payment" below
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      Payment link not yet set by admin. Please wait or contact admin.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
             <DialogFooter>
@@ -260,7 +284,11 @@ const UserOrders: React.FC = () => {
               >
                 Cancel
               </Button>
-              <Button onClick={handleConfirmPayment} className="gap-2" disabled={isProcessing}>
+              <Button 
+                onClick={handleConfirmPayment} 
+                className="gap-2" 
+                disabled={isProcessing || !selectedOrder?.payment_link}
+              >
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
