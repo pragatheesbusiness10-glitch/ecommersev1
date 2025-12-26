@@ -257,6 +257,13 @@ const UserOrders: React.FC = () => {
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors w-full justify-center"
+                      onClick={async () => {
+                        await supabase
+                          .from('orders')
+                          .update({ payment_link_clicked_at: new Date().toISOString() })
+                          .eq('id', selectedOrder.id);
+                        refetchOrders();
+                      }}
                     >
                       <ExternalLink className="w-4 h-4" />
                       Open Payment Link

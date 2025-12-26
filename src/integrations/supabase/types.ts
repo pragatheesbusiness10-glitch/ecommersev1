@@ -163,6 +163,7 @@ export type Database = {
           order_number: string
           paid_at: string | null
           payment_link: string | null
+          payment_link_clicked_at: string | null
           payment_link_updated_at: string | null
           payment_link_updated_by: string | null
           quantity: number
@@ -184,6 +185,7 @@ export type Database = {
           order_number: string
           paid_at?: string | null
           payment_link?: string | null
+          payment_link_clicked_at?: string | null
           payment_link_updated_at?: string | null
           payment_link_updated_by?: string | null
           quantity?: number
@@ -205,6 +207,7 @@ export type Database = {
           order_number?: string
           paid_at?: string | null
           payment_link?: string | null
+          payment_link_clicked_at?: string | null
           payment_link_updated_at?: string | null
           payment_link_updated_by?: string | null
           quantity?: number
