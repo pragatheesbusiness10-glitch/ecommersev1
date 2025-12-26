@@ -3,6 +3,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Store, Users, ShoppingCart, Shield, Zap, BarChart3 } from 'lucide-react';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Index: React.FC = () => {
   const { settingsMap, isLoading } = usePlatformSettings();
@@ -33,12 +34,15 @@ const Index: React.FC = () => {
             )}
             <span className="font-bold text-xl text-foreground">{siteName}</span>
           </div>
-          <Button asChild>
-            <Link to="/login">
-              Sign In
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button asChild>
+              <Link to="/login">
+                Sign In
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
 

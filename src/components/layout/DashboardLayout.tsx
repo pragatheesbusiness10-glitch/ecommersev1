@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { 
   LayoutDashboard, 
   Package, 
@@ -123,7 +124,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           )}
           <span className="font-semibold text-sidebar-foreground">{siteName}</span>
         </div>
-        <div className="w-10" />
+        <ThemeToggle className="text-sidebar-foreground hover:bg-sidebar-accent" />
       </header>
 
       {/* Sidebar */}
@@ -211,6 +212,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
               <LogOut className="w-5 h-5" />
               <span>Sign out</span>
             </Button>
+            <ThemeToggle className="w-full justify-start gap-3 text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent mt-1" variant="ghost" />
           </div>
         </div>
       </aside>
