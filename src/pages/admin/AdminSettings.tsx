@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,15 @@ import {
   Check,
   Image,
   Type,
-  Layout
+  Layout,
+  Upload,
+  X,
+  ExternalLink,
+  ArrowRight,
+  Store,
+  ShoppingCart,
+  Shield,
+  BarChart3
 } from 'lucide-react';
 import {
   Select,
@@ -36,11 +44,18 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminSettings: React.FC = () => {
   const { toast } = useToast();
@@ -62,6 +77,11 @@ const AdminSettings: React.FC = () => {
   const [landingPageSubtitle, setLandingPageSubtitle] = useState('');
   const [isSavingBranding, setIsSavingBranding] = useState(false);
   
+  // Logo upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+
   // Email notification settings
   const [resendApiKey, setResendApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -69,6 +89,69 @@ const AdminSettings: React.FC = () => {
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
   const [isSavingEmailSettings, setIsSavingEmailSettings] = useState(false);
+
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file (PNG, JPG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('branding')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('branding')
+        .getPublicUrl(fileName);
+
+      setSiteLogoUrl(publicUrl);
+      toast({
+        title: "Logo uploaded",
+        description: "Your logo has been uploaded successfully. Save to apply.",
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload logo. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingLogo(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setSiteLogoUrl('');
+  };
 
   // Load settings on mount
   useEffect(() => {
@@ -309,16 +392,64 @@ const AdminSettings: React.FC = () => {
 
             <div className="grid gap-2">
               <Label className="flex items-center gap-2">
-                <Image className="w-4 h-4" /> Logo URL
+                <Image className="w-4 h-4" /> Logo
               </Label>
-              <Input
-                value={siteLogoUrl}
-                onChange={(e) => setSiteLogoUrl(e.target.value)}
-                placeholder="https://example.com/logo.png"
-                className="max-w-md"
-              />
+              
+              {/* Logo Preview */}
+              {siteLogoUrl && (
+                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50 max-w-md">
+                  <img 
+                    src={siteLogoUrl} 
+                    alt="Logo preview" 
+                    className="w-16 h-16 rounded-xl object-cover border border-border"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Current Logo</p>
+                    <p className="text-xs text-muted-foreground truncate max-w-[200px]">{siteLogoUrl}</p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleRemoveLogo}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              
+              {/* Upload Button */}
+              <div className="flex gap-2 max-w-md">
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingLogo}
+                  className="gap-2"
+                >
+                  {isUploadingLogo ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  Upload Logo
+                </Button>
+                <span className="text-sm text-muted-foreground self-center">or</span>
+                <Input
+                  value={siteLogoUrl}
+                  onChange={(e) => setSiteLogoUrl(e.target.value)}
+                  placeholder="Enter logo URL"
+                  className="flex-1"
+                />
+              </div>
               <p className="text-sm text-muted-foreground">
-                Leave empty to use the default logo. Recommended size: 200x200px.
+                Upload an image or enter a URL. Recommended size: 200x200px. Max 2MB.
               </p>
             </div>
 
@@ -359,15 +490,123 @@ const AdminSettings: React.FC = () => {
               </>
             )}
 
-            <Button 
-              onClick={handleSaveBrandingSettings} 
-              disabled={isSavingBranding}
-              className="gap-2"
-            >
-              {isSavingBranding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save Branding Settings
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSaveBrandingSettings} 
+                disabled={isSavingBranding}
+                className="gap-2"
+              >
+                {isSavingBranding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Branding Settings
+              </Button>
+              {landingPageEnabled && (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPreview(true)}
+                  className="gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Preview Landing Page
+                </Button>
+              )}
+            </div>
           </CardContent>
+
+          {/* Landing Page Preview Dialog */}
+          <Dialog open={showPreview} onOpenChange={setShowPreview}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+              <DialogHeader className="p-4 border-b">
+                <DialogTitle>Landing Page Preview</DialogTitle>
+              </DialogHeader>
+              <div className="bg-background">
+                {/* Preview Header */}
+                <div className="bg-background/80 backdrop-blur-lg border-b border-border">
+                  <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {siteLogoUrl ? (
+                        <img src={siteLogoUrl} alt={siteName} className="w-10 h-10 rounded-xl object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+                          <span className="text-primary-foreground font-bold text-lg">{siteName.charAt(0)}</span>
+                        </div>
+                      )}
+                      <span className="font-bold text-xl text-foreground">{siteName}</span>
+                    </div>
+                    <Button size="sm">
+                      Sign In
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Preview Hero */}
+                <div className="py-16 px-4" style={{ background: 'var(--gradient-hero)' }}>
+                  <div className="container mx-auto text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
+                      <Zap className="w-4 h-4 text-accent" />
+                      <span className="text-sm text-primary-foreground/80">The Future of Affiliate Commerce</span>
+                    </div>
+                    <h1 className="text-3xl md:text-4xl font-bold text-primary-foreground mb-4 leading-tight">
+                      {landingPageTitle || 'Empower Your Affiliate Network'}
+                    </h1>
+                    <p className="text-lg text-primary-foreground/70 max-w-xl mx-auto mb-8">
+                      {landingPageSubtitle || 'A private e-commerce platform where affiliates run their own storefronts.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                      <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+                        Get Started
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                      <Button variant="outline" className="border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10">
+                        View Demo Store
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview Features */}
+                <div className="py-12 px-4">
+                  <div className="container mx-auto">
+                    <h2 className="text-2xl font-bold text-foreground mb-8 text-center">Everything You Need</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { icon: Store, title: 'Private Main Store' },
+                        { icon: Users, title: 'Affiliate Storefronts' },
+                        { icon: ShoppingCart, title: 'Smart Order Flow' },
+                        { icon: Shield, title: 'Secure Payments' },
+                        { icon: BarChart3, title: 'Real-time Analytics' },
+                        { icon: Zap, title: 'Instant Setup' },
+                      ].map((feature, index) => (
+                        <div key={index} className="p-4 rounded-xl border border-border bg-card">
+                          <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center mb-3">
+                            <feature.icon className="w-5 h-5 text-accent" />
+                          </div>
+                          <h3 className="font-semibold text-foreground">{feature.title}</h3>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview Footer */}
+                <div className="py-6 px-4 border-t border-border">
+                  <div className="container mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {siteLogoUrl ? (
+                        <img src={siteLogoUrl} alt={siteName} className="w-8 h-8 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                          <span className="text-primary-foreground font-bold text-sm">{siteName.charAt(0)}</span>
+                        </div>
+                      )}
+                      <span className="font-semibold text-foreground">{siteName}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">© 2024 {siteName}. All rights reserved.</p>
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </Card>
 
         {/* Currency Settings */}
