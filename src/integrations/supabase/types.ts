@@ -162,6 +162,9 @@ export type Database = {
           id: string
           order_number: string
           paid_at: string | null
+          payment_link: string | null
+          payment_link_updated_at: string | null
+          payment_link_updated_by: string | null
           quantity: number
           selling_price: number
           status: Database["public"]["Enums"]["order_status"]
@@ -180,6 +183,9 @@ export type Database = {
           id?: string
           order_number: string
           paid_at?: string | null
+          payment_link?: string | null
+          payment_link_updated_at?: string | null
+          payment_link_updated_by?: string | null
           quantity?: number
           selling_price: number
           status?: Database["public"]["Enums"]["order_status"]
@@ -198,6 +204,9 @@ export type Database = {
           id?: string
           order_number?: string
           paid_at?: string | null
+          payment_link?: string | null
+          payment_link_updated_at?: string | null
+          payment_link_updated_by?: string | null
           quantity?: number
           selling_price?: number
           status?: Database["public"]["Enums"]["order_status"]

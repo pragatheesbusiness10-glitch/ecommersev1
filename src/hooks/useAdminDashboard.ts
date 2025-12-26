@@ -18,6 +18,9 @@ export interface AdminOrder {
   created_at: string;
   paid_at: string | null;
   completed_at: string | null;
+  payment_link: string | null;
+  payment_link_updated_at: string | null;
+  payment_link_updated_by: string | null;
   product: {
     id: string;
     name: string;
@@ -109,6 +112,9 @@ export const useAdminDashboard = () => {
           created_at: order.created_at,
           paid_at: order.paid_at,
           completed_at: order.completed_at,
+          payment_link: order.payment_link,
+          payment_link_updated_at: order.payment_link_updated_at,
+          payment_link_updated_by: order.payment_link_updated_by,
           product: order.storefront_products?.products ? {
             id: order.storefront_products.products.id,
             name: order.storefront_products.products.name,

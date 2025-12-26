@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { 
   Search, 
   Eye, 
@@ -13,7 +14,9 @@ import {
   Mail,
   MapPin,
   Calendar,
-  DollarSign
+  DollarSign,
+  Link as LinkIcon,
+  ExternalLink
 } from 'lucide-react';
 import {
   Dialog,
@@ -21,6 +24,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -66,13 +70,17 @@ const AdminOrders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<OrderStatus>('all');
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isPaymentLinkDialogOpen, setIsPaymentLinkDialogOpen] = useState(false);
+  const [paymentLinkInput, setPaymentLinkInput] = useState('');
   
   const { 
     orders, 
     orderCounts, 
     isLoading, 
     updateStatus,
-    isUpdatingStatus 
+    isUpdatingStatus,
+    updatePaymentLink,
+    isUpdatingPaymentLink,
   } = useAdminOrders();
 
   const filteredOrders = orders.filter(order => {
@@ -95,6 +103,18 @@ const AdminOrders: React.FC = () => {
 
   const handleStatusChange = (orderId: string, newStatus: AdminOrder['status'], order?: AdminOrder) => {
     updateStatus({ orderId, status: newStatus, order });
+  };
+
+  const handleOpenPaymentLinkDialog = (order: AdminOrder) => {
+    setSelectedOrder(order);
+    setPaymentLinkInput(order.payment_link || '');
+    setIsPaymentLinkDialogOpen(true);
+  };
+
+  const handleSavePaymentLink = () => {
+    if (!selectedOrder) return;
+    updatePaymentLink({ orderId: selectedOrder.id, paymentLink: paymentLinkInput });
+    setIsPaymentLinkDialogOpen(false);
   };
 
   if (isLoading) {
@@ -240,6 +260,14 @@ const AdminOrders: React.FC = () => {
                       <Button 
                         variant="ghost" 
                         size="icon"
+                        onClick={() => handleOpenPaymentLinkDialog(order)}
+                        title="Set Payment Link"
+                      >
+                        <LinkIcon className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
                         onClick={() => handleViewOrder(order)}
                       >
                         <Eye className="w-4 h-4" />
@@ -355,6 +383,35 @@ const AdminOrders: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Payment Link Section */}
+                <div className="border-t pt-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4" /> Payment Link
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleOpenPaymentLinkDialog(selectedOrder)}
+                    >
+                      {selectedOrder.payment_link ? 'Edit' : 'Add'} Link
+                    </Button>
+                  </div>
+                  {selectedOrder.payment_link ? (
+                    <a 
+                      href={selectedOrder.payment_link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-primary hover:underline flex items-center gap-1 break-all"
+                    >
+                      {selectedOrder.payment_link}
+                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    </a>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No payment link set</p>
+                  )}
+                </div>
+
                 <div className="flex justify-between items-center border-t pt-4">
                   <Badge className={cn("border", statusColors[selectedOrder.status])}>
                     {selectedOrder.status.replace(/_/g, ' ').toUpperCase()}
@@ -376,6 +433,55 @@ const AdminOrders: React.FC = () => {
                 </div>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Link Dialog */}
+        <Dialog open={isPaymentLinkDialogOpen} onOpenChange={setIsPaymentLinkDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Set Payment Link</DialogTitle>
+              <DialogDescription>
+                Set a payment link for order {selectedOrder?.order_number}. Users will use this link to pay for their order.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="paymentLink">Payment Link URL</Label>
+                <Input
+                  id="paymentLink"
+                  placeholder="https://payment-gateway.com/pay/..."
+                  value={paymentLinkInput}
+                  onChange={(e) => setPaymentLinkInput(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the payment link from your payment provider (e.g., Razorpay, Paytm, UPI, etc.)
+                </p>
+              </div>
+              {selectedOrder && (
+                <div className="p-4 rounded-lg bg-muted/50 space-y-2">
+                  <p className="text-sm"><strong>Order:</strong> {selectedOrder.order_number}</p>
+                  <p className="text-sm"><strong>Customer:</strong> {selectedOrder.customer_name}</p>
+                  <p className="text-sm"><strong>Amount Payable:</strong> ${(selectedOrder.base_price * selectedOrder.quantity).toFixed(2)}</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsPaymentLinkDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSavePaymentLink}
+                disabled={isUpdatingPaymentLink}
+                className="gap-2"
+              >
+                {isUpdatingPaymentLink && <Loader2 className="w-4 h-4 animate-spin" />}
+                Save Payment Link
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

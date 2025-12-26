@@ -20,6 +20,9 @@ export interface AdminOrder {
   created_at: string;
   paid_at: string | null;
   completed_at: string | null;
+  payment_link: string | null;
+  payment_link_updated_at: string | null;
+  payment_link_updated_by: string | null;
   product: {
     id: string;
     name: string;
@@ -93,6 +96,9 @@ export const useAdminOrders = () => {
           created_at: order.created_at,
           paid_at: order.paid_at,
           completed_at: order.completed_at,
+          payment_link: order.payment_link,
+          payment_link_updated_at: order.payment_link_updated_at,
+          payment_link_updated_by: order.payment_link_updated_by,
           product: order.storefront_products?.products ? {
             id: order.storefront_products.products.id,
             name: order.storefront_products.products.name,
@@ -198,6 +204,36 @@ export const useAdminOrders = () => {
     },
   });
 
+  const updatePaymentLinkMutation = useMutation({
+    mutationFn: async ({ orderId, paymentLink }: { orderId: string; paymentLink: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          payment_link: paymentLink,
+          payment_link_updated_at: new Date().toISOString(),
+          payment_link_updated_by: user?.id,
+        })
+        .eq('id', orderId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({
+        title: 'Payment Link Updated',
+        description: 'The payment link has been saved successfully.',
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating payment link:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update payment link.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const orderCounts = {
     all: ordersQuery.data?.length || 0,
     pending_payment: ordersQuery.data?.filter(o => o.status === 'pending_payment').length || 0,
@@ -215,5 +251,7 @@ export const useAdminOrders = () => {
     refetch: ordersQuery.refetch,
     updateStatus: updateStatusMutation.mutate,
     isUpdatingStatus: updateStatusMutation.isPending,
+    updatePaymentLink: updatePaymentLinkMutation.mutate,
+    isUpdatingPaymentLink: updatePaymentLinkMutation.isPending,
   };
 };
