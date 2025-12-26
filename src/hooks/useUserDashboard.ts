@@ -20,6 +20,7 @@ export interface DashboardOrder {
   completed_at: string | null;
   payment_link: string | null;
   payment_link_updated_at: string | null;
+  payment_link_clicked_at: string | null;
   product: {
     id: string;
     name: string;
@@ -86,6 +87,7 @@ export const useUserDashboard = () => {
         completed_at: order.completed_at,
         payment_link: order.payment_link,
         payment_link_updated_at: order.payment_link_updated_at,
+        payment_link_clicked_at: order.payment_link_clicked_at,
         product: order.storefront_products?.products ? {
           id: order.storefront_products.products.id,
           name: order.storefront_products.products.name,

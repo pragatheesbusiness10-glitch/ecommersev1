@@ -23,6 +23,7 @@ export interface AdminOrder {
   payment_link: string | null;
   payment_link_updated_at: string | null;
   payment_link_updated_by: string | null;
+  payment_link_clicked_at: string | null;
   product: {
     id: string;
     name: string;
@@ -99,6 +100,7 @@ export const useAdminOrders = () => {
           payment_link: order.payment_link,
           payment_link_updated_at: order.payment_link_updated_at,
           payment_link_updated_by: order.payment_link_updated_by,
+          payment_link_clicked_at: order.payment_link_clicked_at,
           product: order.storefront_products?.products ? {
             id: order.storefront_products.products.id,
             name: order.storefront_products.products.name,
@@ -234,6 +236,37 @@ export const useAdminOrders = () => {
     },
   });
 
+  const bulkUpdatePaymentLinkMutation = useMutation({
+    mutationFn: async ({ orderIds, paymentLink }: { orderIds: string[]; paymentLink: string }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          payment_link: paymentLink,
+          payment_link_updated_at: new Date().toISOString(),
+          payment_link_updated_by: user?.id,
+        })
+        .in('id', orderIds);
+
+      if (error) throw error;
+      return orderIds.length;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast({
+        title: 'Payment Links Updated',
+        description: `Payment link has been applied to ${count} order(s).`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating payment links:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update payment links.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const orderCounts = {
     all: ordersQuery.data?.length || 0,
     pending_payment: ordersQuery.data?.filter(o => o.status === 'pending_payment').length || 0,
@@ -253,5 +286,7 @@ export const useAdminOrders = () => {
     isUpdatingStatus: updateStatusMutation.isPending,
     updatePaymentLink: updatePaymentLinkMutation.mutate,
     isUpdatingPaymentLink: updatePaymentLinkMutation.isPending,
+    bulkUpdatePaymentLink: bulkUpdatePaymentLinkMutation.mutate,
+    isBulkUpdatingPaymentLink: bulkUpdatePaymentLinkMutation.isPending,
   };
 };

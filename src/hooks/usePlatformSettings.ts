@@ -23,6 +23,12 @@ export interface SettingsMap {
   resend_api_key: string;
   email_notifications_enabled: boolean;
   admin_email: string;
+  // Branding settings
+  site_name: string;
+  site_logo_url: string;
+  landing_page_enabled: boolean;
+  landing_page_title: string;
+  landing_page_subtitle: string;
   // Payment gateway settings
   payment_gateway_razorpay_enabled: boolean;
   payment_gateway_razorpay_key_id: string;
@@ -89,6 +95,12 @@ export const usePlatformSettings = () => {
     resend_api_key: '',
     email_notifications_enabled: false,
     admin_email: '',
+    // Branding defaults
+    site_name: 'Affiliate Platform',
+    site_logo_url: '',
+    landing_page_enabled: true,
+    landing_page_title: 'Welcome to Our Platform',
+    landing_page_subtitle: 'Join our affiliate network and start earning today',
     // Payment gateway defaults
     payment_gateway_razorpay_enabled: false,
     payment_gateway_razorpay_key_id: '',
@@ -143,6 +155,22 @@ export const usePlatformSettings = () => {
         break;
       case 'admin_email':
         settingsMap.admin_email = setting.value || '';
+        break;
+      // Branding settings
+      case 'site_name':
+        settingsMap.site_name = setting.value || 'Affiliate Platform';
+        break;
+      case 'site_logo_url':
+        settingsMap.site_logo_url = setting.value || '';
+        break;
+      case 'landing_page_enabled':
+        settingsMap.landing_page_enabled = setting.value !== 'false';
+        break;
+      case 'landing_page_title':
+        settingsMap.landing_page_title = setting.value || 'Welcome to Our Platform';
+        break;
+      case 'landing_page_subtitle':
+        settingsMap.landing_page_subtitle = setting.value || 'Join our affiliate network and start earning today';
         break;
       // Payment gateway settings
       case 'payment_gateway_razorpay_enabled':

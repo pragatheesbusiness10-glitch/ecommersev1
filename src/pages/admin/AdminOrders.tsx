@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Search, 
   Eye, 
@@ -16,7 +17,8 @@ import {
   Calendar,
   DollarSign,
   Link as LinkIcon,
-  ExternalLink
+  ExternalLink,
+  MousePointerClick
 } from 'lucide-react';
 import {
   Dialog,
@@ -71,7 +73,9 @@ const AdminOrders: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isPaymentLinkDialogOpen, setIsPaymentLinkDialogOpen] = useState(false);
+  const [isBulkPaymentLinkDialogOpen, setIsBulkPaymentLinkDialogOpen] = useState(false);
   const [paymentLinkInput, setPaymentLinkInput] = useState('');
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   
   const { 
     orders, 
@@ -81,6 +85,8 @@ const AdminOrders: React.FC = () => {
     isUpdatingStatus,
     updatePaymentLink,
     isUpdatingPaymentLink,
+    bulkUpdatePaymentLink,
+    isBulkUpdatingPaymentLink,
   } = useAdminOrders();
 
   const filteredOrders = orders.filter(order => {
@@ -117,6 +123,33 @@ const AdminOrders: React.FC = () => {
     setIsPaymentLinkDialogOpen(false);
   };
 
+  const handleSelectOrder = (orderId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedOrderIds(prev => [...prev, orderId]);
+    } else {
+      setSelectedOrderIds(prev => prev.filter(id => id !== orderId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedOrderIds(filteredOrders.map(o => o.id));
+    } else {
+      setSelectedOrderIds([]);
+    }
+  };
+
+  const handleOpenBulkPaymentLinkDialog = () => {
+    setPaymentLinkInput('');
+    setIsBulkPaymentLinkDialogOpen(true);
+  };
+
+  const handleSaveBulkPaymentLink = () => {
+    bulkUpdatePaymentLink({ orderIds: selectedOrderIds, paymentLink: paymentLinkInput });
+    setIsBulkPaymentLinkDialogOpen(false);
+    setSelectedOrderIds([]);
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -145,6 +178,12 @@ const AdminOrders: React.FC = () => {
               Manage all orders across affiliates. {orders.length} orders total.
             </p>
           </div>
+          {selectedOrderIds.length > 0 && (
+            <Button onClick={handleOpenBulkPaymentLinkDialog} className="gap-2">
+              <LinkIcon className="w-4 h-4" />
+              Set Payment Link ({selectedOrderIds.length} orders)
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -187,12 +226,19 @@ const AdminOrders: React.FC = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                  <Checkbox 
+                    checked={selectedOrderIds.length === filteredOrders.length && filteredOrders.length > 0}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </TableHead>
                 <TableHead>Order</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Affiliate</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -200,6 +246,12 @@ const AdminOrders: React.FC = () => {
             <TableBody>
               {filteredOrders.map((order) => (
                 <TableRow key={order.id}>
+                  <TableCell>
+                    <Checkbox 
+                      checked={selectedOrderIds.includes(order.id)}
+                      onCheckedChange={(checked) => handleSelectOrder(order.id, checked as boolean)}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{order.order_number}</TableCell>
                   <TableCell>
                     <div>
@@ -249,6 +301,25 @@ const AdminOrders: React.FC = () => {
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      {order.payment_link ? (
+                        <Badge variant="outline" className="text-xs gap-1 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                          <LinkIcon className="w-3 h-3" /> Link Set
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs gap-1 bg-amber-500/10 text-amber-600 border-amber-500/20">
+                          No Link
+                        </Badge>
+                      )}
+                      {order.payment_link_clicked_at && (
+                        <Badge variant="outline" className="text-xs gap-1 bg-blue-500/10 text-blue-600 border-blue-500/20">
+                          <MousePointerClick className="w-3 h-3" />
+                          Clicked
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-muted-foreground">
@@ -410,6 +481,12 @@ const AdminOrders: React.FC = () => {
                   ) : (
                     <p className="text-sm text-muted-foreground italic">No payment link set</p>
                   )}
+                  {selectedOrder.payment_link_clicked_at && (
+                    <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-500/10 p-2 rounded-lg">
+                      <MousePointerClick className="w-4 h-4" />
+                      Link clicked at {format(new Date(selectedOrder.payment_link_clicked_at), 'PPp')}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-center border-t pt-4">
@@ -426,7 +503,6 @@ const AdminOrders: React.FC = () => {
                       className="gap-2"
                     >
                       {isUpdatingStatus && <Loader2 className="w-4 h-4 animate-spin" />}
-                      <CheckCircle className="w-4 h-4" />
                       Mark as Completed
                     </Button>
                   )}
@@ -438,31 +514,39 @@ const AdminOrders: React.FC = () => {
 
         {/* Payment Link Dialog */}
         <Dialog open={isPaymentLinkDialogOpen} onOpenChange={setIsPaymentLinkDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[450px]">
             <DialogHeader>
               <DialogTitle>Set Payment Link</DialogTitle>
               <DialogDescription>
-                Set a payment link for order {selectedOrder?.order_number}. Users will use this link to pay for their order.
+                Add a payment link for order {selectedOrder?.order_number}. Users will use this link to make payments.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="py-4 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="paymentLink">Payment Link URL</Label>
                 <Input
                   id="paymentLink"
-                  placeholder="https://payment-gateway.com/pay/..."
+                  type="url"
+                  placeholder="https://pay.example.com/..."
                   value={paymentLinkInput}
                   onChange={(e) => setPaymentLinkInput(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Enter the payment link from your payment provider (e.g., Razorpay, Paytm, UPI, etc.)
+                  Enter the full URL including https://
                 </p>
               </div>
-              {selectedOrder && (
-                <div className="p-4 rounded-lg bg-muted/50 space-y-2">
-                  <p className="text-sm"><strong>Order:</strong> {selectedOrder.order_number}</p>
-                  <p className="text-sm"><strong>Customer:</strong> {selectedOrder.customer_name}</p>
-                  <p className="text-sm"><strong>Amount Payable:</strong> ${(selectedOrder.base_price * selectedOrder.quantity).toFixed(2)}</p>
+              {selectedOrder?.payment_link && (
+                <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                  <p className="text-muted-foreground mb-1">Current link:</p>
+                  <a 
+                    href={selectedOrder.payment_link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline flex items-center gap-1 break-all"
+                  >
+                    {selectedOrder.payment_link}
+                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                  </a>
                 </div>
               )}
             </div>
@@ -479,7 +563,53 @@ const AdminOrders: React.FC = () => {
                 className="gap-2"
               >
                 {isUpdatingPaymentLink && <Loader2 className="w-4 h-4 animate-spin" />}
-                Save Payment Link
+                Save Link
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk Payment Link Dialog */}
+        <Dialog open={isBulkPaymentLinkDialogOpen} onOpenChange={setIsBulkPaymentLinkDialogOpen}>
+          <DialogContent className="sm:max-w-[450px]">
+            <DialogHeader>
+              <DialogTitle>Set Payment Link for Multiple Orders</DialogTitle>
+              <DialogDescription>
+                This link will be applied to {selectedOrderIds.length} selected order(s).
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bulkPaymentLink">Payment Link URL</Label>
+                <Input
+                  id="bulkPaymentLink"
+                  type="url"
+                  placeholder="https://pay.example.com/..."
+                  value={paymentLinkInput}
+                  onChange={(e) => setPaymentLinkInput(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the full URL including https://
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm text-amber-700 dark:text-amber-300">
+                <p>This will overwrite any existing payment links for the selected orders.</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsBulkPaymentLinkDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveBulkPaymentLink}
+                disabled={isBulkUpdatingPaymentLink || !paymentLinkInput.trim()}
+                className="gap-2"
+              >
+                {isBulkUpdatingPaymentLink && <Loader2 className="w-4 h-4 animate-spin" />}
+                Apply to {selectedOrderIds.length} Orders
               </Button>
             </DialogFooter>
           </DialogContent>

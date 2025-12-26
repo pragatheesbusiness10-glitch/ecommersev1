@@ -17,7 +17,10 @@ import {
   Mail,
   Eye,
   EyeOff,
-  Check
+  Check,
+  Image,
+  Type,
+  Layout
 } from 'lucide-react';
 import {
   Select,
@@ -51,6 +54,14 @@ const AdminSettings: React.FC = () => {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [hasChanges, setHasChanges] = useState(false);
   
+  // Branding settings
+  const [siteName, setSiteName] = useState('Affiliate Platform');
+  const [siteLogoUrl, setSiteLogoUrl] = useState('');
+  const [landingPageEnabled, setLandingPageEnabled] = useState(true);
+  const [landingPageTitle, setLandingPageTitle] = useState('');
+  const [landingPageSubtitle, setLandingPageSubtitle] = useState('');
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  
   // Email notification settings
   const [resendApiKey, setResendApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
@@ -68,6 +79,12 @@ const AdminSettings: React.FC = () => {
       setAutoCreditOnComplete(settingsMap.auto_credit_on_complete);
       setAutoUserApproval(settingsMap.auto_user_approval);
       setDefaultCurrency(settingsMap.default_currency);
+      // Load branding settings
+      setSiteName(settingsMap.site_name);
+      setSiteLogoUrl(settingsMap.site_logo_url);
+      setLandingPageEnabled(settingsMap.landing_page_enabled);
+      setLandingPageTitle(settingsMap.landing_page_title);
+      setLandingPageSubtitle(settingsMap.landing_page_subtitle);
       // Load email settings from platform_settings
       setResendApiKey(settingsMap.resend_api_key || '');
       setEmailNotificationsEnabled(settingsMap.email_notifications_enabled);
@@ -163,6 +180,32 @@ const AdminSettings: React.FC = () => {
     }
   };
 
+  const handleSaveBrandingSettings = async () => {
+    setIsSavingBranding(true);
+    try {
+      await Promise.all([
+        updateSetting({ key: 'site_name', value: siteName }),
+        updateSetting({ key: 'site_logo_url', value: siteLogoUrl }),
+        updateSetting({ key: 'landing_page_enabled', value: landingPageEnabled.toString() }),
+        updateSetting({ key: 'landing_page_title', value: landingPageTitle }),
+        updateSetting({ key: 'landing_page_subtitle', value: landingPageSubtitle }),
+      ]);
+      toast({
+        title: "Branding Settings Saved",
+        description: "Your branding settings have been updated.",
+      });
+    } catch (error) {
+      console.error('Error saving branding settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save branding settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingBranding(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <DashboardLayout>
@@ -233,6 +276,97 @@ const AdminSettings: React.FC = () => {
                 <li>Receive customer orders</li>
               </ul>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Branding Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                <Layout className="w-5 h-5 text-pink-600" />
+              </div>
+              <div>
+                <CardTitle>Branding & Landing Page</CardTitle>
+                <CardDescription>
+                  Customize your platform's name, logo, and landing page.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label className="flex items-center gap-2">
+                <Type className="w-4 h-4" /> Site Name
+              </Label>
+              <Input
+                value={siteName}
+                onChange={(e) => setSiteName(e.target.value)}
+                placeholder="Your Platform Name"
+                className="max-w-md"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="flex items-center gap-2">
+                <Image className="w-4 h-4" /> Logo URL
+              </Label>
+              <Input
+                value={siteLogoUrl}
+                onChange={(e) => setSiteLogoUrl(e.target.value)}
+                placeholder="https://example.com/logo.png"
+                className="max-w-md"
+              />
+              <p className="text-sm text-muted-foreground">
+                Leave empty to use the default logo. Recommended size: 200x200px.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Enable Landing Page</Label>
+                <p className="text-sm text-muted-foreground">
+                  Show the public landing page at the root URL.
+                </p>
+              </div>
+              <Switch
+                checked={landingPageEnabled}
+                onCheckedChange={setLandingPageEnabled}
+              />
+            </div>
+
+            {landingPageEnabled && (
+              <>
+                <div className="grid gap-2">
+                  <Label>Landing Page Title</Label>
+                  <Input
+                    value={landingPageTitle}
+                    onChange={(e) => setLandingPageTitle(e.target.value)}
+                    placeholder="Welcome to Our Platform"
+                    className="max-w-md"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Landing Page Subtitle</Label>
+                  <Input
+                    value={landingPageSubtitle}
+                    onChange={(e) => setLandingPageSubtitle(e.target.value)}
+                    placeholder="Join our affiliate network and start earning today"
+                    className="max-w-md"
+                  />
+                </div>
+              </>
+            )}
+
+            <Button 
+              onClick={handleSaveBrandingSettings} 
+              disabled={isSavingBranding}
+              className="gap-2"
+            >
+              {isSavingBranding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save Branding Settings
+            </Button>
           </CardContent>
         </Card>
 
