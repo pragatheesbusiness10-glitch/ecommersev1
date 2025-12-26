@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { 
   LayoutDashboard, 
   Package, 
@@ -58,6 +59,10 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { settingsMap } = usePlatformSettings();
+  
+  const siteName = settingsMap.site_name || 'Afflux';
+  const logoUrl = settingsMap.site_logo_url;
 
   // Fetch pending KYC count for admin
   const { data: pendingKYCCount = 0 } = useQuery({
@@ -109,10 +114,14 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
           {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <span className="text-accent-foreground font-bold text-sm">A</span>
-          </div>
-          <span className="font-semibold text-sidebar-foreground">Afflux</span>
+          {logoUrl ? (
+            <img src={logoUrl} alt={siteName} className="w-8 h-8 rounded-lg object-cover" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+              <span className="text-accent-foreground font-bold text-sm">{siteName.charAt(0)}</span>
+            </div>
+          )}
+          <span className="font-semibold text-sidebar-foreground">{siteName}</span>
         </div>
         <div className="w-10" />
       </header>
@@ -126,11 +135,15 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="h-16 flex items-center gap-3 px-6 border-b border-sidebar-border">
-            <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg">
-              <span className="text-accent-foreground font-bold text-lg">A</span>
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt={siteName} className="w-10 h-10 rounded-xl object-cover shadow-lg" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg">
+                <span className="text-accent-foreground font-bold text-lg">{siteName.charAt(0)}</span>
+              </div>
+            )}
             <div>
-              <span className="font-bold text-lg text-sidebar-foreground">Afflux</span>
+              <span className="font-bold text-lg text-sidebar-foreground">{siteName}</span>
               <p className="text-xs text-sidebar-foreground/60">
                 {user?.role === 'admin' ? 'Admin Panel' : 'Affiliate Hub'}
               </p>
