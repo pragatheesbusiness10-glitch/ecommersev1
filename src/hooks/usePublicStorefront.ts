@@ -19,35 +19,41 @@ export interface PublicStorefrontProduct {
 
 export interface StoreOwner {
   user_id: string;
-  name: string;
+  display_name: string;
   storefront_name: string | null;
   storefront_slug: string | null;
   storefront_banner: string | null;
 }
 
 export const usePublicStorefront = (slug: string | undefined) => {
-  // Fetch store owner by slug
+  // Fetch store owner by slug using secure function that only exposes public fields
   const storeQuery = useQuery({
     queryKey: ['public-store', slug],
     queryFn: async () => {
       if (!slug) return null;
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, name, storefront_name, storefront_slug, storefront_banner')
-        .eq('storefront_slug', slug)
-        .maybeSingle();
+        .rpc('get_public_storefront_profile', { _slug: slug });
 
       if (error) {
         console.error('Error fetching store:', error);
         throw error;
       }
 
-      return data as StoreOwner | null;
+      if (!data || data.length === 0) return null;
+
+      // Map the function result to our interface
+      const profile = data[0];
+      return {
+        user_id: profile.user_id,
+        display_name: profile.display_name,
+        storefront_name: profile.storefront_name,
+        storefront_slug: profile.storefront_slug,
+        storefront_banner: profile.storefront_banner,
+      } as StoreOwner;
     },
     enabled: !!slug,
   });
-
   // Fetch products for this storefront
   const productsQuery = useQuery({
     queryKey: ['public-storefront-products', storeQuery.data?.user_id],

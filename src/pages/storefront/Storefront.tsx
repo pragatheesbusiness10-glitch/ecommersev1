@@ -238,14 +238,14 @@ const Storefront: React.FC = () => {
             <div className="flex items-center gap-3 group">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
                 <span className="text-primary-foreground font-bold text-lg">
-                  {store?.name?.charAt(0) || 'S'}
+                  {store?.display_name?.charAt(0) || store?.storefront_name?.charAt(0) || 'S'}
                 </span>
               </div>
               <div>
                 <h1 className="font-bold text-foreground text-lg">{store?.storefront_name || 'Store'}</h1>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Sparkles className="w-3 h-3" />
-                  by {store?.name}
+                  by {store?.display_name || store?.storefront_name}
                 </p>
               </div>
             </div>
@@ -495,7 +495,7 @@ const Storefront: React.FC = () => {
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">
-                {store?.name?.charAt(0) || 'S'}
+                {store?.display_name?.charAt(0) || store?.storefront_name?.charAt(0) || 'S'}
               </span>
             </div>
             <span className="font-bold text-foreground">{store?.storefront_name}</span>
