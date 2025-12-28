@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Eye, CheckCircle } from 'lucide-react';
+import { Eye, CheckCircle, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { maskEmail, maskPhoneNumber } from '@/lib/maskingUtils';
 
@@ -134,6 +134,17 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
+                  {userRole === 'user' && order.status === 'pending_payment' && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => onPayOrder?.(order)}
+                      className="gap-1"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      Pay
+                    </Button>
+                  )}
                   {userRole === 'admin' && order.status === 'paid_by_user' && (
                     <Button
                       variant="default"
