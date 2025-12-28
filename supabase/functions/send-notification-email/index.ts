@@ -7,13 +7,15 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: 'new_chat_message' | 'kyc_submitted' | 'payout_request' | 'new_order';
+  type: 'new_chat_message' | 'kyc_submitted' | 'payout_request' | 'new_order' | 'support_ticket';
   userId?: string;
   userName?: string;
   userEmail?: string;
   message?: string;
   orderId?: string;
   amount?: number;
+  ticketCategory?: string;
+  ticketSubject?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -99,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { type, userName, userEmail, message, orderId, amount }: NotificationEmailRequest = await req.json();
+    const { type, userName, userEmail, message, orderId, amount, ticketCategory, ticketSubject }: NotificationEmailRequest = await req.json();
 
     let subject = "";
     let htmlContent = "";
@@ -114,6 +116,33 @@ const handler = async (req: Request): Promise<Response> => {
           <blockquote style="border-left: 3px solid #ccc; padding-left: 10px; margin: 10px 0;">
             ${message || "No message content"}
           </blockquote>
+        `;
+        break;
+      case "support_ticket":
+        subject = `🎫 New Support Ticket from ${userName || "User"}`;
+        htmlContent = `
+          <h2 style="color: #2563eb;">New Support Ticket</h2>
+          <table style="border-collapse: collapse; margin: 15px 0;">
+            <tr>
+              <td style="padding: 8px 15px; background: #f3f4f6; font-weight: bold;">From:</td>
+              <td style="padding: 8px 15px;">${userName || "User"} (${userEmail || "N/A"})</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 15px; background: #f3f4f6; font-weight: bold;">Category:</td>
+              <td style="padding: 8px 15px;">${ticketCategory || "General"}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 15px; background: #f3f4f6; font-weight: bold;">Subject:</td>
+              <td style="padding: 8px 15px;">${ticketSubject || "No Subject"}</td>
+            </tr>
+          </table>
+          <p><strong>Message:</strong></p>
+          <blockquote style="border-left: 4px solid #2563eb; padding: 15px; margin: 15px 0; background: #eff6ff;">
+            ${message || "No message content"}
+          </blockquote>
+          <p style="margin-top: 20px;">
+            <a href="#" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in Admin Panel</a>
+          </p>
         `;
         break;
       case "kyc_submitted":

@@ -80,9 +80,13 @@ export const useChat = () => {
     },
   });
 
-  // Realtime subscription
+  // Realtime subscription with notification sound
   useEffect(() => {
     if (!user?.id) return;
+
+    // Create audio for notification sound
+    const notificationSound = new Audio('/notification.mp3');
+    notificationSound.volume = 0.5;
 
     const channel = supabase
       .channel('user-chat-messages')
@@ -94,11 +98,34 @@ export const useChat = () => {
           table: 'chat_messages',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
+        (payload) => {
           queryClient.invalidateQueries({ queryKey: ['chat-messages'] });
+          
+          // Play sound and show browser notification for admin messages
+          const newMessage = payload.new as ChatMessage;
+          if (newMessage.sender_role === 'admin') {
+            // Play notification sound
+            notificationSound.play().catch(() => {});
+            
+            // Show browser push notification
+            if (Notification.permission === 'granted') {
+              new Notification('Support Reply', {
+                body: newMessage.message.substring(0, 100),
+                icon: '/favicon.ico',
+                tag: 'chat-notification',
+              });
+            } else if (Notification.permission !== 'denied') {
+              Notification.requestPermission();
+            }
+          }
         }
       )
       .subscribe();
+
+    // Request notification permission on mount
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
 
     return () => {
       supabase.removeChannel(channel);

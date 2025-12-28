@@ -73,15 +73,19 @@ const UserPayments: React.FC = () => {
   const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
 
-  const { profile, transactions, isLoading: dashboardLoading } = useUserDashboard();
+  const { profile, transactions, orders, stats, isLoading: dashboardLoading } = useUserDashboard();
   const { payoutRequests, isLoading: payoutsLoading, createPayout, isCreatingPayout } = usePayoutRequests();
   const { settingsMap } = usePlatformSettings();
-  const { isKYCApproved, kycStatus } = useKYC();
+  const { isKYCApproved } = useKYC();
 
   const walletBalance = profile?.wallet_balance || 0;
   const minPayoutAmount = settingsMap.min_payout_amount;
   const canRequestPayout = isKYCApproved && walletBalance >= minPayoutAmount;
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
+  
+  // Calculate total order value and profit
+  const totalOrderValue = orders.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
+  const totalProfit = stats.totalRevenue;
 
   const handleRequestPayout = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,11 +154,6 @@ const UserPayments: React.FC = () => {
 
   const pendingPayouts = payoutRequests.filter(p => p.status === 'pending');
   const totalPendingPayout = pendingPayouts.reduce((sum, p) => sum + p.amount, 0);
-  
-  // Calculate total order value and profit from orders
-  const { orders, stats } = useUserDashboard();
-  const totalOrderValue = orders.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
-  const totalProfit = stats.totalRevenue;
 
   return (
     <DashboardLayout>
