@@ -41,12 +41,13 @@ interface GatewayConfig {
 
 const PAYMENT_GATEWAYS: GatewayConfig[] = [
   {
-    id: 'razorpay',
-    name: 'Razorpay',
-    enabledKey: 'payment_gateway_razorpay_enabled',
+    id: 'paypal',
+    name: 'PayPal',
+    enabledKey: 'payment_gateway_paypal_enabled',
     fields: [
-      { key: 'payment_gateway_razorpay_key_id', label: 'Key ID', placeholder: 'rzp_live_xxxxxxxxx', isSecret: false },
-      { key: 'payment_gateway_razorpay_key_secret', label: 'Key Secret', placeholder: 'xxxxxxxxxxxxxxxxxx', isSecret: true },
+      { key: 'payment_gateway_paypal_client_id', label: 'Client ID', placeholder: 'AxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX', isSecret: false },
+      { key: 'payment_gateway_paypal_client_secret', label: 'Client Secret', placeholder: 'ExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX', isSecret: true },
+      { key: 'payment_gateway_paypal_mode', label: 'Mode (sandbox/live)', placeholder: 'live', isSecret: false },
     ],
   },
   {
@@ -59,31 +60,15 @@ const PAYMENT_GATEWAYS: GatewayConfig[] = [
     ],
   },
   {
-    id: 'payu',
-    name: 'PayU',
-    enabledKey: 'payment_gateway_payu_enabled',
+    id: 'wire',
+    name: 'Wire Transfer',
+    enabledKey: 'payment_gateway_wire_enabled',
     fields: [
-      { key: 'payment_gateway_payu_merchant_key', label: 'Merchant Key', placeholder: 'xxxxxxxxx', isSecret: false },
-      { key: 'payment_gateway_payu_merchant_salt', label: 'Merchant Salt', placeholder: 'xxxxxxxxx', isSecret: true },
-    ],
-  },
-  {
-    id: 'phonepe',
-    name: 'PhonePe',
-    enabledKey: 'payment_gateway_phonepe_enabled',
-    fields: [
-      { key: 'payment_gateway_phonepe_merchant_id', label: 'Merchant ID', placeholder: 'MERCHANTID', isSecret: false },
-      { key: 'payment_gateway_phonepe_salt_key', label: 'Salt Key', placeholder: 'xxxxxxxxx', isSecret: true },
-      { key: 'payment_gateway_phonepe_salt_index', label: 'Salt Index', placeholder: '1', isSecret: false },
-    ],
-  },
-  {
-    id: 'paytm',
-    name: 'Paytm',
-    enabledKey: 'payment_gateway_paytm_enabled',
-    fields: [
-      { key: 'payment_gateway_paytm_merchant_id', label: 'Merchant ID', placeholder: 'MERCHANTID', isSecret: false },
-      { key: 'payment_gateway_paytm_merchant_key', label: 'Merchant Key', placeholder: 'xxxxxxxxx', isSecret: true },
+      { key: 'payment_gateway_wire_bank_name', label: 'Bank Name', placeholder: 'Bank of America', isSecret: false },
+      { key: 'payment_gateway_wire_account_name', label: 'Account Holder Name', placeholder: 'Company Name LLC', isSecret: false },
+      { key: 'payment_gateway_wire_account_number', label: 'Account Number', placeholder: 'XXXXXXXXXXXX', isSecret: true },
+      { key: 'payment_gateway_wire_routing_number', label: 'Routing Number / SWIFT', placeholder: 'XXXXXXXXX', isSecret: false },
+      { key: 'payment_gateway_wire_iban', label: 'IBAN (International)', placeholder: 'XX00 XXXX XXXX XXXX XXXX XX', isSecret: false },
     ],
   },
 ];
