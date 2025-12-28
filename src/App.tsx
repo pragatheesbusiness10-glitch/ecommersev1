@@ -35,9 +35,6 @@ import UserSupport from "./pages/user/UserSupport";
 // Storefront
 import Storefront from "./pages/storefront/Storefront";
 
-// Chat Widgets
-import { AIChatWidget } from "./components/chat/AIChatWidget";
-
 const queryClient = new QueryClient();
 
 // Protected Route Component
@@ -123,7 +120,6 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <AppRoutes />
-            <AIChatWidget />
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

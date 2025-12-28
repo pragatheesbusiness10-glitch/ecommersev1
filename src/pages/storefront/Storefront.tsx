@@ -3,9 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { usePublicStorefront, PublicStorefrontProduct } from '@/hooks/usePublicStorefront';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   ShoppingCart, 
   Search, 
@@ -15,7 +13,6 @@ import {
   ArrowRight,
   Store,
   Loader2,
-  CheckCircle,
   Sparkles,
   Star
 } from 'lucide-react';
@@ -32,26 +29,15 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { z } from 'zod';
 import { cn } from '@/lib/utils';
+import { ShopifyCheckout, CheckoutData } from '@/components/checkout/ShopifyCheckout';
 
 interface CartItem {
   product: PublicStorefrontProduct;
   quantity: number;
 }
-
-const checkoutSchema = z.object({
-  customerName: z.string().trim().min(2, 'Name is required').max(100),
-  customerEmail: z.string().trim().email('Valid email is required'),
-  customerPhone: z.string().trim().optional(),
-  customerAddress: z.string().trim().min(10, 'Address must be at least 10 characters').max(500),
-});
 
 const DEFAULT_BANNER = 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1920&h=400&fit=crop';
 
@@ -65,13 +51,6 @@ const Storefront: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [customerAddress, setCustomerAddress] = useState('');
 
   const bannerUrl = store?.storefront_banner || DEFAULT_BANNER;
 
@@ -126,19 +105,10 @@ const Storefront: React.FC = () => {
     setIsCheckoutOpen(true);
   };
 
-  const handleSubmitOrder = async () => {
-    setErrors({});
-    
+  const handleSubmitOrder = async (data: CheckoutData) => {
+    setIsSubmitting(true);
+
     try {
-      const validated = checkoutSchema.parse({
-        customerName,
-        customerEmail,
-        customerPhone: customerPhone || undefined,
-        customerAddress,
-      });
-
-      setIsSubmitting(true);
-
       const orderPromises = cart.map(async (item) => {
         const { data: productData } = await supabase
           .from('products')
@@ -153,10 +123,10 @@ const Storefront: React.FC = () => {
           .insert({
             storefront_product_id: item.product.id,
             affiliate_user_id: store?.user_id || '',
-            customer_name: validated.customerName,
-            customer_email: validated.customerEmail,
-            customer_phone: validated.customerPhone || null,
-            customer_address: validated.customerAddress,
+            customer_name: data.customerName,
+            customer_email: data.customerEmail,
+            customer_phone: data.customerPhone || null,
+            customer_address: data.customerAddress,
             quantity: item.quantity,
             selling_price: item.product.selling_price,
             base_price: Number(basePrice),
@@ -168,38 +138,22 @@ const Storefront: React.FC = () => {
       });
 
       await Promise.all(orderPromises);
-
-      setOrderSuccess(true);
       setCart([]);
-      setCustomerName('');
-      setCustomerEmail('');
-      setCustomerPhone('');
-      setCustomerAddress('');
 
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        const newErrors: Record<string, string> = {};
-        error.errors.forEach((err) => {
-          if (err.path[0]) {
-            newErrors[err.path[0] as string] = err.message;
-          }
-        });
-        setErrors(newErrors);
-      } else {
-        console.error('Order error:', error);
-        toast({
-          title: 'Order Failed',
-          description: 'Could not place order. Please try again.',
-          variant: 'destructive',
-        });
-      }
+      console.error('Order error:', error);
+      toast({
+        title: 'Order Failed',
+        description: 'Could not place order. Please try again.',
+        variant: 'destructive',
+      });
+      throw error;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCloseSuccess = () => {
-    setOrderSuccess(false);
+  const handleCloseCheckout = () => {
     setIsCheckoutOpen(false);
   };
 
@@ -228,6 +182,15 @@ const Storefront: React.FC = () => {
       </div>
     );
   }
+
+  // Transform cart for ShopifyCheckout
+  const checkoutCart = cart.map(item => ({
+    id: item.product.id,
+    name: item.product.product.name,
+    price: item.product.selling_price,
+    quantity: item.quantity,
+    image: item.product.product.image_url || undefined,
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -506,98 +469,17 @@ const Storefront: React.FC = () => {
         </div>
       </footer>
 
-      {/* Checkout Dialog */}
+      {/* Shopify-style Checkout Dialog */}
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          {orderSuccess ? (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-center">
-                  <CheckCircle className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-                  Order Placed Successfully!
-                </DialogTitle>
-                <DialogDescription className="text-center">
-                  Thank you for your order. You will receive an email with payment instructions.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button onClick={handleCloseSuccess} className="w-full">
-                  Continue Shopping
-                </Button>
-              </DialogFooter>
-            </>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle>Complete Your Order</DialogTitle>
-                <DialogDescription>
-                  Enter your details to proceed with your order of ₹{cartTotal.toFixed(2)}.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4 space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="Enter your full name"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className={errors.customerName ? 'border-destructive' : ''}
-                  />
-                  {errors.customerName && (
-                    <p className="text-sm text-destructive">{errors.customerName}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={customerEmail}
-                    onChange={(e) => setCustomerEmail(e.target.value)}
-                    className={errors.customerEmail ? 'border-destructive' : ''}
-                  />
-                  {errors.customerEmail && (
-                    <p className="text-sm text-destructive">{errors.customerEmail}</p>
-                  )}
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="phone">Phone Number (Optional)</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="address">Delivery Address</Label>
-                  <Textarea
-                    id="address"
-                    placeholder="Enter your complete delivery address"
-                    value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
-                    rows={3}
-                    className={errors.customerAddress ? 'border-destructive' : ''}
-                  />
-                  {errors.customerAddress && (
-                    <p className="text-sm text-destructive">{errors.customerAddress}</p>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCheckoutOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleSubmitOrder} disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Place Order
-                </Button>
-              </DialogFooter>
-            </>
-          )}
+        <DialogContent className="max-w-4xl p-0 gap-0 overflow-hidden">
+          <ShopifyCheckout
+            cart={checkoutCart}
+            total={cartTotal}
+            storeName={store?.storefront_name || 'Store'}
+            onSubmit={handleSubmitOrder}
+            onBack={handleCloseCheckout}
+            isSubmitting={isSubmitting}
+          />
         </DialogContent>
       </Dialog>
     </div>
