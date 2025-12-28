@@ -57,7 +57,7 @@ const Index: React.FC = () => {
                 {heroTitle.split('Affiliate')[1]}
               </> : heroTitle}
           </h1>
-          <p className="text-lg md:text-xl text-primary-foreground/70 max-w-2xl mx-auto mb-10">
+          <p className="text-lg md:text-xl max-w-2xl mx-auto mb-10 text-primary">
             {heroSubtitle}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
