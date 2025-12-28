@@ -29,23 +29,22 @@ export interface SettingsMap {
   landing_page_enabled: boolean;
   landing_page_title: string;
   landing_page_subtitle: string;
-  // Payment gateway settings
-  payment_gateway_razorpay_enabled: boolean;
-  payment_gateway_razorpay_key_id: string;
-  payment_gateway_razorpay_key_secret: string;
+  // Payment gateway settings - PayPal
+  payment_gateway_paypal_enabled: boolean;
+  payment_gateway_paypal_client_id: string;
+  payment_gateway_paypal_client_secret: string;
+  payment_gateway_paypal_mode: string;
+  // Payment gateway settings - Stripe
   payment_gateway_stripe_enabled: boolean;
   payment_gateway_stripe_publishable_key: string;
   payment_gateway_stripe_secret_key: string;
-  payment_gateway_payu_enabled: boolean;
-  payment_gateway_payu_merchant_key: string;
-  payment_gateway_payu_merchant_salt: string;
-  payment_gateway_phonepe_enabled: boolean;
-  payment_gateway_phonepe_merchant_id: string;
-  payment_gateway_phonepe_salt_key: string;
-  payment_gateway_phonepe_salt_index: string;
-  payment_gateway_paytm_enabled: boolean;
-  payment_gateway_paytm_merchant_id: string;
-  payment_gateway_paytm_merchant_key: string;
+  // Payment gateway settings - Wire Transfer
+  payment_gateway_wire_enabled: boolean;
+  payment_gateway_wire_bank_name: string;
+  payment_gateway_wire_account_name: string;
+  payment_gateway_wire_account_number: string;
+  payment_gateway_wire_routing_number: string;
+  payment_gateway_wire_iban: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -101,23 +100,22 @@ export const usePlatformSettings = () => {
     landing_page_enabled: true,
     landing_page_title: 'Welcome to Our Platform',
     landing_page_subtitle: 'Join our affiliate network and start earning today',
-    // Payment gateway defaults
-    payment_gateway_razorpay_enabled: false,
-    payment_gateway_razorpay_key_id: '',
-    payment_gateway_razorpay_key_secret: '',
+    // Payment gateway defaults - PayPal
+    payment_gateway_paypal_enabled: false,
+    payment_gateway_paypal_client_id: '',
+    payment_gateway_paypal_client_secret: '',
+    payment_gateway_paypal_mode: 'sandbox',
+    // Payment gateway defaults - Stripe
     payment_gateway_stripe_enabled: false,
     payment_gateway_stripe_publishable_key: '',
     payment_gateway_stripe_secret_key: '',
-    payment_gateway_payu_enabled: false,
-    payment_gateway_payu_merchant_key: '',
-    payment_gateway_payu_merchant_salt: '',
-    payment_gateway_phonepe_enabled: false,
-    payment_gateway_phonepe_merchant_id: '',
-    payment_gateway_phonepe_salt_key: '',
-    payment_gateway_phonepe_salt_index: '',
-    payment_gateway_paytm_enabled: false,
-    payment_gateway_paytm_merchant_id: '',
-    payment_gateway_paytm_merchant_key: '',
+    // Payment gateway defaults - Wire Transfer
+    payment_gateway_wire_enabled: false,
+    payment_gateway_wire_bank_name: '',
+    payment_gateway_wire_account_name: '',
+    payment_gateway_wire_account_number: '',
+    payment_gateway_wire_routing_number: '',
+    payment_gateway_wire_iban: '',
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -172,16 +170,20 @@ export const usePlatformSettings = () => {
       case 'landing_page_subtitle':
         settingsMap.landing_page_subtitle = setting.value || 'Join our affiliate network and start earning today';
         break;
-      // Payment gateway settings
-      case 'payment_gateway_razorpay_enabled':
-        settingsMap.payment_gateway_razorpay_enabled = setting.value === 'true';
+      // Payment gateway settings - PayPal
+      case 'payment_gateway_paypal_enabled':
+        settingsMap.payment_gateway_paypal_enabled = setting.value === 'true';
         break;
-      case 'payment_gateway_razorpay_key_id':
-        settingsMap.payment_gateway_razorpay_key_id = setting.value || '';
+      case 'payment_gateway_paypal_client_id':
+        settingsMap.payment_gateway_paypal_client_id = setting.value || '';
         break;
-      case 'payment_gateway_razorpay_key_secret':
-        settingsMap.payment_gateway_razorpay_key_secret = setting.value || '';
+      case 'payment_gateway_paypal_client_secret':
+        settingsMap.payment_gateway_paypal_client_secret = setting.value || '';
         break;
+      case 'payment_gateway_paypal_mode':
+        settingsMap.payment_gateway_paypal_mode = setting.value || 'sandbox';
+        break;
+      // Payment gateway settings - Stripe
       case 'payment_gateway_stripe_enabled':
         settingsMap.payment_gateway_stripe_enabled = setting.value === 'true';
         break;
@@ -191,35 +193,24 @@ export const usePlatformSettings = () => {
       case 'payment_gateway_stripe_secret_key':
         settingsMap.payment_gateway_stripe_secret_key = setting.value || '';
         break;
-      case 'payment_gateway_payu_enabled':
-        settingsMap.payment_gateway_payu_enabled = setting.value === 'true';
+      // Payment gateway settings - Wire Transfer
+      case 'payment_gateway_wire_enabled':
+        settingsMap.payment_gateway_wire_enabled = setting.value === 'true';
         break;
-      case 'payment_gateway_payu_merchant_key':
-        settingsMap.payment_gateway_payu_merchant_key = setting.value || '';
+      case 'payment_gateway_wire_bank_name':
+        settingsMap.payment_gateway_wire_bank_name = setting.value || '';
         break;
-      case 'payment_gateway_payu_merchant_salt':
-        settingsMap.payment_gateway_payu_merchant_salt = setting.value || '';
+      case 'payment_gateway_wire_account_name':
+        settingsMap.payment_gateway_wire_account_name = setting.value || '';
         break;
-      case 'payment_gateway_phonepe_enabled':
-        settingsMap.payment_gateway_phonepe_enabled = setting.value === 'true';
+      case 'payment_gateway_wire_account_number':
+        settingsMap.payment_gateway_wire_account_number = setting.value || '';
         break;
-      case 'payment_gateway_phonepe_merchant_id':
-        settingsMap.payment_gateway_phonepe_merchant_id = setting.value || '';
+      case 'payment_gateway_wire_routing_number':
+        settingsMap.payment_gateway_wire_routing_number = setting.value || '';
         break;
-      case 'payment_gateway_phonepe_salt_key':
-        settingsMap.payment_gateway_phonepe_salt_key = setting.value || '';
-        break;
-      case 'payment_gateway_phonepe_salt_index':
-        settingsMap.payment_gateway_phonepe_salt_index = setting.value || '';
-        break;
-      case 'payment_gateway_paytm_enabled':
-        settingsMap.payment_gateway_paytm_enabled = setting.value === 'true';
-        break;
-      case 'payment_gateway_paytm_merchant_id':
-        settingsMap.payment_gateway_paytm_merchant_id = setting.value || '';
-        break;
-      case 'payment_gateway_paytm_merchant_key':
-        settingsMap.payment_gateway_paytm_merchant_key = setting.value || '';
+      case 'payment_gateway_wire_iban':
+        settingsMap.payment_gateway_wire_iban = setting.value || '';
         break;
     }
   });
