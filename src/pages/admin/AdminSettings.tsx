@@ -194,12 +194,12 @@ const AdminSettings: React.FC = () => {
   const handleSaveAll = async () => {
     try {
       await Promise.all([
-        updateSetting({ key: 'commission_type', value: commissionType }),
-        updateSetting({ key: 'commission_rate', value: commissionRate }),
-        updateSetting({ key: 'min_payout_amount', value: minPayoutAmount }),
-        updateSetting({ key: 'auto_credit_on_complete', value: autoCreditOnComplete.toString() }),
-        updateSetting({ key: 'auto_user_approval', value: autoUserApproval.toString() }),
-        updateSetting({ key: 'default_currency', value: defaultCurrency }),
+        updateSetting({ key: 'commission_type', value: commissionType, oldValue: settingsMap.commission_type }),
+        updateSetting({ key: 'commission_rate', value: commissionRate, oldValue: settingsMap.commission_rate.toString() }),
+        updateSetting({ key: 'min_payout_amount', value: minPayoutAmount, oldValue: settingsMap.min_payout_amount.toString() }),
+        updateSetting({ key: 'auto_credit_on_complete', value: autoCreditOnComplete.toString(), oldValue: settingsMap.auto_credit_on_complete.toString() }),
+        updateSetting({ key: 'auto_user_approval', value: autoUserApproval.toString(), oldValue: settingsMap.auto_user_approval.toString() }),
+        updateSetting({ key: 'default_currency', value: defaultCurrency, oldValue: settingsMap.default_currency }),
       ]);
       setHasChanges(false);
     } catch (error) {
@@ -220,9 +220,9 @@ const AdminSettings: React.FC = () => {
     setIsSavingEmailSettings(true);
     try {
       await Promise.all([
-        updateSetting({ key: 'resend_api_key', value: resendApiKey }),
-        updateSetting({ key: 'email_notifications_enabled', value: emailNotificationsEnabled.toString() }),
-        updateSetting({ key: 'admin_email', value: adminEmail }),
+        updateSetting({ key: 'resend_api_key', value: resendApiKey, oldValue: settingsMap.resend_api_key }),
+        updateSetting({ key: 'email_notifications_enabled', value: emailNotificationsEnabled.toString(), oldValue: settingsMap.email_notifications_enabled.toString() }),
+        updateSetting({ key: 'admin_email', value: adminEmail, oldValue: settingsMap.admin_email }),
       ]);
       setIsApiKeySaved(true);
       toast({
@@ -245,9 +245,9 @@ const AdminSettings: React.FC = () => {
     setIsSavingEmailSettings(true);
     try {
       await Promise.all([
-        updateSetting({ key: 'resend_api_key', value: '' }),
-        updateSetting({ key: 'email_notifications_enabled', value: 'false' }),
-        updateSetting({ key: 'admin_email', value: '' }),
+        updateSetting({ key: 'resend_api_key', value: '', oldValue: settingsMap.resend_api_key }),
+        updateSetting({ key: 'email_notifications_enabled', value: 'false', oldValue: settingsMap.email_notifications_enabled.toString() }),
+        updateSetting({ key: 'admin_email', value: '', oldValue: settingsMap.admin_email }),
       ]);
       setResendApiKey('');
       setIsApiKeySaved(false);
@@ -268,11 +268,11 @@ const AdminSettings: React.FC = () => {
     setIsSavingBranding(true);
     try {
       await Promise.all([
-        updateSetting({ key: 'site_name', value: siteName }),
-        updateSetting({ key: 'site_logo_url', value: siteLogoUrl }),
-        updateSetting({ key: 'landing_page_enabled', value: landingPageEnabled.toString() }),
-        updateSetting({ key: 'landing_page_title', value: landingPageTitle }),
-        updateSetting({ key: 'landing_page_subtitle', value: landingPageSubtitle }),
+        updateSetting({ key: 'site_name', value: siteName, oldValue: settingsMap.site_name }),
+        updateSetting({ key: 'site_logo_url', value: siteLogoUrl, oldValue: settingsMap.site_logo_url }),
+        updateSetting({ key: 'landing_page_enabled', value: landingPageEnabled.toString(), oldValue: settingsMap.landing_page_enabled.toString() }),
+        updateSetting({ key: 'landing_page_title', value: landingPageTitle, oldValue: settingsMap.landing_page_title }),
+        updateSetting({ key: 'landing_page_subtitle', value: landingPageSubtitle, oldValue: settingsMap.landing_page_subtitle }),
       ]);
       toast({
         title: "Branding Settings Saved",
