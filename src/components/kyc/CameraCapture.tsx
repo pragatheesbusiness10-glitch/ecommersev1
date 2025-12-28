@@ -95,14 +95,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
 
   React.useEffect(() => {
     if (isOpen && !capturedImage) {
-      startCamera();
+      // Small delay to ensure dialog is mounted before accessing camera
+      const timeoutId = setTimeout(() => {
+        startCamera();
+      }, 100);
+      return () => clearTimeout(timeoutId);
     }
     return () => {
-      if (!isOpen) {
-        stopCamera();
-      }
+      stopCamera();
     };
-  }, [isOpen, capturedImage, startCamera, stopCamera]);
+  }, [isOpen]);
+
+  // Cleanup camera on unmount
+  React.useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>

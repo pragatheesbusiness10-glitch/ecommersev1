@@ -22,7 +22,8 @@ import {
   FileText,
   Send,
   Shield,
-  MessageCircle
+  MessageCircle,
+  LifeBuoy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserChatWidget } from '@/components/chat/UserChatWidget';
@@ -53,6 +54,7 @@ const userNavItems: NavItem[] = [
   { icon: ShoppingCart, label: 'Orders', href: '/dashboard/orders' },
   { icon: Wallet, label: 'Payments', href: '/dashboard/payments' },
   { icon: Shield, label: 'KYC Verification', href: '/dashboard/kyc' },
+  { icon: LifeBuoy, label: 'Raise Ticket', href: '/dashboard/support' },
 ];
 
 export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
