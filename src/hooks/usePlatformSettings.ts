@@ -225,7 +225,7 @@ export const usePlatformSettings = () => {
   });
 
   const updateSettingMutation = useMutation({
-    mutationFn: async ({ key, value }: { key: string; value: string }) => {
+    mutationFn: async ({ key, value, oldValue }: { key: string; value: string; oldValue?: string }) => {
       // Use upsert to handle both insert and update cases
       const { error } = await supabase
         .from('platform_settings')
@@ -235,6 +235,20 @@ export const usePlatformSettings = () => {
         );
 
       if (error) throw error;
+
+      // Create audit log for setting change
+      if (user?.id) {
+        await supabase.rpc('create_audit_log', {
+          _action_type: 'setting_changed',
+          _entity_type: 'platform_settings',
+          _entity_id: null,
+          _user_id: null,
+          _admin_id: user.id,
+          _old_value: oldValue !== undefined ? { [key]: oldValue } : null,
+          _new_value: { [key]: value },
+          _reason: `Platform setting "${key}" updated`,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-settings'] });
