@@ -17,7 +17,8 @@ import {
   Loader2,
   CheckCircle,
   Lock,
-  Smartphone,
+  CreditCard,
+  Wallet,
   Building2,
   Plus
 } from 'lucide-react';
@@ -45,7 +46,7 @@ export interface CheckoutData {
   customerEmail: string;
   customerPhone: string;
   customerAddress: string;
-  paymentMethod: 'upi' | 'bank';
+  paymentMethod: 'paypal' | 'stripe' | 'wire';
 }
 
 // Countries list - India excluded as per requirement
@@ -93,7 +94,7 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
     state: '',
   });
   const [showApartment, setShowApartment] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'bank'>('upi');
+  const [paymentMethod, setPaymentMethod] = useState<'paypal' | 'stripe' | 'wire'>('paypal');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const selectedCountry = countries.find(c => c.code === formData.countryCode);
@@ -378,30 +379,42 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
 
               <RadioGroup 
                 value={paymentMethod} 
-                onValueChange={(v) => setPaymentMethod(v as 'upi' | 'bank')}
+                onValueChange={(v) => setPaymentMethod(v as 'paypal' | 'stripe' | 'wire')}
                 className="space-y-3"
               >
                 <label className={cn(
                   "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                  paymentMethod === 'upi' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
+                  paymentMethod === 'paypal' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
                 )}>
-                  <RadioGroupItem value="upi" id="upi" />
-                  <Smartphone className="w-5 h-5 text-muted-foreground" />
+                  <RadioGroupItem value="paypal" id="paypal" />
+                  <Wallet className="w-5 h-5 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="font-medium">UPI Payment</p>
-                    <p className="text-xs text-muted-foreground">GPay, PhonePe, Paytm</p>
+                    <p className="font-medium">PayPal</p>
+                    <p className="text-xs text-muted-foreground">Pay securely with PayPal</p>
                   </div>
                 </label>
 
                 <label className={cn(
                   "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                  paymentMethod === 'bank' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
+                  paymentMethod === 'stripe' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
                 )}>
-                  <RadioGroupItem value="bank" id="bank" />
+                  <RadioGroupItem value="stripe" id="stripe" />
+                  <CreditCard className="w-5 h-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <p className="font-medium">Credit/Debit Card</p>
+                    <p className="text-xs text-muted-foreground">Visa, Mastercard, Amex</p>
+                  </div>
+                </label>
+
+                <label className={cn(
+                  "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                  paymentMethod === 'wire' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
+                )}>
+                  <RadioGroupItem value="wire" id="wire" />
                   <Building2 className="w-5 h-5 text-muted-foreground" />
                   <div className="flex-1">
-                    <p className="font-medium">Bank Transfer</p>
-                    <p className="text-xs text-muted-foreground">Direct bank transfer</p>
+                    <p className="font-medium">Wire Transfer</p>
+                    <p className="text-xs text-muted-foreground">International bank transfer</p>
                   </div>
                 </label>
               </RadioGroup>
