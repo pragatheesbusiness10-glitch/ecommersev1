@@ -226,10 +226,13 @@ export const usePlatformSettings = () => {
 
   const updateSettingMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: string }) => {
+      // Use upsert to handle both insert and update cases
       const { error } = await supabase
         .from('platform_settings')
-        .update({ value })
-        .eq('key', key);
+        .upsert(
+          { key, value, updated_at: new Date().toISOString() },
+          { onConflict: 'key' }
+        );
 
       if (error) throw error;
     },
