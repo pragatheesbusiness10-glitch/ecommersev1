@@ -28,7 +28,9 @@ import {
   Store,
   ShoppingCart,
   Shield,
-  BarChart3
+  BarChart3,
+  History,
+  Clock
 } from 'lucide-react';
 import {
   Select,
@@ -51,16 +53,20 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
+import { useSettingsAuditLogs } from '@/hooks/useSettingsAuditLogs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
 import { MFASettings } from '@/components/mfa/MFASettings';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { formatDistanceToNow } from 'date-fns';
 
 const AdminSettings: React.FC = () => {
   const { toast } = useToast();
   const { settingsMap, isLoading, updateSetting, isUpdating } = usePlatformSettings();
+  const { logs: settingsLogs, isLoading: isLoadingLogs } = useSettingsAuditLogs(10);
   
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage');
   const [commissionRate, setCommissionRate] = useState('100');
@@ -898,6 +904,108 @@ const AdminSettings: React.FC = () => {
 
         {/* Security - MFA Settings */}
         <MFASettings />
+
+        {/* Settings Change History */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-slate-500/10 flex items-center justify-center">
+                <History className="w-5 h-5 text-slate-600" />
+              </div>
+              <div>
+                <CardTitle>Settings Change History</CardTitle>
+                <CardDescription>
+                  Recent modifications to platform settings.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoadingLogs ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} className="h-16 w-full" />
+                ))}
+              </div>
+            ) : settingsLogs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <History className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                <p>No settings changes recorded yet.</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[300px] pr-4">
+                <div className="space-y-3">
+                  {settingsLogs.map((log) => {
+                    const settingKey = log.new_value ? Object.keys(log.new_value)[0] : 'unknown';
+                    const newValue = log.new_value ? Object.values(log.new_value)[0] : null;
+                    const oldValue = log.old_value ? Object.values(log.old_value)[0] : null;
+                    
+                    // Format display values
+                    const formatValue = (val: any) => {
+                      if (val === null || val === undefined) return 'N/A';
+                      if (typeof val === 'boolean') return val ? 'Enabled' : 'Disabled';
+                      if (val === 'true') return 'Enabled';
+                      if (val === 'false') return 'Disabled';
+                      if (String(val).length > 30) return String(val).substring(0, 30) + '...';
+                      return String(val);
+                    };
+
+                    // Format setting key for display
+                    const formatSettingKey = (key: string) => {
+                      return key
+                        .replace(/_/g, ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase());
+                    };
+
+                    return (
+                      <div 
+                        key={log.id} 
+                        className="p-3 rounded-lg bg-muted/50 border border-border/50 hover:bg-muted/70 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge variant="outline" className="text-xs font-mono">
+                                {formatSettingKey(settingKey)}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                            <div className="mt-1.5 flex items-center gap-2 text-sm">
+                              {oldValue !== null && (
+                                <>
+                                  <span className="text-muted-foreground line-through">
+                                    {formatValue(oldValue)}
+                                  </span>
+                                  <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                                </>
+                              )}
+                              <span className="font-medium text-foreground">
+                                {formatValue(newValue)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {new Date(log.created_at).toLocaleTimeString()}
+                            </div>
+                            {log.admin_email && (
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[120px]">
+                                {log.admin_email}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Commission Preview */}
         <Card className="border-dashed">
