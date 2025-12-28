@@ -1,27 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, ArrowRight, Loader2, UserPlus, LogIn } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Loader2, UserPlus, LogIn, Check, X } from 'lucide-react';
 import { z } from 'zod';
 
 const loginSchema = z.object({
   email: z.string().trim().email({ message: 'Invalid email address' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+  password: z.string().min(1, { message: 'Password is required' }),
 });
+
+// Strong password requirements
+const passwordSchema = z.string()
+  .min(8, { message: 'Password must be at least 8 characters' })
+  .max(128, { message: 'Password must be less than 128 characters' })
+  .regex(/[a-z]/, { message: 'Password must contain at least one lowercase letter' })
+  .regex(/[A-Z]/, { message: 'Password must contain at least one uppercase letter' })
+  .regex(/[0-9]/, { message: 'Password must contain at least one number' })
+  .regex(/[^a-zA-Z0-9]/, { message: 'Password must contain at least one special character' });
 
 const signupSchema = z.object({
   name: z.string().trim().min(2, { message: 'Name must be at least 2 characters' }).max(100, { message: 'Name must be less than 100 characters' }),
   email: z.string().trim().email({ message: 'Invalid email address' }),
-  password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
+  password: passwordSchema,
   confirmPassword: z.string(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
 });
+
+// Password strength checker
+const getPasswordStrength = (password: string): { score: number; label: string; color: string } => {
+  let score = 0;
+  if (password.length >= 8) score += 20;
+  if (password.length >= 12) score += 10;
+  if (/[a-z]/.test(password)) score += 20;
+  if (/[A-Z]/.test(password)) score += 20;
+  if (/[0-9]/.test(password)) score += 15;
+  if (/[^a-zA-Z0-9]/.test(password)) score += 15;
+
+  if (score < 40) return { score, label: 'Weak', color: 'bg-red-500' };
+  if (score < 60) return { score, label: 'Fair', color: 'bg-orange-500' };
+  if (score < 80) return { score, label: 'Good', color: 'bg-yellow-500' };
+  return { score, label: 'Strong', color: 'bg-green-500' };
+};
+
+const passwordRequirements = [
+  { regex: /.{8,}/, label: 'At least 8 characters' },
+  { regex: /[a-z]/, label: 'One lowercase letter' },
+  { regex: /[A-Z]/, label: 'One uppercase letter' },
+  { regex: /[0-9]/, label: 'One number' },
+  { regex: /[^a-zA-Z0-9]/, label: 'One special character' },
+];
 
 const Auth: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -36,6 +70,8 @@ const Auth: React.FC = () => {
   const { login, signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
   const validateForm = () => {
     setErrors({});
@@ -253,6 +289,38 @@ const Auth: React.FC = () => {
                 </button>
               </div>
               {errors.password && <p className="text-sm text-destructive">{errors.password}</p>}
+              
+              {/* Password strength indicator - only show during signup */}
+              {isSignUp && password.length > 0 && (
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Password strength:</span>
+                    <span className={`font-medium ${
+                      passwordStrength.label === 'Weak' ? 'text-red-500' :
+                      passwordStrength.label === 'Fair' ? 'text-orange-500' :
+                      passwordStrength.label === 'Good' ? 'text-yellow-500' : 'text-green-500'
+                    }`}>
+                      {passwordStrength.label}
+                    </span>
+                  </div>
+                  <Progress value={passwordStrength.score} className="h-1.5" />
+                  
+                  <div className="grid grid-cols-2 gap-1 mt-2">
+                    {passwordRequirements.map((req) => (
+                      <div key={req.label} className="flex items-center gap-1.5 text-xs">
+                        {req.regex.test(password) ? (
+                          <Check className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <X className="w-3 h-3 text-muted-foreground" />
+                        )}
+                        <span className={req.regex.test(password) ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                          {req.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {isSignUp && (
