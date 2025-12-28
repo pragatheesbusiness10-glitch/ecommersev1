@@ -43,6 +43,18 @@ export const maskPhoneNumber = (phone: string): string => {
 };
 
 /**
+ * Masks an email address, showing only first 2 characters and domain
+ */
+export const maskEmail = (email: string): string => {
+  if (!email) return '';
+  const parts = email.split('@');
+  if (parts.length !== 2) return email;
+  const [username, domain] = parts;
+  if (username.length <= 2) return email;
+  return username.slice(0, 2) + '*'.repeat(Math.min(username.length - 2, 6)) + '@' + domain;
+};
+
+/**
  * Generic masking function that detects the field type and applies appropriate masking
  */
 export const maskSensitiveField = (key: string, value: string): string => {
