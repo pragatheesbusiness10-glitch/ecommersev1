@@ -109,42 +109,35 @@ const Storefront: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const orderPromises = cart.map(async (item) => {
-        const { data: productData } = await supabase
-          .from('products')
-          .select('base_price')
-          .eq('id', item.product.product_id)
-          .single();
-
-        const basePrice = productData?.base_price || 0;
-
-        const { error } = await supabase
-          .from('orders')
-          .insert({
+      // Create orders via secure edge function
+      for (const item of cart) {
+        const { data: response, error } = await supabase.functions.invoke('create-public-order', {
+          body: {
             storefront_product_id: item.product.id,
-            affiliate_user_id: store?.user_id || '',
             customer_name: data.customerName,
             customer_email: data.customerEmail,
-            customer_phone: data.customerPhone || null,
+            customer_phone: data.customerPhone || undefined,
             customer_address: data.customerAddress,
             quantity: item.quantity,
-            selling_price: item.product.selling_price,
-            base_price: Number(basePrice),
-            status: 'pending_payment',
-            order_number: `ORD-${Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}`,
-          });
+          },
+        });
 
-        if (error) throw error;
-      });
+        if (error) {
+          console.error('Order creation error:', error);
+          throw new Error(error.message || 'Failed to create order');
+        }
 
-      await Promise.all(orderPromises);
+        if (!response?.success) {
+          throw new Error(response?.error || 'Failed to create order');
+        }
+      }
+
       setCart([]);
-
     } catch (error) {
       console.error('Order error:', error);
       toast({
         title: 'Order Failed',
-        description: 'Could not place order. Please try again.',
+        description: error instanceof Error ? error.message : 'Could not place order. Please try again.',
         variant: 'destructive',
       });
       throw error;
