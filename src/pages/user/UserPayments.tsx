@@ -150,6 +150,11 @@ const UserPayments: React.FC = () => {
 
   const pendingPayouts = payoutRequests.filter(p => p.status === 'pending');
   const totalPendingPayout = pendingPayouts.reduce((sum, p) => sum + p.amount, 0);
+  
+  // Calculate total order value and profit from orders
+  const { orders, stats } = useUserDashboard();
+  const totalOrderValue = orders.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
+  const totalProfit = stats.totalRevenue;
 
   return (
     <DashboardLayout>
@@ -297,13 +302,21 @@ const UserPayments: React.FC = () => {
                 <p className="text-4xl font-bold">{currencySymbol}{walletBalance.toFixed(2)}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-amber-300">{currencySymbol}{totalPendingPayout.toFixed(2)}</p>
+                <p className="text-xl md:text-2xl font-bold">{currencySymbol}{totalOrderValue.toFixed(2)}</p>
+                <p className="text-xs text-primary-foreground/70">Total Order Value</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl md:text-2xl font-bold text-emerald-300">{currencySymbol}{totalProfit.toFixed(2)}</p>
+                <p className="text-xs text-primary-foreground/70">Total Profit</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xl md:text-2xl font-bold text-amber-300">{currencySymbol}{totalPendingPayout.toFixed(2)}</p>
                 <p className="text-xs text-primary-foreground/70">Pending Payouts</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold">{pendingPayouts.length}</p>
+                <p className="text-xl md:text-2xl font-bold">{pendingPayouts.length}</p>
                 <p className="text-xs text-primary-foreground/70">Pending Requests</p>
               </div>
             </div>
