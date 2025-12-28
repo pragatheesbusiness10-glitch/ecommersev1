@@ -55,6 +55,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
+import { MFASettings } from '@/components/mfa/MFASettings';
 import { supabase } from '@/integrations/supabase/client';
 
 const AdminSettings: React.FC = () => {
@@ -894,6 +895,9 @@ const AdminSettings: React.FC = () => {
 
         {/* Payment Gateway Settings */}
         <PaymentGatewaySettings />
+
+        {/* Security - MFA Settings */}
+        <MFASettings />
 
         {/* Commission Preview */}
         <Card className="border-dashed">
