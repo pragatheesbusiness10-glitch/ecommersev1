@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Eye, CreditCard, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { maskEmail, maskPhoneNumber } from '@/lib/maskingUtils';
 
 type OrderType = DashboardOrder | AdminOrder;
 
@@ -100,7 +101,9 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
               <TableCell>
                 <div>
                   <p className="font-medium text-foreground">{order.customer_name}</p>
-                  <p className="text-xs text-muted-foreground">{order.customer_email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {userRole === 'user' ? maskEmail(order.customer_email) : order.customer_email}
+                  </p>
                 </div>
               </TableCell>
               <TableCell className="text-right">

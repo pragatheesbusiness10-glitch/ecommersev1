@@ -4,16 +4,22 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { 
-  CreditCard, 
-  Truck, 
   Shield, 
   ChevronLeft, 
   Loader2,
   CheckCircle,
   Lock,
   Smartphone,
-  Building2
+  Building2,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,8 +45,32 @@ export interface CheckoutData {
   customerEmail: string;
   customerPhone: string;
   customerAddress: string;
-  paymentMethod: 'cod' | 'upi' | 'bank';
+  paymentMethod: 'upi' | 'bank';
 }
+
+// Countries list - India excluded as per requirement
+const countries = [
+  { code: 'US', name: 'United States', dialCode: '+1' },
+  { code: 'GB', name: 'United Kingdom', dialCode: '+44' },
+  { code: 'CA', name: 'Canada', dialCode: '+1' },
+  { code: 'AU', name: 'Australia', dialCode: '+61' },
+  { code: 'DE', name: 'Germany', dialCode: '+49' },
+  { code: 'FR', name: 'France', dialCode: '+33' },
+  { code: 'AE', name: 'United Arab Emirates', dialCode: '+971' },
+  { code: 'SG', name: 'Singapore', dialCode: '+65' },
+  { code: 'JP', name: 'Japan', dialCode: '+81' },
+  { code: 'NZ', name: 'New Zealand', dialCode: '+64' },
+  { code: 'ZA', name: 'South Africa', dialCode: '+27' },
+  { code: 'BR', name: 'Brazil', dialCode: '+55' },
+  { code: 'MX', name: 'Mexico', dialCode: '+52' },
+  { code: 'IT', name: 'Italy', dialCode: '+39' },
+  { code: 'ES', name: 'Spain', dialCode: '+34' },
+  { code: 'NL', name: 'Netherlands', dialCode: '+31' },
+  { code: 'SE', name: 'Sweden', dialCode: '+46' },
+  { code: 'CH', name: 'Switzerland', dialCode: '+41' },
+  { code: 'MY', name: 'Malaysia', dialCode: '+60' },
+  { code: 'TH', name: 'Thailand', dialCode: '+66' },
+];
 
 export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
   cart,
@@ -51,26 +81,34 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
   isSubmitting,
 }) => {
   const [step, setStep] = useState<'info' | 'payment' | 'success'>('info');
-  const [formData, setFormData] = useState<CheckoutData>({
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    customerAddress: '',
-    paymentMethod: 'cod',
+  const [formData, setFormData] = useState({
+    firstName: '',
+    email: '',
+    phone: '',
+    countryCode: 'US',
+    streetAddress: '',
+    apartment: '',
+    city: '',
+    pinCode: '',
+    state: '',
   });
+  const [showApartment, setShowApartment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'bank'>('upi');
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const selectedCountry = countries.find(c => c.code === formData.countryCode);
 
   const validateInfo = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.customerName.trim()) newErrors.customerName = 'Name is required';
-    if (!formData.customerEmail.trim()) newErrors.customerEmail = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.customerEmail)) 
-      newErrors.customerEmail = 'Invalid email';
-    if (!formData.customerPhone.trim()) newErrors.customerPhone = 'Phone is required';
-    else if (!/^\d{10}$/.test(formData.customerPhone.replace(/\D/g, '')))
-      newErrors.customerPhone = 'Invalid phone (10 digits)';
-    if (!formData.customerAddress.trim()) newErrors.customerAddress = 'Address is required';
-    else if (formData.customerAddress.length < 10) newErrors.customerAddress = 'Address too short';
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) 
+      newErrors.email = 'Invalid email';
+    if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
+    if (!formData.streetAddress.trim()) newErrors.streetAddress = 'Street address is required';
+    if (!formData.city.trim()) newErrors.city = 'City is required';
+    if (!formData.pinCode.trim()) newErrors.pinCode = 'PIN code is required';
+    if (!formData.state.trim()) newErrors.state = 'State is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -82,9 +120,29 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
     }
   };
 
+  const buildFullAddress = () => {
+    const parts = [
+      formData.streetAddress,
+      formData.apartment,
+      formData.city,
+      formData.state,
+      formData.pinCode,
+      selectedCountry?.name
+    ].filter(Boolean);
+    return parts.join(', ');
+  };
+
   const handleSubmitOrder = async () => {
+    const checkoutData: CheckoutData = {
+      customerName: formData.firstName,
+      customerEmail: formData.email,
+      customerPhone: `${selectedCountry?.dialCode || ''} ${formData.phone}`,
+      customerAddress: buildFullAddress(),
+      paymentMethod: paymentMethod,
+    };
+
     try {
-      await onSubmit(formData);
+      await onSubmit(checkoutData);
       setStep('success');
     } catch (error) {
       // Error handled by parent
@@ -128,74 +186,174 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
 
           {step === 'info' && (
             <div className="space-y-6 animate-fade-in">
+              {/* Contact Information */}
               <div>
-                <h2 className="text-xl font-semibold mb-1">Contact Information</h2>
-                <p className="text-sm text-muted-foreground">We'll use this to send order updates</p>
+                <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
               </div>
 
               <div className="space-y-4">
+                {/* First Name */}
+                <div>
+                  <Label htmlFor="firstName">First name *</Label>
+                  <Input
+                    id="firstName"
+                    placeholder="First name"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className={cn("mt-1", errors.firstName && "border-destructive")}
+                  />
+                  {errors.firstName && <p className="text-xs text-destructive mt-1">{errors.firstName}</p>}
+                </div>
+
+                {/* Phone with Country Code */}
+                <div>
+                  <Label htmlFor="phone">Phone *</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Select
+                      value={formData.countryCode}
+                      onValueChange={(v) => setFormData({ ...formData, countryCode: v })}
+                    >
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue>
+                          {selectedCountry?.dialCode}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countries.map((country) => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.dialCode} ({country.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="Phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className={cn("flex-1", errors.phone && "border-destructive")}
+                    />
+                  </div>
+                  {errors.phone && <p className="text-xs text-destructive mt-1">{errors.phone}</p>}
+                </div>
+
+                {/* Email */}
                 <div>
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="you@example.com"
-                    value={formData.customerEmail}
-                    onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
-                    className={cn("mt-1", errors.customerEmail && "border-destructive")}
+                    placeholder="Email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className={cn("mt-1", errors.email && "border-destructive")}
                   />
-                  {errors.customerEmail && <p className="text-xs text-destructive mt-1">{errors.customerEmail}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="+91 XXXXX XXXXX"
-                    value={formData.customerPhone}
-                    onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
-                    className={cn("mt-1", errors.customerPhone && "border-destructive")}
-                  />
-                  {errors.customerPhone && <p className="text-xs text-destructive mt-1">{errors.customerPhone}</p>}
+                  {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
               </div>
 
               <Separator />
 
+              {/* Shipping Address */}
               <div>
-                <h2 className="text-xl font-semibold mb-1">Shipping Address</h2>
-                <p className="text-sm text-muted-foreground">Where should we deliver?</p>
+                <h2 className="text-xl font-semibold mb-4">Shipping Address</h2>
               </div>
 
               <div className="space-y-4">
+                {/* Street Address */}
                 <div>
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="streetAddress">Street address *</Label>
                   <Input
-                    id="name"
-                    placeholder="John Doe"
-                    value={formData.customerName}
-                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
-                    className={cn("mt-1", errors.customerName && "border-destructive")}
+                    id="streetAddress"
+                    placeholder="Street address"
+                    value={formData.streetAddress}
+                    onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+                    className={cn("mt-1", errors.streetAddress && "border-destructive")}
                   />
-                  {errors.customerName && <p className="text-xs text-destructive mt-1">{errors.customerName}</p>}
+                  {errors.streetAddress && <p className="text-xs text-destructive mt-1">{errors.streetAddress}</p>}
                 </div>
 
-                <div>
-                  <Label htmlFor="address">Complete Address</Label>
-                  <textarea
-                    id="address"
-                    placeholder="House/Flat No., Street, Landmark, City, State, PIN Code"
-                    value={formData.customerAddress}
-                    onChange={(e) => setFormData({ ...formData, customerAddress: e.target.value })}
-                    rows={3}
-                    className={cn(
-                      "w-full mt-1 px-3 py-2 rounded-md border bg-background text-sm resize-none",
-                      "focus:outline-none focus:ring-2 focus:ring-ring",
-                      errors.customerAddress && "border-destructive"
-                    )}
-                  />
-                  {errors.customerAddress && <p className="text-xs text-destructive mt-1">{errors.customerAddress}</p>}
+                {/* Add Apartment */}
+                {!showApartment ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowApartment(true)}
+                    className="flex items-center gap-1 text-sm text-primary hover:underline"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Apartment, suite, unit, etc.
+                  </button>
+                ) : (
+                  <div>
+                    <Label htmlFor="apartment">Apartment, suite, unit, etc.</Label>
+                    <Input
+                      id="apartment"
+                      placeholder="Apartment, suite, unit, etc."
+                      value={formData.apartment}
+                      onChange={(e) => setFormData({ ...formData, apartment: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                )}
+
+                {/* City and PIN Code */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="city">Town / City *</Label>
+                    <Input
+                      id="city"
+                      placeholder="Town / City"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className={cn("mt-1", errors.city && "border-destructive")}
+                    />
+                    {errors.city && <p className="text-xs text-destructive mt-1">{errors.city}</p>}
+                  </div>
+                  <div>
+                    <Label htmlFor="pinCode">PIN Code *</Label>
+                    <Input
+                      id="pinCode"
+                      placeholder="PIN Code"
+                      value={formData.pinCode}
+                      onChange={(e) => setFormData({ ...formData, pinCode: e.target.value })}
+                      className={cn("mt-1", errors.pinCode && "border-destructive")}
+                    />
+                    {errors.pinCode && <p className="text-xs text-destructive mt-1">{errors.pinCode}</p>}
+                  </div>
+                </div>
+
+                {/* Country and State */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="country">Country *</Label>
+                    <Select
+                      value={formData.countryCode}
+                      onValueChange={(v) => setFormData({ ...formData, countryCode: v })}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Select country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countries.map((country) => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="state">State *</Label>
+                    <Input
+                      id="state"
+                      placeholder="State"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      className={cn("mt-1", errors.state && "border-destructive")}
+                    />
+                    {errors.state && <p className="text-xs text-destructive mt-1">{errors.state}</p>}
+                  </div>
                 </div>
               </div>
 
@@ -219,25 +377,13 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
               </div>
 
               <RadioGroup 
-                value={formData.paymentMethod} 
-                onValueChange={(v) => setFormData({ ...formData, paymentMethod: v as CheckoutData['paymentMethod'] })}
+                value={paymentMethod} 
+                onValueChange={(v) => setPaymentMethod(v as 'upi' | 'bank')}
                 className="space-y-3"
               >
                 <label className={cn(
                   "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                  formData.paymentMethod === 'cod' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
-                )}>
-                  <RadioGroupItem value="cod" id="cod" />
-                  <Truck className="w-5 h-5 text-muted-foreground" />
-                  <div className="flex-1">
-                    <p className="font-medium">Cash on Delivery</p>
-                    <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
-                  </div>
-                </label>
-
-                <label className={cn(
-                  "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                  formData.paymentMethod === 'upi' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
+                  paymentMethod === 'upi' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
                 )}>
                   <RadioGroupItem value="upi" id="upi" />
                   <Smartphone className="w-5 h-5 text-muted-foreground" />
@@ -249,7 +395,7 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
 
                 <label className={cn(
                   "flex items-center gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all",
-                  formData.paymentMethod === 'bank' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
+                  paymentMethod === 'bank' ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground"
                 )}>
                   <RadioGroupItem value="bank" id="bank" />
                   <Building2 className="w-5 h-5 text-muted-foreground" />
@@ -266,6 +412,12 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
                   <p className="text-sm font-medium">Secure Checkout</p>
                   <p className="text-xs text-muted-foreground">Your payment information is protected</p>
                 </div>
+              </div>
+
+              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  <strong>Note:</strong> Payment is required to complete your order. You will receive payment details after confirmation.
+                </p>
               </div>
 
               <div className="flex items-center justify-between pt-4">

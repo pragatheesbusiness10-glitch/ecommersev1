@@ -18,7 +18,8 @@ import {
   DollarSign,
   Link as LinkIcon,
   ExternalLink,
-  MousePointerClick
+  MousePointerClick,
+  Plus
 } from 'lucide-react';
 import {
   Dialog,
@@ -44,6 +45,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAdminOrders, AdminOrder } from '@/hooks/useAdminOrders';
+import { CreateOrderDialog } from '@/components/admin/CreateOrderDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -74,6 +76,7 @@ const AdminOrders: React.FC = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isPaymentLinkDialogOpen, setIsPaymentLinkDialogOpen] = useState(false);
   const [isBulkPaymentLinkDialogOpen, setIsBulkPaymentLinkDialogOpen] = useState(false);
+  const [isCreateOrderDialogOpen, setIsCreateOrderDialogOpen] = useState(false);
   const [paymentLinkInput, setPaymentLinkInput] = useState('');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   
@@ -87,6 +90,8 @@ const AdminOrders: React.FC = () => {
     isUpdatingPaymentLink,
     bulkUpdatePaymentLink,
     isBulkUpdatingPaymentLink,
+    createOrder,
+    isCreatingOrder,
   } = useAdminOrders();
 
   const filteredOrders = orders.filter(order => {
@@ -178,13 +183,30 @@ const AdminOrders: React.FC = () => {
               Manage all orders across affiliates. {orders.length} orders total.
             </p>
           </div>
-          {selectedOrderIds.length > 0 && (
-            <Button onClick={handleOpenBulkPaymentLinkDialog} className="gap-2">
-              <LinkIcon className="w-4 h-4" />
-              Set Payment Link ({selectedOrderIds.length} orders)
+          <div className="flex gap-2">
+            <Button onClick={() => setIsCreateOrderDialogOpen(true)} className="gap-2">
+              <Plus className="w-4 h-4" />
+              Create Order
             </Button>
-          )}
+            {selectedOrderIds.length > 0 && (
+              <Button onClick={handleOpenBulkPaymentLinkDialog} variant="outline" className="gap-2">
+                <LinkIcon className="w-4 h-4" />
+                Set Payment Link ({selectedOrderIds.length})
+              </Button>
+            )}
+          </div>
         </div>
+
+        {/* Create Order Dialog */}
+        <CreateOrderDialog
+          open={isCreateOrderDialogOpen}
+          onOpenChange={setIsCreateOrderDialogOpen}
+          onCreateOrder={(data) => {
+            createOrder(data);
+            setIsCreateOrderDialogOpen(false);
+          }}
+          isCreating={isCreatingOrder}
+        />
 
         {/* Filters */}
         <div className="flex flex-col lg:flex-row gap-4">
