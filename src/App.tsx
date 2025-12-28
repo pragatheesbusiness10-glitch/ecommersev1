@@ -35,6 +35,9 @@ import UserSupport from "./pages/user/UserSupport";
 // Storefront
 import Storefront from "./pages/storefront/Storefront";
 
+// Track Order
+import TrackOrder from "./pages/TrackOrder";
+
 const queryClient = new QueryClient();
 
 // Protected Route Component
@@ -83,6 +86,9 @@ const AppRoutes = () => {
       
       {/* Storefront (Public) */}
       <Route path="/store/:slug" element={<Storefront />} />
+      
+      {/* Track Order (Public) */}
+      <Route path="/track-order" element={<TrackOrder />} />
       
       {/* Admin Routes */}
       <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
