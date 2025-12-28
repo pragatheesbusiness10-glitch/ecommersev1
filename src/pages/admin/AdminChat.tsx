@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAdminChat, type ChatConversation } from '@/hooks/useAdminChat';
+import { useTypingIndicator } from '@/hooks/useTypingIndicator';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,9 @@ const AdminChat: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Typing indicator for the selected conversation
+  const { isOtherTyping, typingUserName, setTyping } = useTypingIndicator(selectedConversation?.user_id);
+
   // Fetch messages for selected user
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ['admin-chat-messages', selectedConversation?.user_id],
@@ -55,10 +59,16 @@ const AdminChat: React.FC = () => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputMessage(e.target.value);
+    setTyping(e.target.value.length > 0);
+  };
+
   const handleSend = () => {
     if (inputMessage.trim() && selectedConversation) {
       sendMessage({ userId: selectedConversation.user_id, message: inputMessage.trim() });
       setInputMessage('');
+      setTyping(false);
     }
   };
 
@@ -254,6 +264,21 @@ const AdminChat: React.FC = () => {
                           </div>
                         </div>
                       ))}
+                      {/* Typing indicator */}
+                      {isOtherTyping && (
+                        <div className="flex justify-start">
+                          <div className="bg-muted rounded-lg px-4 py-2">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-muted-foreground">{typingUserName || 'User'} is typing</span>
+                              <span className="flex gap-0.5">
+                                <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </ScrollArea>
@@ -263,7 +288,7 @@ const AdminChat: React.FC = () => {
                   <div className="flex gap-2">
                     <Input
                       value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
+                      onChange={handleInputChange}
                       onKeyPress={handleKeyPress}
                       placeholder="Type a reply..."
                       disabled={isSending}

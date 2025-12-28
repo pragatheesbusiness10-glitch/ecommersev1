@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationCenter } from '@/components/admin/NotificationCenter';
 import { 
   LayoutDashboard, 
   Package, 
@@ -137,20 +138,24 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
       )}>
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-16 flex items-center gap-3 px-6 border-b border-sidebar-border">
-            {logoUrl ? (
-              <img src={logoUrl} alt={siteName} className="w-10 h-10 rounded-xl object-cover shadow-lg" />
-            ) : (
-              <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg">
-                <span className="text-accent-foreground font-bold text-lg">{siteName.charAt(0)}</span>
+          <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border">
+            <div className="flex items-center gap-3">
+              {logoUrl ? (
+                <img src={logoUrl} alt={siteName} className="w-10 h-10 rounded-xl object-cover shadow-lg" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center shadow-lg">
+                  <span className="text-accent-foreground font-bold text-lg">{siteName.charAt(0)}</span>
+                </div>
+              )}
+              <div>
+                <span className="font-bold text-lg text-sidebar-foreground">{siteName}</span>
+                <p className="text-xs text-sidebar-foreground/60">
+                  {user?.role === 'admin' ? 'Admin Panel' : 'Affiliate Hub'}
+                </p>
               </div>
-            )}
-            <div>
-              <span className="font-bold text-lg text-sidebar-foreground">{siteName}</span>
-              <p className="text-xs text-sidebar-foreground/60">
-                {user?.role === 'admin' ? 'Admin Panel' : 'Affiliate Hub'}
-              </p>
             </div>
+            {/* Admin Notification Center */}
+            {user?.role === 'admin' && <NotificationCenter />}
           </div>
 
           {/* Navigation */}
