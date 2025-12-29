@@ -50,6 +50,7 @@ const adminNavItems: NavItem[] = [
 
 const userNavItems: NavItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
+  { icon: Users, label: 'Profile', href: '/dashboard/profile' },
   { icon: Store, label: 'My Storefront', href: '/dashboard/storefront' },
   { icon: Package, label: 'Browse Products', href: '/dashboard/products' },
   { icon: ShoppingCart, label: 'Orders', href: '/dashboard/orders' },

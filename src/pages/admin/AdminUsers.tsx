@@ -20,7 +20,8 @@ import {
   Clock,
   Trash2,
   Percent,
-  Shield
+  Shield,
+  Award
 } from 'lucide-react';
 import {
   Dialog,
@@ -49,7 +50,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
-import { useAdminUsers, AffiliateUser, UserStatus } from '@/hooks/useAdminUsers';
+import { useAdminUsers, AffiliateUser, UserStatus, UserLevel } from '@/hooks/useAdminUsers';
+import { UserLevelSelect } from '@/components/admin/UserLevelSelect';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { useAdminKYC } from '@/hooks/useAdminKYC';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -100,6 +102,8 @@ const AdminUsers: React.FC = () => {
     isUpdatingCommission,
     deleteUser,
     isDeletingUser,
+    updateUserLevel,
+    isUpdatingUserLevel,
   } = useAdminUsers();
 
   const { settingsMap } = usePlatformSettings();
@@ -389,12 +393,19 @@ const AdminUsers: React.FC = () => {
                     return null;
                   })()}
                 </div>
-                <div className="flex items-center gap-1 text-right">
-                  <Wallet className="w-4 h-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {CURRENCY_SYMBOLS[settingsMap.default_currency]}{user.wallet_balance.toFixed(2)}
-                    </p>
+                <div className="flex items-center gap-2">
+                  <UserLevelSelect
+                    value={user.user_level}
+                    onValueChange={(level) => updateUserLevel({ userId: user.user_id, level })}
+                    disabled={isUpdatingUserLevel}
+                  />
+                  <div className="flex items-center gap-1 text-right">
+                    <Wallet className="w-4 h-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {CURRENCY_SYMBOLS[settingsMap.default_currency]}{user.wallet_balance.toFixed(2)}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

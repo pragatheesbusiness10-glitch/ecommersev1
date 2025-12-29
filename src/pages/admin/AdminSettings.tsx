@@ -903,6 +903,9 @@ const AdminSettings: React.FC = () => {
         {/* Payment Gateway Settings */}
         <PaymentGatewaySettings />
 
+        {/* USD Wallet Settings */}
+        <USDWalletSettings />
+
         {/* Security - MFA Settings */}
         <MFASettings />
 
