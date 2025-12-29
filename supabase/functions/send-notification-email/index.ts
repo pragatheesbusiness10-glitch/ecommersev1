@@ -21,6 +21,17 @@ interface NotificationEmailRequest {
   customerName?: string;
 }
 
+// HTML escape function to prevent XSS in email content
+const escapeHtml = (str: string | undefined | null): string => {
+  if (!str) return 'N/A';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -104,44 +115,54 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { type, userName, userEmail, message, orderId, orderNumber, amount, ticketCategory, ticketSubject, productName, customerName }: NotificationEmailRequest = await req.json();
+    const requestData: NotificationEmailRequest = await req.json();
+    const { type, orderId, orderNumber, amount } = requestData;
+    
+    // Sanitize all user-provided input to prevent XSS
+    const userName = escapeHtml(requestData.userName);
+    const userEmail = escapeHtml(requestData.userEmail);
+    const message = escapeHtml(requestData.message);
+    const ticketCategory = escapeHtml(requestData.ticketCategory);
+    const ticketSubject = escapeHtml(requestData.ticketSubject);
+    const productName = escapeHtml(requestData.productName);
+    const customerName = escapeHtml(requestData.customerName);
 
     let subject = "";
     let htmlContent = "";
 
     switch (type) {
       case "new_chat_message":
-        subject = `New Chat Message from ${userName || "User"}`;
+        subject = `New Chat Message from ${userName}`;
         htmlContent = `
           <h2>New Chat Message</h2>
-          <p><strong>From:</strong> ${userName || "User"} (${userEmail || "N/A"})</p>
+          <p><strong>From:</strong> ${userName} (${userEmail})</p>
           <p><strong>Message:</strong></p>
           <blockquote style="border-left: 3px solid #ccc; padding-left: 10px; margin: 10px 0;">
-            ${message || "No message content"}
+            ${message}
           </blockquote>
         `;
         break;
       case "support_ticket":
-        subject = `🎫 New Support Ticket from ${userName || "User"}`;
+        subject = `🎫 New Support Ticket from ${userName}`;
         htmlContent = `
           <h2 style="color: #2563eb;">New Support Ticket</h2>
           <table style="border-collapse: collapse; margin: 15px 0;">
             <tr>
               <td style="padding: 8px 15px; background: #f3f4f6; font-weight: bold;">From:</td>
-              <td style="padding: 8px 15px;">${userName || "User"} (${userEmail || "N/A"})</td>
+              <td style="padding: 8px 15px;">${userName} (${userEmail})</td>
             </tr>
             <tr>
               <td style="padding: 8px 15px; background: #f3f4f6; font-weight: bold;">Category:</td>
-              <td style="padding: 8px 15px;">${ticketCategory || "General"}</td>
+              <td style="padding: 8px 15px;">${ticketCategory || 'General'}</td>
             </tr>
             <tr>
               <td style="padding: 8px 15px; background: #f3f4f6; font-weight: bold;">Subject:</td>
-              <td style="padding: 8px 15px;">${ticketSubject || "No Subject"}</td>
+              <td style="padding: 8px 15px;">${ticketSubject || 'No Subject'}</td>
             </tr>
           </table>
           <p><strong>Message:</strong></p>
           <blockquote style="border-left: 4px solid #2563eb; padding: 15px; margin: 15px 0; background: #eff6ff;">
-            ${message || "No message content"}
+            ${message}
           </blockquote>
           <p style="margin-top: 20px;">
             <a href="#" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in Admin Panel</a>
@@ -149,35 +170,35 @@ const handler = async (req: Request): Promise<Response> => {
         `;
         break;
       case "kyc_submitted":
-        subject = `New KYC Submission from ${userName || "User"}`;
+        subject = `New KYC Submission from ${userName}`;
         htmlContent = `
           <h2>New KYC Submission</h2>
-          <p><strong>User:</strong> ${userName || "User"} (${userEmail || "N/A"})</p>
+          <p><strong>User:</strong> ${userName} (${userEmail})</p>
           <p>A new KYC submission is awaiting review.</p>
         `;
         break;
       case "payout_request":
-        subject = `New Payout Request from ${userName || "User"}`;
+        subject = `New Payout Request from ${userName}`;
         htmlContent = `
           <h2>New Payout Request</h2>
-          <p><strong>User:</strong> ${userName || "User"} (${userEmail || "N/A"})</p>
+          <p><strong>User:</strong> ${userName} (${userEmail})</p>
           <p><strong>Amount:</strong> $${amount?.toFixed(2) || "0.00"}</p>
         `;
         break;
       case "new_order":
-        subject = `New Order Received - ${orderId || "Unknown"}`;
+        subject = `New Order Received - ${escapeHtml(orderId)}`;
         htmlContent = `
           <h2>New Order Received</h2>
-          <p><strong>Order ID:</strong> ${orderId || "Unknown"}</p>
-          <p><strong>Affiliate:</strong> ${userName || "User"}</p>
+          <p><strong>Order ID:</strong> ${escapeHtml(orderId)}</p>
+          <p><strong>Affiliate:</strong> ${userName}</p>
         `;
         break;
       case "affiliate_order_created":
-        subject = `🎉 New Order Created for You - ${orderNumber || "Unknown"}`;
+        subject = `🎉 New Order Created for You - ${escapeHtml(orderNumber)}`;
         htmlContent = `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #059669;">🎉 Congratulations! A New Order Has Been Created</h2>
-            <p>Hello ${userName || "Affiliate"},</p>
+            <p>Hello ${userName},</p>
             <p>Great news! An administrator has created a new order for your storefront.</p>
             
             <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -185,15 +206,15 @@ const handler = async (req: Request): Promise<Response> => {
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Order Number:</strong></td>
-                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${orderNumber || "N/A"}</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${escapeHtml(orderNumber)}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Product:</strong></td>
-                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${productName || "N/A"}</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${productName}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Customer:</strong></td>
-                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${customerName || "N/A"}</td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${customerName}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0;"><strong>Amount:</strong></td>
@@ -212,7 +233,7 @@ const handler = async (req: Request): Promise<Response> => {
         break;
       default:
         subject = "Platform Notification";
-        htmlContent = `<p>${message || "You have a new notification."}</p>`;
+        htmlContent = `<p>${message}</p>`;
     }
 
     console.log("Sending email to:", adminEmail);
