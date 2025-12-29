@@ -60,6 +60,7 @@ import { Badge } from '@/components/ui/badge';
 import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
 import { USDWalletSettings } from '@/components/admin/USDWalletSettings';
 import { LevelCommissionSettings } from '@/components/admin/LevelCommissionSettings';
+import { AutoPayoutSettings } from '@/components/admin/AutoPayoutSettings';
 import { MFASettings } from '@/components/mfa/MFASettings';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -909,6 +910,9 @@ const AdminSettings: React.FC = () => {
 
         {/* Level-Based Commission Settings */}
         <LevelCommissionSettings />
+
+        {/* Auto-Payout Settings */}
+        <AutoPayoutSettings />
 
         {/* Security - MFA Settings */}
         <MFASettings />
