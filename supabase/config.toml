@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.create-public-order]
 verify_jwt = false
+
+[functions.process-auto-payouts]
+verify_jwt = false

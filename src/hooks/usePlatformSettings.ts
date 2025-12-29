@@ -51,6 +51,10 @@ export interface SettingsMap {
   commission_rate_bronze: number;
   commission_rate_silver: number;
   commission_rate_gold: number;
+  // Auto-payout settings
+  auto_payout_enabled: boolean;
+  auto_payout_threshold: number;
+  auto_payout_schedule: 'daily' | 'weekly' | 'monthly';
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -128,6 +132,10 @@ export const usePlatformSettings = () => {
     commission_rate_bronze: 5,
     commission_rate_silver: 7,
     commission_rate_gold: 10,
+    // Auto-payout settings
+    auto_payout_enabled: false,
+    auto_payout_threshold: 1000,
+    auto_payout_schedule: 'weekly',
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -235,6 +243,15 @@ export const usePlatformSettings = () => {
         break;
       case 'commission_rate_gold':
         settingsMap.commission_rate_gold = parseFloat(setting.value) || 10;
+        break;
+      case 'auto_payout_enabled':
+        settingsMap.auto_payout_enabled = setting.value === 'true';
+        break;
+      case 'auto_payout_threshold':
+        settingsMap.auto_payout_threshold = parseFloat(setting.value) || 1000;
+        break;
+      case 'auto_payout_schedule':
+        settingsMap.auto_payout_schedule = (setting.value as 'daily' | 'weekly' | 'monthly') || 'weekly';
         break;
     }
   });
