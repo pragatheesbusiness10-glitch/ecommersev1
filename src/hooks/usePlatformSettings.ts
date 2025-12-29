@@ -47,6 +47,10 @@ export interface SettingsMap {
   payment_gateway_wire_iban: string;
   // USD Wallet ID for user payments
   usd_wallet_id: string;
+  // Level-based commission rates
+  commission_rate_bronze: number;
+  commission_rate_silver: number;
+  commission_rate_gold: number;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -120,6 +124,10 @@ export const usePlatformSettings = () => {
     payment_gateway_wire_iban: '',
     // USD Wallet ID
     usd_wallet_id: '',
+    // Level-based commission rates
+    commission_rate_bronze: 5,
+    commission_rate_silver: 7,
+    commission_rate_gold: 10,
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -218,6 +226,15 @@ export const usePlatformSettings = () => {
         break;
       case 'usd_wallet_id':
         settingsMap.usd_wallet_id = setting.value || '';
+        break;
+      case 'commission_rate_bronze':
+        settingsMap.commission_rate_bronze = parseFloat(setting.value) || 5;
+        break;
+      case 'commission_rate_silver':
+        settingsMap.commission_rate_silver = parseFloat(setting.value) || 7;
+        break;
+      case 'commission_rate_gold':
+        settingsMap.commission_rate_gold = parseFloat(setting.value) || 10;
         break;
     }
   });
