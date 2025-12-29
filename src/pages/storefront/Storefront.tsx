@@ -127,6 +127,11 @@ const Storefront: React.FC = () => {
           throw new Error(error.message || 'Failed to create order');
         }
 
+        // Check if order creation is disabled
+        if (response?.disabled) {
+          throw new Error(response?.error || 'Order creation is currently disabled. Please contact the store owner to place your order.');
+        }
+
         if (!response?.success) {
           throw new Error(response?.error || 'Failed to create order');
         }
@@ -136,8 +141,8 @@ const Storefront: React.FC = () => {
     } catch (error) {
       console.error('Order error:', error);
       toast({
-        title: 'Order Failed',
-        description: error instanceof Error ? error.message : 'Could not place order. Please try again.',
+        title: 'Order Not Available',
+        description: error instanceof Error ? error.message : 'Could not place order. Please contact the store owner.',
         variant: 'destructive',
       });
       throw error;

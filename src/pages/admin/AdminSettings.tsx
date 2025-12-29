@@ -59,6 +59,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
 import { USDWalletSettings } from '@/components/admin/USDWalletSettings';
+import { LevelCommissionSettings } from '@/components/admin/LevelCommissionSettings';
 import { MFASettings } from '@/components/mfa/MFASettings';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -905,6 +906,9 @@ const AdminSettings: React.FC = () => {
 
         {/* USD Wallet Settings */}
         <USDWalletSettings />
+
+        {/* Level-Based Commission Settings */}
+        <LevelCommissionSettings />
 
         {/* Security - MFA Settings */}
         <MFASettings />
