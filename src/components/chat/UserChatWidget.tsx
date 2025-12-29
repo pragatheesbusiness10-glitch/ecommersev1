@@ -326,7 +326,6 @@ export const UserChatWidget: React.FC = () => {
               </div>
               <div>
                 <span className="font-semibold">AI Assistant</span>
-                <p className="text-xs text-white/80">Powered by Lovable AI</p>
               </div>
             </div>
             <Button
