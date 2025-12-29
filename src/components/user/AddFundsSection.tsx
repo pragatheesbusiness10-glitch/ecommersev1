@@ -70,7 +70,7 @@ export const AddFundsSection: React.FC = () => {
             >
               <method.icon className="w-5 h-5" />
               <span className="text-xs">{method.name}</span>
-              <Badge variant="secondary" className="text-[10px]">Disabled</Badge>
+              <Badge variant="secondary" className="text-[10px]">Not Available</Badge>
             </Button>
           ))}
         </div>

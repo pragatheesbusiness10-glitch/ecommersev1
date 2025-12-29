@@ -19,7 +19,8 @@ import {
   Link as LinkIcon,
   ExternalLink,
   MousePointerClick,
-  Plus
+  Plus,
+  Upload
 } from 'lucide-react';
 import {
   Dialog,
@@ -46,6 +47,7 @@ import {
 } from '@/components/ui/table';
 import { useAdminOrders, AdminOrder } from '@/hooks/useAdminOrders';
 import { CreateOrderDialog } from '@/components/admin/CreateOrderDialog';
+import { BulkOrderDialog } from '@/components/admin/BulkOrderDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -77,6 +79,7 @@ const AdminOrders: React.FC = () => {
   const [isPaymentLinkDialogOpen, setIsPaymentLinkDialogOpen] = useState(false);
   const [isBulkPaymentLinkDialogOpen, setIsBulkPaymentLinkDialogOpen] = useState(false);
   const [isCreateOrderDialogOpen, setIsCreateOrderDialogOpen] = useState(false);
+  const [isBulkOrderDialogOpen, setIsBulkOrderDialogOpen] = useState(false);
   const [paymentLinkInput, setPaymentLinkInput] = useState('');
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   
@@ -92,6 +95,8 @@ const AdminOrders: React.FC = () => {
     isBulkUpdatingPaymentLink,
     createOrder,
     isCreatingOrder,
+    bulkCreateOrders,
+    isBulkCreatingOrders,
   } = useAdminOrders();
 
   const filteredOrders = orders.filter(order => {
@@ -183,10 +188,14 @@ const AdminOrders: React.FC = () => {
               Manage all orders across affiliates. {orders.length} orders total.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button onClick={() => setIsCreateOrderDialogOpen(true)} className="gap-2">
               <Plus className="w-4 h-4" />
               Create Order
+            </Button>
+            <Button onClick={() => setIsBulkOrderDialogOpen(true)} variant="outline" className="gap-2">
+              <Upload className="w-4 h-4" />
+              Bulk Create
             </Button>
             {selectedOrderIds.length > 0 && (
               <Button onClick={handleOpenBulkPaymentLinkDialog} variant="outline" className="gap-2">
@@ -206,6 +215,17 @@ const AdminOrders: React.FC = () => {
             setIsCreateOrderDialogOpen(false);
           }}
           isCreating={isCreatingOrder}
+        />
+
+        {/* Bulk Order Dialog */}
+        <BulkOrderDialog
+          open={isBulkOrderDialogOpen}
+          onOpenChange={setIsBulkOrderDialogOpen}
+          onCreateOrders={(data) => {
+            bulkCreateOrders(data);
+            setIsBulkOrderDialogOpen(false);
+          }}
+          isCreating={isBulkCreatingOrders}
         />
 
         {/* Filters */}
