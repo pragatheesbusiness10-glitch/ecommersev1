@@ -53,6 +53,7 @@ interface CreateOrderDialogProps {
     quantity: number;
     selling_price: number;
     base_price: number;
+    productName?: string;
   }) => void;
   isCreating: boolean;
 }
@@ -195,6 +196,7 @@ export const CreateOrderDialog: React.FC<CreateOrderDialogProps> = ({
       quantity: formData.quantity,
       selling_price: selectedProductData.selling_price,
       base_price: selectedProductData.product.base_price,
+      productName: selectedProductData.product.name,
     });
 
     // Reset form

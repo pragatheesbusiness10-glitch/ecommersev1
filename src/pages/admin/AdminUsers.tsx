@@ -21,7 +21,8 @@ import {
   Trash2,
   Percent,
   Shield,
-  Award
+  Award,
+  History
 } from 'lucide-react';
 import {
   Dialog,
@@ -52,6 +53,7 @@ import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { useAdminUsers, AffiliateUser, UserStatus, UserLevel } from '@/hooks/useAdminUsers';
 import { UserLevelSelect } from '@/components/admin/UserLevelSelect';
+import { UserLevelHistory } from '@/components/admin/UserLevelHistory';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { useAdminKYC } from '@/hooks/useAdminKYC';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -80,6 +82,7 @@ const AdminUsers: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCommissionDialogOpen, setIsCommissionDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AffiliateUser | null>(null);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -209,7 +212,7 @@ const AdminUsers: React.FC = () => {
               Manage your affiliate resellers. {affiliates.length} total.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {pendingCount > 0 && (
               <Badge variant="outline" className="border-amber-500/50 text-amber-600">
                 <Clock className="w-3 h-3 mr-1" />
@@ -220,6 +223,15 @@ const AdminUsers: React.FC = () => {
               <CheckCircle className="w-3 h-3 mr-1" />
               {approvedCount} Approved
             </Badge>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsHistoryDialogOpen(true)}
+              className="ml-2"
+            >
+              <History className="w-4 h-4 mr-1" />
+              Level History
+            </Button>
           </div>
         </div>
 
@@ -545,6 +557,19 @@ const AdminUsers: React.FC = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Level History Dialog */}
+        <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle>User Level Change History</DialogTitle>
+              <DialogDescription>
+                View all user level changes made by administrators
+              </DialogDescription>
+            </DialogHeader>
+            <UserLevelHistory />
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
