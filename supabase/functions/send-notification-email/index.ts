@@ -7,15 +7,18 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: 'new_chat_message' | 'kyc_submitted' | 'payout_request' | 'new_order' | 'support_ticket';
+  type: 'new_chat_message' | 'kyc_submitted' | 'payout_request' | 'new_order' | 'support_ticket' | 'affiliate_order_created';
   userId?: string;
   userName?: string;
   userEmail?: string;
   message?: string;
   orderId?: string;
+  orderNumber?: string;
   amount?: number;
   ticketCategory?: string;
   ticketSubject?: string;
+  productName?: string;
+  customerName?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -101,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { type, userName, userEmail, message, orderId, amount, ticketCategory, ticketSubject }: NotificationEmailRequest = await req.json();
+    const { type, userName, userEmail, message, orderId, orderNumber, amount, ticketCategory, ticketSubject, productName, customerName }: NotificationEmailRequest = await req.json();
 
     let subject = "";
     let htmlContent = "";
@@ -167,6 +170,44 @@ const handler = async (req: Request): Promise<Response> => {
           <h2>New Order Received</h2>
           <p><strong>Order ID:</strong> ${orderId || "Unknown"}</p>
           <p><strong>Affiliate:</strong> ${userName || "User"}</p>
+        `;
+        break;
+      case "affiliate_order_created":
+        subject = `🎉 New Order Created for You - ${orderNumber || "Unknown"}`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">🎉 Congratulations! A New Order Has Been Created</h2>
+            <p>Hello ${userName || "Affiliate"},</p>
+            <p>Great news! An administrator has created a new order for your storefront.</p>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #374151;">Order Details</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Order Number:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${orderNumber || "N/A"}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Product:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${productName || "N/A"}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Customer:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${customerName || "N/A"}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0;"><strong>Amount:</strong></td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #059669;">$${amount?.toFixed(2) || "0.00"}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <p>You can view the full order details in your dashboard.</p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated notification. Please do not reply to this email.
+            </p>
+          </div>
         `;
         break;
       default:
