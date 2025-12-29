@@ -58,6 +58,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
+import { USDWalletSettings } from '@/components/admin/USDWalletSettings';
 import { MFASettings } from '@/components/mfa/MFASettings';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';

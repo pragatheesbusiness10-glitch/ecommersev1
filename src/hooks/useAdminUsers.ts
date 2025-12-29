@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export type UserStatus = 'pending' | 'approved' | 'disabled';
+export type UserLevel = 'bronze' | 'silver' | 'gold';
 
 export interface AffiliateUser {
   id: string;
@@ -14,6 +15,7 @@ export interface AffiliateUser {
   storefront_slug: string | null;
   is_active: boolean;
   user_status: UserStatus;
+  user_level: UserLevel;
   wallet_balance: number;
   commission_override: number | null;
   created_at: string;
@@ -65,12 +67,52 @@ export const useAdminUsers = () => {
         storefront_slug: p.storefront_slug,
         is_active: p.is_active,
         user_status: (p.user_status as UserStatus) || 'pending',
+        user_level: ((p as any).user_level as UserLevel) || 'bronze',
         wallet_balance: Number(p.wallet_balance),
         commission_override: p.commission_override ? Number(p.commission_override) : null,
         created_at: p.created_at,
       }));
     },
     enabled: user?.role === 'admin' && !!session,
+  });
+
+  const updateUserLevelMutation = useMutation({
+    mutationFn: async ({ userId, level }: { userId: string; level: UserLevel }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ user_level: level } as any)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+      
+      // Log the action
+      await supabase.rpc('create_audit_log', {
+        _action_type: 'user_level_change',
+        _entity_type: 'profile',
+        _entity_id: userId,
+        _user_id: userId,
+        _admin_id: user?.id,
+        _new_value: { user_level: level },
+        _reason: `User level changed to ${level}`,
+      });
+      
+      return level;
+    },
+    onSuccess: (level) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
+      toast({
+        title: 'User Level Updated',
+        description: `User level has been changed to ${level}.`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating user level:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update user level.',
+        variant: 'destructive',
+      });
+    },
   });
 
   const toggleStatusMutation = useMutation({
@@ -283,6 +325,8 @@ export const useAdminUsers = () => {
     isTogglingStatus: toggleStatusMutation.isPending,
     updateUserStatus: updateUserStatusMutation.mutate,
     isUpdatingUserStatus: updateUserStatusMutation.isPending,
+    updateUserLevel: updateUserLevelMutation.mutate,
+    isUpdatingUserLevel: updateUserLevelMutation.isPending,
     updateProfile: updateProfileMutation.mutate,
     isUpdatingProfile: updateProfileMutation.isPending,
     updateCommission: updateCommissionMutation.mutate,
