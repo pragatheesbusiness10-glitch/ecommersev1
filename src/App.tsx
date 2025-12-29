@@ -31,6 +31,7 @@ import UserStorefront from "./pages/user/UserStorefront";
 import UserPayments from "./pages/user/UserPayments";
 import UserKYC from "./pages/user/UserKYC";
 import UserSupport from "./pages/user/UserSupport";
+import UserProfile from "./pages/user/UserProfile";
 
 // Storefront
 import Storefront from "./pages/storefront/Storefront";
@@ -110,6 +111,7 @@ const AppRoutes = () => {
       <Route path="/dashboard/payments" element={<ProtectedRoute allowedRoles={['user']}><UserPayments /></ProtectedRoute>} />
       <Route path="/dashboard/kyc" element={<ProtectedRoute allowedRoles={['user']}><UserKYC /></ProtectedRoute>} />
       <Route path="/dashboard/support" element={<ProtectedRoute allowedRoles={['user']}><UserSupport /></ProtectedRoute>} />
+      <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['user']}><UserProfile /></ProtectedRoute>} />
       
       {/* Catch All */}
       <Route path="*" element={<NotFound />} />

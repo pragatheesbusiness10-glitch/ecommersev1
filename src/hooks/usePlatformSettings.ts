@@ -45,6 +45,8 @@ export interface SettingsMap {
   payment_gateway_wire_account_number: string;
   payment_gateway_wire_routing_number: string;
   payment_gateway_wire_iban: string;
+  // USD Wallet ID for user payments
+  usd_wallet_id: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -116,6 +118,8 @@ export const usePlatformSettings = () => {
     payment_gateway_wire_account_number: '',
     payment_gateway_wire_routing_number: '',
     payment_gateway_wire_iban: '',
+    // USD Wallet ID
+    usd_wallet_id: '',
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -211,6 +215,9 @@ export const usePlatformSettings = () => {
         break;
       case 'payment_gateway_wire_iban':
         settingsMap.payment_gateway_wire_iban = setting.value || '';
+        break;
+      case 'usd_wallet_id':
+        settingsMap.usd_wallet_id = setting.value || '';
         break;
     }
   });

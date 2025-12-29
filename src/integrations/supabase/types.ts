@@ -347,6 +347,7 @@ export type Database = {
           storefront_slug: string | null
           updated_at: string
           user_id: string
+          user_level: Database["public"]["Enums"]["user_level"]
           user_status: Database["public"]["Enums"]["user_status"]
           wallet_balance: number
         }
@@ -362,6 +363,7 @@ export type Database = {
           storefront_slug?: string | null
           updated_at?: string
           user_id: string
+          user_level?: Database["public"]["Enums"]["user_level"]
           user_status?: Database["public"]["Enums"]["user_status"]
           wallet_balance?: number
         }
@@ -377,6 +379,7 @@ export type Database = {
           storefront_slug?: string | null
           updated_at?: string
           user_id?: string
+          user_level?: Database["public"]["Enums"]["user_level"]
           user_status?: Database["public"]["Enums"]["user_status"]
           wallet_balance?: number
         }
@@ -539,6 +542,7 @@ export type Database = {
         | "processing"
         | "completed"
         | "cancelled"
+      user_level: "bronze" | "silver" | "gold"
       user_status: "pending" | "approved" | "disabled"
     }
     CompositeTypes: {
@@ -676,6 +680,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      user_level: ["bronze", "silver", "gold"],
       user_status: ["pending", "approved", "disabled"],
     },
   },

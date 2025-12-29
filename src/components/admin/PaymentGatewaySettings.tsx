@@ -22,10 +22,22 @@ import {
   Save, 
   Eye, 
   EyeOff,
-  Check
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { useToast } from '@/hooks/use-toast';
+import { z } from 'zod';
+
+// Validation schemas
+const apiKeySchema = z.string().min(10, 'API key must be at least 10 characters');
+const accountNumberSchema = z.string().regex(/^[0-9A-Za-z]{8,34}$/, 'Account number must be 8-34 alphanumeric characters');
+const routingNumberSchema = z.string().regex(/^[A-Z0-9]{6,11}$/i, 'Routing/SWIFT must be 6-11 alphanumeric characters');
+const ibanSchema = z.string().regex(/^[A-Z]{2}[0-9]{2}[A-Z0-9]{4,30}$/i, 'Invalid IBAN format').or(z.string().length(0));
+
+interface ValidationErrors {
+  [key: string]: string;
+}
 
 interface GatewayConfig {
   id: string;
@@ -81,6 +93,30 @@ export const PaymentGatewaySettings: React.FC = () => {
   const [visibleSecrets, setVisibleSecrets] = useState<Record<string, boolean>>({});
   const [savingGateway, setSavingGateway] = useState<string | null>(null);
   const [savedGateways, setSavedGateways] = useState<Record<string, boolean>>({});
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
+
+  // Validate a field based on its key
+  const validateField = (key: string, value: string): string | null => {
+    if (!value || value.trim() === '') return null; // Empty values are ok (optional)
+    
+    try {
+      if (key.includes('client_id') || key.includes('client_secret') || key.includes('secret_key') || key.includes('publishable_key')) {
+        apiKeySchema.parse(value);
+      } else if (key.includes('account_number')) {
+        accountNumberSchema.parse(value);
+      } else if (key.includes('routing_number')) {
+        routingNumberSchema.parse(value);
+      } else if (key.includes('iban')) {
+        ibanSchema.parse(value);
+      }
+      return null;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return error.errors[0]?.message || 'Invalid format';
+      }
+      return 'Invalid format';
+    }
+  };
 
   // Initialize gateway values from settings
   useEffect(() => {
@@ -113,6 +149,16 @@ export const PaymentGatewaySettings: React.FC = () => {
 
   const handleValueChange = (key: string, value: string) => {
     setGatewayValues(prev => ({ ...prev, [key]: value }));
+    
+    // Validate on change
+    const error = validateField(key, value);
+    setValidationErrors(prev => {
+      if (error) {
+        return { ...prev, [key]: error };
+      }
+      const { [key]: _, ...rest } = prev;
+      return rest;
+    });
   };
 
   const handleToggleEnabled = async (gateway: GatewayConfig, enabled: boolean) => {
@@ -130,6 +176,31 @@ export const PaymentGatewaySettings: React.FC = () => {
 
   const handleSaveGateway = async (gateway: GatewayConfig) => {
     setSavingGateway(gateway.id);
+    
+    // Validate all fields before saving
+    let hasErrors = false;
+    const newErrors: ValidationErrors = {};
+    
+    gateway.fields.forEach(field => {
+      const value = gatewayValues[field.key] || '';
+      const error = validateField(field.key, value);
+      if (error) {
+        hasErrors = true;
+        newErrors[field.key] = error;
+      }
+    });
+    
+    if (hasErrors) {
+      setValidationErrors(prev => ({ ...prev, ...newErrors }));
+      toast({
+        title: 'Validation Error',
+        description: 'Please fix the validation errors before saving.',
+        variant: 'destructive',
+      });
+      setSavingGateway(null);
+      return;
+    }
+
     try {
       const updates = [
         updateSetting({ key: gateway.enabledKey, value: gatewayValues[gateway.enabledKey] }),
@@ -203,14 +274,22 @@ export const PaymentGatewaySettings: React.FC = () => {
                 <div className="space-y-4 pt-2">
                   {gateway.fields.map((field) => (
                     <div key={field.key} className="grid gap-2">
-                      <Label>{field.label}</Label>
+                      <Label className="flex items-center gap-2">
+                        {field.label}
+                        {validationErrors[field.key] && (
+                          <span className="text-xs text-destructive flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {validationErrors[field.key]}
+                          </span>
+                        )}
+                      </Label>
                       <div className="relative">
                         <Input
                           type={field.isSecret && !visibleSecrets[field.key] ? 'password' : 'text'}
                           value={gatewayValues[field.key] || ''}
                           onChange={(e) => handleValueChange(field.key, e.target.value)}
                           placeholder={field.placeholder}
-                          className={field.isSecret ? 'pr-10' : ''}
+                          className={`${field.isSecret ? 'pr-10' : ''} ${validationErrors[field.key] ? 'border-destructive' : ''}`}
                         />
                         {field.isSecret && (
                           <Button

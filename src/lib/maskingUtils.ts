@@ -12,6 +12,24 @@ export const maskBankAccount = (account: string): string => {
 };
 
 /**
+ * Masks an Aadhaar number (12 digits), showing only last 4 digits
+ */
+export const maskAadhaar = (aadhaar: string): string => {
+  if (!aadhaar) return '';
+  if (aadhaar.length <= 4) return aadhaar;
+  return 'XXXX-XXXX-' + aadhaar.slice(-4);
+};
+
+/**
+ * Masks a PAN number (10 chars), showing only first 2 and last 2
+ */
+export const maskPAN = (pan: string): string => {
+  if (!pan) return '';
+  if (pan.length <= 4) return pan;
+  return pan.slice(0, 2) + '****' + pan.slice(-2);
+};
+
+/**
  * Masks a UPI ID, showing only the first 2 characters and domain
  */
 export const maskUpiId = (upiId: string): string => {
