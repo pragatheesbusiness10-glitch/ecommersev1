@@ -49,6 +49,7 @@ import { useKYC } from '@/hooks/useKYC';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddFundsSection } from '@/components/user/AddFundsSection';
+import { CommissionHistory } from '@/components/user/CommissionHistory';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-600',
@@ -334,6 +335,9 @@ const UserPayments: React.FC = () => {
             You need at least {currencySymbol}{minPayoutAmount} in your wallet to request a payout. Current balance: {currencySymbol}{walletBalance.toFixed(2)}
           </div>
         )}
+
+        {/* Commission History */}
+        <CommissionHistory />
 
         {/* Add Funds Section */}
         <AddFundsSection />
