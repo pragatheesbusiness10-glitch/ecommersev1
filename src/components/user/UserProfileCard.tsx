@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -47,6 +47,7 @@ const kycStatusConfig = {
 export const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
   const { kycSubmission, kycStatus, isLoading: kycLoading } = useKYC();
+  const [faceImageUrl, setFaceImageUrl] = useState<string | null>(null);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['user-profile-level', user?.id],
@@ -64,17 +65,27 @@ export const UserProfileCard: React.FC = () => {
     enabled: !!user?.id,
   });
 
+  // Use signed URL for KYC face image (expires in 1 hour for security)
+  useEffect(() => {
+    const fetchSignedUrl = async () => {
+      if (kycSubmission?.face_image_url) {
+        const { data, error } = await supabase.storage
+          .from('kyc-documents')
+          .createSignedUrl(kycSubmission.face_image_url, 3600); // 1 hour expiry
+        
+        if (!error && data?.signedUrl) {
+          setFaceImageUrl(data.signedUrl);
+        }
+      }
+    };
+    fetchSignedUrl();
+  }, [kycSubmission?.face_image_url]);
+
   const isLoading = kycLoading || profileLoading;
   const userLevel = (profile?.user_level || 'bronze') as UserLevel;
   const levelInfo = levelConfig[userLevel];
   const kycInfo = kycStatusConfig[kycStatus as keyof typeof kycStatusConfig] || kycStatusConfig.not_submitted;
   const KycIcon = kycInfo.icon;
-
-  // Get face image URL from KYC
-  const faceImageUrl = kycSubmission?.face_image_url 
-    ? supabase.storage.from('kyc-documents').getPublicUrl(kycSubmission.face_image_url).data.publicUrl
-    : null;
-
   if (isLoading) {
     return (
       <Card>

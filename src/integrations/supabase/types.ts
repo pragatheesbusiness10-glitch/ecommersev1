@@ -504,6 +504,29 @@ export type Database = {
         }
         Returns: string
       }
+      get_affiliate_orders_masked: {
+        Args: never
+        Returns: {
+          affiliate_user_id: string
+          base_price: number
+          completed_at: string
+          created_at: string
+          customer_address_masked: string
+          customer_email_masked: string
+          customer_name_masked: string
+          customer_phone_masked: string
+          id: string
+          order_number: string
+          paid_at: string
+          payment_link: string
+          payment_link_clicked_at: string
+          quantity: number
+          selling_price: number
+          status: Database["public"]["Enums"]["order_status"]
+          storefront_product_id: string
+          updated_at: string
+        }[]
+      }
       get_kyc_status: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["kyc_status"]

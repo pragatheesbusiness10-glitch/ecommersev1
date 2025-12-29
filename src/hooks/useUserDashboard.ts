@@ -38,6 +38,28 @@ export interface UserStats {
   paidAmount: number;
 }
 
+// Interface for masked order data from RPC
+interface MaskedOrder {
+  id: string;
+  order_number: string;
+  status: 'pending_payment' | 'paid_by_user' | 'processing' | 'completed' | 'cancelled';
+  quantity: number;
+  selling_price: number;
+  base_price: number;
+  created_at: string;
+  updated_at: string;
+  paid_at: string | null;
+  completed_at: string | null;
+  payment_link: string | null;
+  payment_link_clicked_at: string | null;
+  storefront_product_id: string;
+  affiliate_user_id: string;
+  customer_name_masked: string;
+  customer_email_masked: string;
+  customer_phone_masked: string | null;
+  customer_address_masked: string;
+}
+
 export const useUserDashboard = () => {
   const { user, session } = useAuth();
 
@@ -46,59 +68,77 @@ export const useUserDashboard = () => {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data: orders, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          storefront_products!inner(
-            product_id,
-            products!inner(
-              id,
-              name,
-              image_url,
-              base_price
-            )
-          )
-        `)
-        .eq('affiliate_user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Use the masked RPC function to protect customer PII
+      const { data: maskedOrders, error: maskedError } = await supabase
+        .rpc('get_affiliate_orders_masked');
 
-      if (error) {
-        console.error('Error fetching orders:', error);
-        throw error;
+      if (maskedError) {
+        console.error('Error fetching masked orders:', maskedError);
+        throw maskedError;
       }
 
-      // Transform data to match expected format
-      return (orders || []).map((order): DashboardOrder => ({
-        id: order.id,
-        order_number: order.order_number,
-        storefront_product_id: order.storefront_product_id,
-        affiliate_user_id: order.affiliate_user_id,
-        customer_name: order.customer_name,
-        customer_email: order.customer_email,
-        customer_phone: order.customer_phone,
-        customer_address: order.customer_address,
-        quantity: order.quantity,
-        selling_price: Number(order.selling_price),
-        base_price: Number(order.base_price),
-        status: order.status,
-        created_at: order.created_at,
-        paid_at: order.paid_at,
-        completed_at: order.completed_at,
-        payment_link: order.payment_link,
-        payment_link_updated_at: order.payment_link_updated_at,
-        payment_link_clicked_at: order.payment_link_clicked_at,
-        product: order.storefront_products?.products ? {
-          id: order.storefront_products.products.id,
-          name: order.storefront_products.products.name,
-          image_url: order.storefront_products.products.image_url,
-          base_price: Number(order.storefront_products.products.base_price),
-        } : null,
-      }));
+      // Get product info separately
+      const storefrontProductIds = [...new Set((maskedOrders || []).map((o: MaskedOrder) => o.storefront_product_id))];
+      
+      const { data: storefrontProducts, error: spError } = await supabase
+        .from('storefront_products')
+        .select(`
+          id,
+          product_id,
+          products!inner(
+            id,
+            name,
+            image_url,
+            base_price
+          )
+        `)
+        .in('id', storefrontProductIds);
+
+      if (spError) {
+        console.error('Error fetching storefront products:', spError);
+      }
+
+      // Create a map for quick lookup
+      const productMap = new Map(
+        (storefrontProducts || []).map(sp => [sp.id, sp.products])
+      );
+
+      // Transform data to match expected format with masked customer data
+      return ((maskedOrders || []) as MaskedOrder[])
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .map((order): DashboardOrder => {
+          const product = productMap.get(order.storefront_product_id);
+          return {
+            id: order.id,
+            order_number: order.order_number,
+            storefront_product_id: order.storefront_product_id,
+            affiliate_user_id: order.affiliate_user_id,
+            // Use masked customer data
+            customer_name: order.customer_name_masked,
+            customer_email: order.customer_email_masked,
+            customer_phone: order.customer_phone_masked,
+            customer_address: order.customer_address_masked,
+            quantity: order.quantity,
+            selling_price: Number(order.selling_price),
+            base_price: Number(order.base_price),
+            status: order.status,
+            created_at: order.created_at,
+            paid_at: order.paid_at,
+            completed_at: order.completed_at,
+            payment_link: order.payment_link,
+            payment_link_updated_at: order.updated_at,
+            payment_link_clicked_at: order.payment_link_clicked_at,
+            product: product ? {
+              id: product.id,
+              name: product.name,
+              image_url: product.image_url,
+              base_price: Number(product.base_price),
+            } : null,
+          };
+        });
     },
     enabled: !!user?.id && !!session,
   });
-
   const profileQuery = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
