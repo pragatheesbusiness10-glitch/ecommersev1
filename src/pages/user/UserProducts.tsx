@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ProductCardNew } from '@/components/dashboard/ProductCardNew';
 import { useProducts, Product } from '@/hooks/useProducts';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Filter, Store, Loader2 } from 'lucide-react';
@@ -29,6 +30,7 @@ const UserProducts: React.FC = () => {
     addToStorefront,
     isAdding 
   } = useProducts();
+  const { settingsMap, isLoading: isLoadingSettings } = usePlatformSettings();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -37,6 +39,8 @@ const UserProducts: React.FC = () => {
   const [sellingPrice, setSellingPrice] = useState('');
   const [customDescription, setCustomDescription] = useState('');
   const { toast } = useToast();
+
+  const markupPercentage = settingsMap.default_markup_percentage;
 
   const filteredProducts = products.filter(product =>
     product.is_active &&
@@ -57,7 +61,7 @@ const UserProducts: React.FC = () => {
       return;
     }
     setSelectedProduct(product);
-    setSellingPrice((product.base_price * 1.3).toFixed(2)); // Default 30% markup
+    setSellingPrice((product.base_price * (1 + markupPercentage / 100)).toFixed(2));
     setCustomDescription('');
     setIsAddDialogOpen(true);
   };
@@ -89,7 +93,7 @@ const UserProducts: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingSettings) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -233,7 +237,7 @@ const UserProducts: React.FC = () => {
                       className="text-lg font-semibold bg-muted cursor-not-allowed"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Price is set automatically with 30% markup
+                      Price is set automatically with {markupPercentage}% markup
                     </p>
                     {parseFloat(sellingPrice) > selectedProduct.base_price && (
                       <p className="text-sm text-green-600">

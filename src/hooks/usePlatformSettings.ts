@@ -55,6 +55,8 @@ export interface SettingsMap {
   auto_payout_enabled: boolean;
   auto_payout_threshold: number;
   auto_payout_schedule: 'daily' | 'weekly' | 'monthly';
+  // Default markup percentage for product pricing
+  default_markup_percentage: number;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -136,6 +138,8 @@ export const usePlatformSettings = () => {
     auto_payout_enabled: false,
     auto_payout_threshold: 1000,
     auto_payout_schedule: 'weekly',
+    // Default markup percentage
+    default_markup_percentage: 30,
   };
 
   settingsQuery.data?.forEach(setting => {
@@ -252,6 +256,9 @@ export const usePlatformSettings = () => {
         break;
       case 'auto_payout_schedule':
         settingsMap.auto_payout_schedule = (setting.value as 'daily' | 'weekly' | 'monthly') || 'weekly';
+        break;
+      case 'default_markup_percentage':
+        settingsMap.default_markup_percentage = parseFloat(setting.value) || 30;
         break;
     }
   });
