@@ -79,6 +79,7 @@ const AdminSettings: React.FC = () => {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [defaultMarkupPercentage, setDefaultMarkupPercentage] = useState('30');
   const [hasChanges, setHasChanges] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   
   // Branding settings
   const [siteName, setSiteName] = useState('Affiliate Platform');
@@ -164,9 +165,9 @@ const AdminSettings: React.FC = () => {
     setSiteLogoUrl('');
   };
 
-  // Load settings on mount
+  // Load settings once (prevents inputs/toggles from resetting while typing)
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && !hasInitialized) {
       setCommissionType(settingsMap.commission_type);
       setCommissionRate(settingsMap.commission_rate.toString());
       setMinPayoutAmount(settingsMap.min_payout_amount.toString());
@@ -187,8 +188,9 @@ const AdminSettings: React.FC = () => {
       if (settingsMap.resend_api_key) {
         setIsApiKeySaved(true);
       }
+      setHasInitialized(true);
     }
-  }, [isLoading, settingsMap]);
+  }, [isLoading, hasInitialized, settingsMap]);
 
   // Track changes
   useEffect(() => {
