@@ -510,15 +510,19 @@ const AdminUsers: React.FC = () => {
                 <Label htmlFor="use-default">Use default commission ({settingsMap.commission_rate}%)</Label>
               </div>
               {!useDefaultCommission && (
-                <div className="grid gap-2">
-                  <Label>Custom Commission Rate (%)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={commissionOverride}
-                    onChange={(e) => setCommissionOverride(e.target.value)}
-                  />
+              <div className="grid gap-2">
+                  <Label>Custom Commission Rate</Label>
+                  <div className="relative max-w-xs">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={commissionOverride}
+                      onChange={(e) => setCommissionOverride(e.target.value)}
+                      className="pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                  </div>
                 </div>
               )}
             </div>

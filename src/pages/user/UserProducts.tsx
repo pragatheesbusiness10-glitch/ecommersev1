@@ -227,15 +227,18 @@ const UserProducts: React.FC = () => {
                   </div>
 
                   <div className="grid gap-2">
-                    <Label htmlFor="selling-price">Your Selling Price ($)</Label>
-                    <Input
-                      id="selling-price"
-                      type="text"
-                      value={`$${parseFloat(sellingPrice).toFixed(2)}`}
-                      readOnly
-                      disabled
-                      className="text-lg font-semibold bg-muted cursor-not-allowed"
-                    />
+                    <Label htmlFor="selling-price">Your Selling Price</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg font-semibold text-muted-foreground">$</span>
+                      <Input
+                        id="selling-price"
+                        type="text"
+                        value={parseFloat(sellingPrice).toFixed(2)}
+                        readOnly
+                        disabled
+                        className="text-lg font-semibold bg-muted cursor-not-allowed pl-8"
+                      />
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       Price is set automatically with {markupPercentage}% markup
                     </p>
