@@ -217,8 +217,17 @@ const AdminSettings: React.FC = () => {
         updateSettingAsync({ key: 'default_markup_percentage', value: defaultMarkupPercentage, oldValue: settingsMap.default_markup_percentage.toString() }),
       ]);
       setHasChanges(false);
+      toast({
+        title: "Settings Saved",
+        description: "Your platform settings have been updated successfully.",
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

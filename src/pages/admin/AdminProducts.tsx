@@ -101,13 +101,23 @@ const AdminProducts: React.FC = () => {
 
   const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
+    const price = parseFloat(addForm.base_price);
+    const stock = parseInt(addForm.stock);
+    
+    if (isNaN(price) || price < 0) {
+      return; // Input validation prevents this, but extra safety
+    }
+    if (isNaN(stock) || stock < 0) {
+      return;
+    }
+    
     addProduct({
       name: addForm.name,
       description: addForm.description,
       sku: addForm.sku,
       category: addForm.category,
-      base_price: parseFloat(addForm.base_price) || 0,
-      stock: parseInt(addForm.stock) || 0,
+      base_price: price,
+      stock: stock,
       image_url: addForm.image_url,
     });
     setIsAddDialogOpen(false);
@@ -140,14 +150,24 @@ const AdminProducts: React.FC = () => {
     e.preventDefault();
     if (!selectedProduct) return;
     
+    const price = parseFloat(editForm.base_price);
+    const stock = parseInt(editForm.stock);
+    
+    if (isNaN(price) || price < 0) {
+      return; // Input validation prevents this, but extra safety
+    }
+    if (isNaN(stock) || stock < 0) {
+      return;
+    }
+    
     updateProduct({
       id: selectedProduct.id,
       name: editForm.name,
       description: editForm.description || null,
       sku: editForm.sku,
       category: editForm.category || null,
-      base_price: parseFloat(editForm.base_price) || 0,
-      stock: parseInt(editForm.stock) || 0,
+      base_price: price,
+      stock: stock,
       image_url: editForm.image_url || null,
     });
     setIsEditDialogOpen(false);
@@ -247,8 +267,14 @@ const AdminProducts: React.FC = () => {
                           id="price" 
                           type="number" 
                           step="0.01" 
+                          min="0"
                           value={addForm.base_price}
-                          onChange={(e) => setAddForm(prev => ({ ...prev, base_price: e.target.value }))}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || parseFloat(val) >= 0) {
+                              setAddForm(prev => ({ ...prev, base_price: val }));
+                            }
+                          }}
                           placeholder="0.00" 
                           className="pl-10"
                           required
@@ -260,8 +286,14 @@ const AdminProducts: React.FC = () => {
                       <Input 
                         id="stock" 
                         type="number" 
+                        min="0"
                         value={addForm.stock}
-                        onChange={(e) => setAddForm(prev => ({ ...prev, stock: e.target.value }))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '' || parseInt(val) >= 0) {
+                            setAddForm(prev => ({ ...prev, stock: val }));
+                          }
+                        }}
                         placeholder="0" 
                         required
                       />
@@ -470,8 +502,14 @@ const AdminProducts: React.FC = () => {
                         id="edit-price" 
                         type="number" 
                         step="0.01" 
+                        min="0"
                         value={editForm.base_price}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, base_price: e.target.value }))}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '' || parseFloat(val) >= 0) {
+                            setEditForm(prev => ({ ...prev, base_price: val }));
+                          }
+                        }}
                         className="pl-10"
                         required
                       />
@@ -482,8 +520,14 @@ const AdminProducts: React.FC = () => {
                     <Input 
                       id="edit-stock" 
                       type="number" 
+                      min="0"
                       value={editForm.stock}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, stock: e.target.value }))}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseInt(val) >= 0) {
+                          setEditForm(prev => ({ ...prev, stock: val }));
+                        }
+                      }}
                       required
                     />
                   </div>
