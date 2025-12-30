@@ -68,7 +68,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 const AdminSettings: React.FC = () => {
   const { toast } = useToast();
-  const { settingsMap, isLoading, updateSetting, isUpdating } = usePlatformSettings();
+  const { settingsMap, isLoading, updateSettingAsync, isUpdating } = usePlatformSettings();
   const { logs: settingsLogs, isLoading: isLoadingLogs } = useSettingsAuditLogs(10);
   
   const [commissionType, setCommissionType] = useState<'percentage' | 'fixed'>('percentage');
@@ -206,13 +206,13 @@ const AdminSettings: React.FC = () => {
   const handleSaveAll = async () => {
     try {
       await Promise.all([
-        updateSetting({ key: 'commission_type', value: commissionType, oldValue: settingsMap.commission_type }),
-        updateSetting({ key: 'commission_rate', value: commissionRate, oldValue: settingsMap.commission_rate.toString() }),
-        updateSetting({ key: 'min_payout_amount', value: minPayoutAmount, oldValue: settingsMap.min_payout_amount.toString() }),
-        updateSetting({ key: 'auto_credit_on_complete', value: autoCreditOnComplete.toString(), oldValue: settingsMap.auto_credit_on_complete.toString() }),
-        updateSetting({ key: 'auto_user_approval', value: autoUserApproval.toString(), oldValue: settingsMap.auto_user_approval.toString() }),
-        updateSetting({ key: 'default_currency', value: defaultCurrency, oldValue: settingsMap.default_currency }),
-        updateSetting({ key: 'default_markup_percentage', value: defaultMarkupPercentage, oldValue: settingsMap.default_markup_percentage.toString() }),
+        updateSettingAsync({ key: 'commission_type', value: commissionType, oldValue: settingsMap.commission_type }),
+        updateSettingAsync({ key: 'commission_rate', value: commissionRate, oldValue: settingsMap.commission_rate.toString() }),
+        updateSettingAsync({ key: 'min_payout_amount', value: minPayoutAmount, oldValue: settingsMap.min_payout_amount.toString() }),
+        updateSettingAsync({ key: 'auto_credit_on_complete', value: autoCreditOnComplete.toString(), oldValue: settingsMap.auto_credit_on_complete.toString() }),
+        updateSettingAsync({ key: 'auto_user_approval', value: autoUserApproval.toString(), oldValue: settingsMap.auto_user_approval.toString() }),
+        updateSettingAsync({ key: 'default_currency', value: defaultCurrency, oldValue: settingsMap.default_currency }),
+        updateSettingAsync({ key: 'default_markup_percentage', value: defaultMarkupPercentage, oldValue: settingsMap.default_markup_percentage.toString() }),
       ]);
       setHasChanges(false);
     } catch (error) {
@@ -233,9 +233,9 @@ const AdminSettings: React.FC = () => {
     setIsSavingEmailSettings(true);
     try {
       await Promise.all([
-        updateSetting({ key: 'resend_api_key', value: resendApiKey, oldValue: settingsMap.resend_api_key }),
-        updateSetting({ key: 'email_notifications_enabled', value: emailNotificationsEnabled.toString(), oldValue: settingsMap.email_notifications_enabled.toString() }),
-        updateSetting({ key: 'admin_email', value: adminEmail, oldValue: settingsMap.admin_email }),
+        updateSettingAsync({ key: 'resend_api_key', value: resendApiKey, oldValue: settingsMap.resend_api_key }),
+        updateSettingAsync({ key: 'email_notifications_enabled', value: emailNotificationsEnabled.toString(), oldValue: settingsMap.email_notifications_enabled.toString() }),
+        updateSettingAsync({ key: 'admin_email', value: adminEmail, oldValue: settingsMap.admin_email }),
       ]);
       setIsApiKeySaved(true);
       toast({
@@ -258,9 +258,9 @@ const AdminSettings: React.FC = () => {
     setIsSavingEmailSettings(true);
     try {
       await Promise.all([
-        updateSetting({ key: 'resend_api_key', value: '', oldValue: settingsMap.resend_api_key }),
-        updateSetting({ key: 'email_notifications_enabled', value: 'false', oldValue: settingsMap.email_notifications_enabled.toString() }),
-        updateSetting({ key: 'admin_email', value: '', oldValue: settingsMap.admin_email }),
+        updateSettingAsync({ key: 'resend_api_key', value: '', oldValue: settingsMap.resend_api_key }),
+        updateSettingAsync({ key: 'email_notifications_enabled', value: 'false', oldValue: settingsMap.email_notifications_enabled.toString() }),
+        updateSettingAsync({ key: 'admin_email', value: '', oldValue: settingsMap.admin_email }),
       ]);
       setResendApiKey('');
       setIsApiKeySaved(false);
@@ -281,11 +281,11 @@ const AdminSettings: React.FC = () => {
     setIsSavingBranding(true);
     try {
       await Promise.all([
-        updateSetting({ key: 'site_name', value: siteName, oldValue: settingsMap.site_name }),
-        updateSetting({ key: 'site_logo_url', value: siteLogoUrl, oldValue: settingsMap.site_logo_url }),
-        updateSetting({ key: 'landing_page_enabled', value: landingPageEnabled.toString(), oldValue: settingsMap.landing_page_enabled.toString() }),
-        updateSetting({ key: 'landing_page_title', value: landingPageTitle, oldValue: settingsMap.landing_page_title }),
-        updateSetting({ key: 'landing_page_subtitle', value: landingPageSubtitle, oldValue: settingsMap.landing_page_subtitle }),
+        updateSettingAsync({ key: 'site_name', value: siteName, oldValue: settingsMap.site_name }),
+        updateSettingAsync({ key: 'site_logo_url', value: siteLogoUrl, oldValue: settingsMap.site_logo_url }),
+        updateSettingAsync({ key: 'landing_page_enabled', value: landingPageEnabled.toString(), oldValue: settingsMap.landing_page_enabled.toString() }),
+        updateSettingAsync({ key: 'landing_page_title', value: landingPageTitle, oldValue: settingsMap.landing_page_title }),
+        updateSettingAsync({ key: 'landing_page_subtitle', value: landingPageSubtitle, oldValue: settingsMap.landing_page_subtitle }),
       ]);
       toast({
         title: "Branding Settings Saved",
