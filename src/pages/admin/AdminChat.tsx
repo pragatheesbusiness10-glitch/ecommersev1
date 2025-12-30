@@ -8,17 +8,33 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { 
   MessageCircle, 
   Send, 
   Loader2, 
   Search,
   User,
-  ArrowLeft
+  ArrowLeft,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { ChatMessage } from '@/hooks/useChat';
+import { supabase } from '@/integrations/supabase/client';
+
+interface UserProfile {
+  user_id: string;
+  name: string;
+  email: string;
+}
 
 const AdminChat: React.FC = () => {
   const queryClient = useQueryClient();
@@ -34,7 +50,31 @@ const AdminChat: React.FC = () => {
   const [selectedConversation, setSelectedConversation] = useState<ChatConversation | null>(null);
   const [inputMessage, setInputMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isNewConversationOpen, setIsNewConversationOpen] = useState(false);
+  const [newConversationSearch, setNewConversationSearch] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch all users for new conversation dialog
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['all-users-for-chat'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, name, email')
+        .order('name');
+      
+      if (error) throw error;
+      return data as UserProfile[];
+    },
+  });
+
+  // Filter users who don't have existing conversations
+  const existingUserIds = new Set(conversations.map(c => c.user_id));
+  const availableUsers = allUsers.filter(
+    u => !existingUserIds.has(u.user_id) &&
+      (u.name.toLowerCase().includes(newConversationSearch.toLowerCase()) ||
+       u.email.toLowerCase().includes(newConversationSearch.toLowerCase()))
+  );
 
   // Typing indicator for the selected conversation
   const { isOtherTyping, typingUserName, setTyping } = useTypingIndicator(selectedConversation?.user_id);
@@ -57,6 +97,21 @@ const AdminChat: React.FC = () => {
     if (conv.unread_count > 0) {
       markAsRead(conv.user_id);
     }
+  };
+
+  const handleStartNewConversation = (user: UserProfile) => {
+    // Create a temporary conversation object
+    const newConv: ChatConversation = {
+      user_id: user.user_id,
+      user_name: user.name,
+      user_email: user.email,
+      last_message: '',
+      last_message_at: new Date().toISOString(),
+      unread_count: 0,
+    };
+    setSelectedConversation(newConv);
+    setIsNewConversationOpen(false);
+    setNewConversationSearch('');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -127,8 +182,8 @@ const AdminChat: React.FC = () => {
             "w-80 border rounded-xl flex flex-col bg-card",
             selectedConversation && "hidden md:flex"
           )}>
-            {/* Search */}
-            <div className="p-3 border-b">
+            {/* Search and New Conversation */}
+            <div className="p-3 border-b space-y-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -138,6 +193,60 @@ const AdminChat: React.FC = () => {
                   className="pl-10"
                 />
               </div>
+              <Dialog open={isNewConversationOpen} onOpenChange={setIsNewConversationOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full gap-2">
+                    <Plus className="w-4 h-4" />
+                    New Conversation
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Start New Conversation</DialogTitle>
+                    <DialogDescription>
+                      Select a user to start a conversation with
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search users..."
+                        value={newConversationSearch}
+                        onChange={(e) => setNewConversationSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                    <ScrollArea className="h-[300px]">
+                      {availableUsers.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
+                          <User className="w-10 h-10 mb-2 opacity-50" />
+                          <p className="text-sm">No users available</p>
+                          <p className="text-xs">All users already have conversations</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {availableUsers.map((user) => (
+                            <button
+                              key={user.user_id}
+                              onClick={() => handleStartNewConversation(user)}
+                              className="w-full p-3 text-left rounded-lg hover:bg-accent/50 transition-colors flex items-center gap-3"
+                            >
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <User className="w-5 h-5 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium truncate">{user.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Conversations */}

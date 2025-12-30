@@ -60,9 +60,28 @@ const Storefront: React.FC = () => {
   );
 
   const addToCart = (product: PublicStorefrontProduct) => {
+    // Check if product is in stock
+    if (product.product.stock <= 0) {
+      toast({
+        title: 'Out of Stock',
+        description: `${product.product.name} is currently out of stock.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
+        // Check stock limit
+        if (existing.quantity >= product.product.stock) {
+          toast({
+            title: 'Maximum Quantity Reached',
+            description: `Only ${product.product.stock} units available.`,
+            variant: 'destructive',
+          });
+          return prev;
+        }
         return prev.map(item =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
@@ -82,6 +101,15 @@ const Storefront: React.FC = () => {
       prev.map(item => {
         if (item.product.id === productId) {
           const newQuantity = item.quantity + delta;
+          // Check stock limit when increasing
+          if (delta > 0 && newQuantity > item.product.product.stock) {
+            toast({
+              title: 'Maximum Quantity Reached',
+              description: `Only ${item.product.product.stock} units available.`,
+              variant: 'destructive',
+            });
+            return item;
+          }
           return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
         }
         return item;
