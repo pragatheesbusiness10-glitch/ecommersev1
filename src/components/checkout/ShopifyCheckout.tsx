@@ -20,7 +20,8 @@ import {
   CreditCard,
   Wallet,
   Building2,
-  Plus
+  Plus,
+  Minus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,6 +33,10 @@ interface CartItem {
   image?: string;
 }
 
+interface ShopifyCheckoutInternalProps extends ShopifyCheckoutProps {
+  onUpdateQuantity?: (id: string, delta: number) => void;
+}
+
 interface ShopifyCheckoutProps {
   cart: CartItem[];
   total: number;
@@ -39,6 +44,7 @@ interface ShopifyCheckoutProps {
   onSubmit: (data: CheckoutData) => Promise<void>;
   onBack: () => void;
   isSubmitting: boolean;
+  onUpdateQuantity?: (id: string, delta: number) => void;
 }
 
 export interface CheckoutData {
@@ -80,6 +86,7 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
   onSubmit,
   onBack,
   isSubmitting,
+  onUpdateQuantity,
 }) => {
   const [step, setStep] = useState<'info' | 'payment' | 'success'>('info');
   const [formData, setFormData] = useState({
@@ -461,7 +468,7 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
           
           <div className="space-y-4 mb-6">
             {cart.map((item) => (
-              <div key={item.id} className="flex gap-4">
+              <div key={item.id} className="flex gap-4 items-start">
                 <div className="relative">
                   {item.image ? (
                     <img src={item.image} alt={item.name} className="w-16 h-16 rounded-lg object-cover border" />
@@ -470,13 +477,32 @@ export const ShopifyCheckout: React.FC<ShopifyCheckoutProps> = ({
                       <span className="text-xs text-muted-foreground">N/A</span>
                     </div>
                   )}
-                  <span className="absolute -top-2 -right-2 w-5 h-5 bg-muted-foreground text-white text-xs rounded-full flex items-center justify-center">
-                    {item.quantity}
-                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                  {onUpdateQuantity ? (
+                    <div className="flex items-center gap-2 mt-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 rounded-full"
+                        onClick={() => onUpdateQuantity(item.id, -1)}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+                      <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 rounded-full"
+                        onClick={() => onUpdateQuantity(item.id, 1)}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                  )}
                 </div>
                 <p className="font-medium text-sm">₹{(item.price * item.quantity).toFixed(2)}</p>
               </div>

@@ -477,6 +477,7 @@ const Storefront: React.FC = () => {
             onSubmit={handleSubmitOrder}
             onBack={handleCloseCheckout}
             isSubmitting={isSubmitting}
+            onUpdateQuantity={updateQuantity}
           />
         </DialogContent>
       </Dialog>

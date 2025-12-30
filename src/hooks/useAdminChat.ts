@@ -130,8 +130,12 @@ export const useAdminChat = () => {
     },
   });
 
-  // Realtime subscription for new messages
+  // Realtime subscription for new messages with notification sound
   useEffect(() => {
+    // Create audio for notification sound
+    const notificationSound = new Audio('/notification.mp3');
+    notificationSound.volume = 0.5;
+
     const channel = supabase
       .channel('admin-chat-messages')
       .on(
@@ -141,12 +145,35 @@ export const useAdminChat = () => {
           schema: 'public',
           table: 'chat_messages',
         },
-        () => {
+        (payload) => {
           queryClient.invalidateQueries({ queryKey: ['admin-chat-conversations'] });
           queryClient.invalidateQueries({ queryKey: ['admin-chat-messages'] });
+
+          // Play sound and show browser notification for user messages to admin
+          const newMessage = payload.new as ChatMessage;
+          if (newMessage.sender_role === 'user') {
+            // Play notification sound
+            notificationSound.play().catch(() => {});
+            
+            // Show browser push notification
+            if (Notification.permission === 'granted') {
+              new Notification('New Support Message', {
+                body: newMessage.message.substring(0, 100),
+                icon: '/favicon.ico',
+                tag: 'admin-chat-notification',
+              });
+            } else if (Notification.permission !== 'denied') {
+              Notification.requestPermission();
+            }
+          }
         }
       )
       .subscribe();
+
+    // Request notification permission on mount
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
 
     return () => {
       supabase.removeChannel(channel);
