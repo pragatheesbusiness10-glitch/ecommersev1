@@ -226,13 +226,15 @@ const UserProducts: React.FC = () => {
                     <Label htmlFor="selling-price">Your Selling Price ($)</Label>
                     <Input
                       id="selling-price"
-                      type="number"
-                      step="0.01"
-                      min={selectedProduct.base_price + 0.01}
-                      value={sellingPrice}
-                      onChange={(e) => setSellingPrice(e.target.value)}
-                      className="text-lg font-semibold"
+                      type="text"
+                      value={`$${parseFloat(sellingPrice).toFixed(2)}`}
+                      readOnly
+                      disabled
+                      className="text-lg font-semibold bg-muted cursor-not-allowed"
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Price is set automatically with 30% markup
+                    </p>
                     {parseFloat(sellingPrice) > selectedProduct.base_price && (
                       <p className="text-sm text-green-600">
                         Your profit: ${(parseFloat(sellingPrice) - selectedProduct.base_price).toFixed(2)} per sale
