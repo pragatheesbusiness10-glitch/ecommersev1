@@ -77,6 +77,7 @@ const AdminSettings: React.FC = () => {
   const [autoCreditOnComplete, setAutoCreditOnComplete] = useState(true);
   const [autoUserApproval, setAutoUserApproval] = useState(false);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [defaultMarkupPercentage, setDefaultMarkupPercentage] = useState('30');
   const [hasChanges, setHasChanges] = useState(false);
   
   // Branding settings
@@ -172,6 +173,7 @@ const AdminSettings: React.FC = () => {
       setAutoCreditOnComplete(settingsMap.auto_credit_on_complete);
       setAutoUserApproval(settingsMap.auto_user_approval);
       setDefaultCurrency(settingsMap.default_currency);
+      setDefaultMarkupPercentage(settingsMap.default_markup_percentage.toString());
       // Load branding settings
       setSiteName(settingsMap.site_name);
       setSiteLogoUrl(settingsMap.site_logo_url);
@@ -196,9 +198,10 @@ const AdminSettings: React.FC = () => {
       minPayoutAmount !== settingsMap.min_payout_amount.toString() ||
       autoCreditOnComplete !== settingsMap.auto_credit_on_complete ||
       autoUserApproval !== settingsMap.auto_user_approval ||
-      defaultCurrency !== settingsMap.default_currency;
+      defaultCurrency !== settingsMap.default_currency ||
+      defaultMarkupPercentage !== settingsMap.default_markup_percentage.toString();
     setHasChanges(changed);
-  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, autoUserApproval, defaultCurrency, settingsMap]);
+  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, autoUserApproval, defaultCurrency, defaultMarkupPercentage, settingsMap]);
 
   const handleSaveAll = async () => {
     try {
@@ -209,6 +212,7 @@ const AdminSettings: React.FC = () => {
         updateSetting({ key: 'auto_credit_on_complete', value: autoCreditOnComplete.toString(), oldValue: settingsMap.auto_credit_on_complete.toString() }),
         updateSetting({ key: 'auto_user_approval', value: autoUserApproval.toString(), oldValue: settingsMap.auto_user_approval.toString() }),
         updateSetting({ key: 'default_currency', value: defaultCurrency, oldValue: settingsMap.default_currency }),
+        updateSetting({ key: 'default_markup_percentage', value: defaultMarkupPercentage, oldValue: settingsMap.default_markup_percentage.toString() }),
       ]);
       setHasChanges(false);
     } catch (error) {
@@ -724,6 +728,50 @@ const AdminSettings: React.FC = () => {
                 {commissionType === 'percentage' 
                   ? `Affiliates receive ${commissionRate}% of their profit margin by default.`
                   : `Affiliates receive ${CURRENCY_SYMBOLS[defaultCurrency]}${(parseFloat(commissionRate) || 0).toFixed(2)} per unit sold.`}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Product Markup Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <CardTitle>Product Markup Settings</CardTitle>
+                <CardDescription>
+                  Configure the default markup percentage applied to product base prices.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label>Default Markup Percentage (%)</Label>
+              <div className="relative max-w-xs">
+                <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="number"
+                  value={defaultMarkupPercentage}
+                  onChange={(e) => setDefaultMarkupPercentage(e.target.value)}
+                  className="pl-10"
+                  min="1"
+                  max="500"
+                  step="1"
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                When users add products to their storefront, the selling price will be automatically set to the base price + {defaultMarkupPercentage}% markup.
+              </p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-sm">
+              <p className="font-medium mb-2">Example:</p>
+              <p className="text-muted-foreground">
+                If a product has a base price of $100 and the markup is {defaultMarkupPercentage}%, 
+                the selling price will be ${(100 * (1 + parseFloat(defaultMarkupPercentage || '0') / 100)).toFixed(2)}
               </p>
             </div>
           </CardContent>
