@@ -12,7 +12,8 @@ import {
   Power,
   Trash2,
   Package,
-  Loader2
+  Loader2,
+  DollarSign
 } from 'lucide-react';
 import {
   Dialog,
@@ -239,16 +240,20 @@ const AdminProducts: React.FC = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="price">Base Price ($)</Label>
-                      <Input 
-                        id="price" 
-                        type="number" 
-                        step="0.01" 
-                        value={addForm.base_price}
-                        onChange={(e) => setAddForm(prev => ({ ...prev, base_price: e.target.value }))}
-                        placeholder="0.00" 
-                        required
-                      />
+                      <Label htmlFor="price">Base Price</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input 
+                          id="price" 
+                          type="number" 
+                          step="0.01" 
+                          value={addForm.base_price}
+                          onChange={(e) => setAddForm(prev => ({ ...prev, base_price: e.target.value }))}
+                          placeholder="0.00" 
+                          className="pl-10"
+                          required
+                        />
+                      </div>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="stock">Stock</Label>
@@ -458,15 +463,19 @@ const AdminProducts: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="edit-price">Base Price ($)</Label>
-                    <Input 
-                      id="edit-price" 
-                      type="number" 
-                      step="0.01" 
-                      value={editForm.base_price}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, base_price: e.target.value }))}
-                      required
-                    />
+                    <Label htmlFor="edit-price">Base Price</Label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input 
+                        id="edit-price" 
+                        type="number" 
+                        step="0.01" 
+                        value={editForm.base_price}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, base_price: e.target.value }))}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="edit-stock">Stock</Label>

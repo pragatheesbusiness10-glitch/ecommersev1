@@ -99,20 +99,22 @@ export const LevelCommissionSettings: React.FC = () => {
               <div className="space-y-1">
                 <Label htmlFor={`rate-${level.key}`}>Commission Rate</Label>
                 <div className="flex items-center gap-2">
-                  <Input
-                    id={`rate-${level.key}`}
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    value={rates[level.key as keyof typeof rates]}
-                    onChange={(e) => setRates(prev => ({
-                      ...prev,
-                      [level.key]: parseFloat(e.target.value) || 0
-                    }))}
-                    className="max-w-24"
-                  />
-                  <span className="text-muted-foreground">%</span>
+                  <div className="relative">
+                    <Input
+                      id={`rate-${level.key}`}
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      value={rates[level.key as keyof typeof rates]}
+                      onChange={(e) => setRates(prev => ({
+                        ...prev,
+                        [level.key]: parseFloat(e.target.value) || 0
+                      }))}
+                      className="max-w-24 pr-8"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
+                  </div>
                 </div>
               </div>
             </div>
