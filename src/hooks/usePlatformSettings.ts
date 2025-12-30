@@ -312,6 +312,7 @@ export const usePlatformSettings = () => {
     isLoading: settingsQuery.isLoading,
     error: settingsQuery.error,
     updateSetting: updateSettingMutation.mutate,
+    updateSettingAsync: updateSettingMutation.mutateAsync,
     isUpdating: updateSettingMutation.isPending,
   };
 };
