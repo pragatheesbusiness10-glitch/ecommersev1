@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
@@ -13,20 +13,83 @@ import {
   DollarSign,
   Wallet,
   TrendingUp,
-  Loader2
+  Loader2,
+  Play,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { recentOrders, stats, profile, isLoading, refetchOrders } = useUserDashboard();
   const { settingsMap } = usePlatformSettings();
+  const [showVideoDialog, setShowVideoDialog] = useState(false);
   
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
+  const tutorialVideoUrl = settingsMap.user_dashboard_video_url;
+
+  // Helper to render video (supports YouTube, Vimeo, direct video)
+  const renderVideo = (url: string) => {
+    if (!url) return null;
+
+    // YouTube embed
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = '';
+      if (url.includes('youtube.com/watch')) {
+        videoId = new URL(url).searchParams.get('v') || '';
+      } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+      } else if (url.includes('youtube.com/embed/')) {
+        videoId = url.split('embed/')[1]?.split('?')[0] || '';
+      }
+      if (videoId) {
+        return (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            className="w-full aspect-video rounded-xl"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        );
+      }
+    }
+
+    // Vimeo embed
+    if (url.includes('vimeo.com')) {
+      const vimeoId = url.split('vimeo.com/')[1]?.split('?')[0];
+      if (vimeoId) {
+        return (
+          <iframe
+            src={`https://player.vimeo.com/video/${vimeoId}`}
+            className="w-full aspect-video rounded-xl"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        );
+      }
+    }
+
+    // Direct video file
+    return (
+      <video
+        src={url}
+        controls
+        className="w-full aspect-video rounded-xl"
+      >
+        Your browser does not support the video tag.
+      </video>
+    );
+  };
 
   const handlePayOrder = async (order: typeof recentOrders[0]) => {
     try {
@@ -69,7 +132,8 @@ const UserDashboard: React.FC = () => {
   if (!user) return null;
 
   return (
-    <DashboardLayout>
+    <>
+      <DashboardLayout>
       <div className="space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -211,6 +275,23 @@ const UserDashboard: React.FC = () => {
               </Button>
             </div>
 
+            {/* Tutorial Video Card */}
+            {tutorialVideoUrl && (
+              <div className="dashboard-card bg-primary/5 border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Play className="w-4 h-4 text-primary" />
+                  <h3 className="font-semibold text-foreground">Getting Started</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Watch our tutorial to learn how to use the platform effectively.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setShowVideoDialog(true)}>
+                  <Play className="w-3 h-3 mr-2" />
+                  Watch Tutorial
+                </Button>
+              </div>
+            )}
+
             {/* Tips Card */}
             <div className="dashboard-card bg-accent/5 border-accent/20">
               <h3 className="font-semibold text-foreground mb-2">Pro Tip</h3>
@@ -235,6 +316,19 @@ const UserDashboard: React.FC = () => {
         </div>
       </div>
     </DashboardLayout>
+
+      {/* Video Dialog */}
+      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Getting Started Tutorial</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4">
+            {tutorialVideoUrl && renderVideo(tutorialVideoUrl)}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
