@@ -1,9 +1,16 @@
 import React from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Store, Users, ShoppingCart, Shield, Zap, BarChart3 } from 'lucide-react';
+import { ArrowRight, Store, Users, ShoppingCart, Shield, Zap, BarChart3, ChevronDown, Play } from 'lucide-react';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+
 const Index: React.FC = () => {
   const {
     settingsMap,
@@ -14,11 +21,67 @@ const Index: React.FC = () => {
   const landingEnabled = settingsMap.landing_page_enabled;
   const heroTitle = settingsMap.landing_page_title || 'Empower Your Affiliate Network';
   const heroSubtitle = settingsMap.landing_page_subtitle || 'A private e-commerce platform where affiliates run their own storefronts, you control the catalog, and payments flow seamlessly.';
+  const videoUrl = settingsMap.landing_video_url;
+  const faqItems = settingsMap.faq_items || [];
 
   // If landing page is disabled, redirect to login
   if (!isLoading && !landingEnabled) {
     return <Navigate to="/login" replace />;
   }
+
+  // Helper to render video (supports YouTube, Vimeo, direct video)
+  const renderVideo = (url: string) => {
+    if (!url) return null;
+
+    // YouTube embed
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = '';
+      if (url.includes('youtube.com/watch')) {
+        videoId = new URL(url).searchParams.get('v') || '';
+      } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+      } else if (url.includes('youtube.com/embed/')) {
+        videoId = url.split('embed/')[1]?.split('?')[0] || '';
+      }
+      if (videoId) {
+        return (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            className="w-full aspect-video rounded-xl shadow-2xl"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        );
+      }
+    }
+
+    // Vimeo embed
+    if (url.includes('vimeo.com')) {
+      const vimeoId = url.split('vimeo.com/')[1]?.split('?')[0];
+      if (vimeoId) {
+        return (
+          <iframe
+            src={`https://player.vimeo.com/video/${vimeoId}`}
+            className="w-full aspect-video rounded-xl shadow-2xl"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        );
+      }
+    }
+
+    // Direct video file
+    return (
+      <video
+        src={url}
+        controls
+        className="w-full aspect-video rounded-xl shadow-2xl"
+      >
+        Your browser does not support the video tag.
+      </video>
+    );
+  };
+
   return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
@@ -73,6 +136,30 @@ const Index: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Video Section */}
+      {videoUrl && (
+        <section className="py-20 px-4 bg-muted/30">
+          <div className="container mx-auto">
+            <div className="text-center mb-12">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+                <Play className="w-4 h-4 text-primary" />
+                <span className="text-sm text-primary">Watch & Learn</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                See How It Works
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Watch this quick tutorial to understand how our platform can help you grow your affiliate network.
+              </p>
+            </div>
+            
+            <div className="max-w-4xl mx-auto">
+              {renderVideo(videoUrl)}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="py-20 px-4">
@@ -164,6 +251,41 @@ const Index: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* FAQ Section */}
+      {faqItems.length > 0 && (
+        <section className="py-20 px-4">
+          <div className="container mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                Frequently Asked Questions
+              </h2>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Got questions? We've got answers.
+              </p>
+            </div>
+
+            <div className="max-w-3xl mx-auto">
+              <Accordion type="single" collapsible className="space-y-4">
+                {faqItems.map((item, index) => (
+                  <AccordionItem 
+                    key={item.id} 
+                    value={item.id}
+                    className="dashboard-card border rounded-xl px-6"
+                  >
+                    <AccordionTrigger className="text-left hover:no-underline py-6">
+                      <span className="text-lg font-semibold text-foreground">{item.question}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground pb-6">
+                      {item.answer}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <section className="py-20 px-4" style={{

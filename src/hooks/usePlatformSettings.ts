@@ -13,6 +13,12 @@ export interface PlatformSetting {
   updated_at: string;
 }
 
+export interface FAQItem {
+  id: string;
+  question: string;
+  answer: string;
+}
+
 export interface SettingsMap {
   commission_type: 'percentage' | 'fixed';
   commission_rate: number;
@@ -30,6 +36,11 @@ export interface SettingsMap {
   landing_page_enabled: boolean;
   landing_page_title: string;
   landing_page_subtitle: string;
+  // Video settings
+  landing_video_url: string;
+  user_dashboard_video_url: string;
+  // FAQ settings
+  faq_items: FAQItem[];
   // Payment gateway settings - PayPal
   payment_gateway_paypal_enabled: boolean;
   payment_gateway_paypal_client_id: string;
@@ -114,6 +125,11 @@ export const usePlatformSettings = () => {
       landing_page_enabled: true,
       landing_page_title: 'Welcome to Our Platform',
       landing_page_subtitle: 'Join our affiliate network and start earning today',
+      // Video settings
+      landing_video_url: '',
+      user_dashboard_video_url: '',
+      // FAQ settings
+      faq_items: [],
       // Payment gateway defaults - PayPal
       payment_gateway_paypal_enabled: false,
       payment_gateway_paypal_client_id: '',
@@ -196,6 +212,19 @@ export const usePlatformSettings = () => {
         case 'landing_page_subtitle':
           map.landing_page_subtitle =
             setting.value || 'Join our affiliate network and start earning today';
+          break;
+        case 'landing_video_url':
+          map.landing_video_url = setting.value || '';
+          break;
+        case 'user_dashboard_video_url':
+          map.user_dashboard_video_url = setting.value || '';
+          break;
+        case 'faq_items':
+          try {
+            map.faq_items = JSON.parse(setting.value) || [];
+          } catch {
+            map.faq_items = [];
+          }
           break;
         // Payment gateway settings - PayPal
         case 'payment_gateway_paypal_enabled':
