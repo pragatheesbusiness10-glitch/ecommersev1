@@ -64,6 +64,7 @@ import { LevelCommissionSettings } from '@/components/admin/LevelCommissionSetti
 import { AutoPayoutSettings } from '@/components/admin/AutoPayoutSettings';
 import { FAQSettings } from '@/components/admin/FAQSettings';
 import { VideoSettings } from '@/components/admin/VideoSettings';
+import { StorefrontSettings } from '@/components/admin/StorefrontSettings';
 import { MFASettings } from '@/components/mfa/MFASettings';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -1086,6 +1087,9 @@ const AdminSettings: React.FC = () => {
 
         {/* FAQ Settings */}
         <FAQSettings />
+
+        {/* Storefront Settings */}
+        <StorefrontSettings />
 
         {/* Commission Preview */}
         <Card className="border-dashed">

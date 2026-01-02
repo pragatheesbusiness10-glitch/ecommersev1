@@ -155,7 +155,7 @@ const Storefront: React.FC = () => {
           throw new Error(error.message || 'Failed to create order');
         }
 
-        // Check if order creation is disabled
+        // Check if order creation is disabled or blocked
         if (response?.disabled) {
           throw new Error(response?.error || 'Order creation is currently disabled. Please contact the store owner to place your order.');
         }
@@ -170,7 +170,7 @@ const Storefront: React.FC = () => {
       console.error('Order error:', error);
       toast({
         title: 'Order Failed',
-        description: 'Order not available in India or you are using VPN, fake order.',
+        description: error instanceof Error ? error.message : 'Order not available. Please contact the store owner.',
         variant: 'destructive',
       });
       throw error;
