@@ -15,7 +15,9 @@ import {
   CheckCircle,
   XCircle,
   RotateCcw,
-  EyeOff
+  EyeOff,
+  Download,
+  FileText
 } from 'lucide-react';
 import {
   Dialog,
@@ -48,6 +50,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { maskSensitiveField } from '@/lib/maskingUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
@@ -347,14 +350,45 @@ const AdminPayouts: React.FC = () => {
                     </Button>
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3 space-y-1 text-sm">
-                    {Object.entries(selectedPayout.payment_details).map(([key, value]) => (
-                      <div key={key} className="flex justify-between">
-                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
-                        <span className="font-medium font-mono">
-                          {showUnmasked ? value : maskSensitiveField(key, String(value))}
-                        </span>
-                      </div>
-                    ))}
+                    {Object.entries(selectedPayout.payment_details).map(([key, value]) => {
+                      // Handle bank statement download link
+                      if (key === 'bank_statement_path' && value) {
+                        const handleDownload = async () => {
+                          const { data } = await supabase.storage
+                            .from('payout-documents')
+                            .createSignedUrl(String(value), 3600);
+                          if (data?.signedUrl) {
+                            window.open(data.signedUrl, '_blank');
+                          }
+                        };
+                        return (
+                          <div key={key} className="flex justify-between items-center">
+                            <span className="text-muted-foreground capitalize">Bank Statement:</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleDownload}
+                              className="h-7 px-2 text-xs gap-1"
+                            >
+                              <Download className="w-3 h-3" />
+                              Download
+                            </Button>
+                          </div>
+                        );
+                      }
+                      
+                      // Skip empty values
+                      if (!value) return null;
+                      
+                      return (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
+                          <span className="font-medium font-mono">
+                            {showUnmasked ? value : maskSensitiveField(key, String(value))}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

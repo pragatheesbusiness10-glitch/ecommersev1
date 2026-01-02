@@ -136,6 +136,17 @@ const UserPayments: React.FC = () => {
         return;
       }
 
+      // Validate IFSC code format (4 letters + 0 + 6 alphanumeric)
+      const ifscPattern = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+      if (!ifscPattern.test(ifscCode)) {
+        toast({
+          title: 'Invalid IFSC Code',
+          description: 'IFSC code must be 11 characters: 4 letters, followed by 0, then 6 alphanumeric characters.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Upload bank statement if provided
       let bankStatementUrl = '';
       if (bankStatement && user) {
