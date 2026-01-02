@@ -189,7 +189,7 @@ const UserPayments: React.FC = () => {
                   <div className="bg-muted/50 rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Available Balance:</span>
-                      <span className="font-bold text-lg">{currencySymbol}{walletBalance.toFixed(2)}</span>
+                      <span className="font-bold text-lg">{currencySymbol}{totalOrderValue.toFixed(2)}</span>
                     </div>
                   </div>
 
