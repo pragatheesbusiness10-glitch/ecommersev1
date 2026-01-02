@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.process-auto-payouts]
 verify_jwt = false
+
+[functions.validate-ifsc]
+verify_jwt = false

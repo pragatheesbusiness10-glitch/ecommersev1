@@ -80,6 +80,14 @@ const UserPayments: React.FC = () => {
   const [ifscCode, setIfscCode] = useState('');
   const [bankStatement, setBankStatement] = useState<File | null>(null);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [ifscValidation, setIfscValidation] = useState<{
+    valid: boolean | null;
+    bank?: string;
+    branch?: string;
+    error?: string;
+    loading: boolean;
+  }>({ valid: null, loading: false });
+  const [accountNumberError, setAccountNumberError] = useState('');
 
   const { profile, transactions, orders, stats, isLoading: dashboardLoading } = useUserDashboard();
   const { payoutRequests, isLoading: payoutsLoading, createPayout, isCreatingPayout } = usePayoutRequests();
@@ -94,6 +102,71 @@ const UserPayments: React.FC = () => {
   // Calculate total order value and profit
   const totalOrderValue = orders.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
   const totalProfit = stats.totalRevenue;
+
+  // Validate IFSC code with API
+  const validateIfsc = async (code: string) => {
+    if (code.length !== 11) {
+      setIfscValidation({ valid: null, loading: false });
+      return;
+    }
+    
+    setIfscValidation({ valid: null, loading: true });
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-ifsc', {
+        body: { ifsc: code }
+      });
+      
+      if (error) throw error;
+      
+      if (data.valid) {
+        setIfscValidation({
+          valid: true,
+          bank: data.bank,
+          branch: data.branch,
+          loading: false
+        });
+      } else {
+        setIfscValidation({
+          valid: false,
+          error: data.error || 'Invalid IFSC code',
+          loading: false
+        });
+      }
+    } catch (err) {
+      setIfscValidation({
+        valid: false,
+        error: 'Failed to validate IFSC',
+        loading: false
+      });
+    }
+  };
+
+  // Handle IFSC code change with debounce
+  const handleIfscChange = (value: string) => {
+    const uppercaseValue = value.toUpperCase();
+    setIfscCode(uppercaseValue);
+    
+    // Reset validation when typing
+    if (uppercaseValue.length < 11) {
+      setIfscValidation({ valid: null, loading: false });
+    } else if (uppercaseValue.length === 11) {
+      validateIfsc(uppercaseValue);
+    }
+  };
+
+  // Validate account number format
+  const handleAccountNumberChange = (value: string) => {
+    // Only allow digits
+    const digitsOnly = value.replace(/\D/g, '');
+    setAccountNumber(digitsOnly);
+    
+    if (digitsOnly.length > 0 && (digitsOnly.length < 9 || digitsOnly.length > 18)) {
+      setAccountNumberError('Account number must be 9-18 digits');
+    } else {
+      setAccountNumberError('');
+    }
+  };
 
   const handleRequestPayout = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -314,27 +387,59 @@ const UserPayments: React.FC = () => {
                         <Input
                           id="account-number"
                           value={accountNumber}
-                          onChange={(e) => setAccountNumber(e.target.value)}
-                          placeholder="Enter account number"
+                          onChange={(e) => handleAccountNumberChange(e.target.value)}
+                          placeholder="Enter account number (9-18 digits)"
+                          maxLength={18}
                         />
+                        {accountNumberError && (
+                          <p className="text-xs text-red-500">{accountNumberError}</p>
+                        )}
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="confirm-account-number">Confirm Account Number</Label>
                         <Input
                           id="confirm-account-number"
                           value={confirmAccountNumber}
-                          onChange={(e) => setConfirmAccountNumber(e.target.value)}
+                          onChange={(e) => setConfirmAccountNumber(e.target.value.replace(/\D/g, ''))}
                           placeholder="Re-enter account number"
+                          maxLength={18}
                         />
+                        {confirmAccountNumber && accountNumber !== confirmAccountNumber && (
+                          <p className="text-xs text-red-500">Account numbers do not match</p>
+                        )}
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="ifsc-code">IFSC Code</Label>
-                        <Input
-                          id="ifsc-code"
-                          value={ifscCode}
-                          onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
-                          placeholder="Enter IFSC code"
-                        />
+                        <div className="relative">
+                          <Input
+                            id="ifsc-code"
+                            value={ifscCode}
+                            onChange={(e) => handleIfscChange(e.target.value)}
+                            placeholder="Enter IFSC code (e.g., SBIN0001234)"
+                            maxLength={11}
+                            className={cn(
+                              ifscValidation.valid === true && "border-emerald-500 focus-visible:ring-emerald-500",
+                              ifscValidation.valid === false && "border-red-500 focus-visible:ring-red-500"
+                            )}
+                          />
+                          {ifscValidation.loading && (
+                            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-muted-foreground" />
+                          )}
+                          {ifscValidation.valid === true && !ifscValidation.loading && (
+                            <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                          )}
+                          {ifscValidation.valid === false && !ifscValidation.loading && (
+                            <XCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-500" />
+                          )}
+                        </div>
+                        {ifscValidation.valid === true && ifscValidation.bank && (
+                          <p className="text-xs text-emerald-600">
+                            ✓ {ifscValidation.bank} - {ifscValidation.branch}
+                          </p>
+                        )}
+                        {ifscValidation.valid === false && ifscValidation.error && (
+                          <p className="text-xs text-red-500">{ifscValidation.error}</p>
+                        )}
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="bank-statement">Passbook Or 3 Months Bank Statement</Label>
