@@ -3,9 +3,11 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
 import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
+import { AffiliateLeaderboard } from '@/components/user/AffiliateLeaderboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
+import { useLevelMilestone } from '@/hooks/useLevelMilestone';
 import { 
   ShoppingCart, 
   Clock, 
@@ -34,6 +36,9 @@ const UserDashboard: React.FC = () => {
   const { recentOrders, stats, profile, isLoading, refetchOrders } = useUserDashboard();
   const { settingsMap } = usePlatformSettings();
   const [showVideoDialog, setShowVideoDialog] = useState(false);
+  
+  // Hook for milestone notifications (runs in background)
+  useLevelMilestone();
   
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
   const tutorialVideoUrl = settingsMap.user_dashboard_video_url;
@@ -251,7 +256,7 @@ const UserDashboard: React.FC = () => {
             />
           </div>
 
-          {/* Quick Actions & Tips */}
+          {/* Quick Actions, Leaderboard & Tips */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">Quick Actions</h2>
             <div className="dashboard-card space-y-3">
@@ -274,6 +279,9 @@ const UserDashboard: React.FC = () => {
                 </Link>
               </Button>
             </div>
+
+            {/* Affiliate Leaderboard */}
+            <AffiliateLeaderboard />
 
             {/* Tutorial Video Card */}
             {tutorialVideoUrl && (
