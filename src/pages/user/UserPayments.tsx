@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,7 @@ const UserPayments: React.FC = () => {
   const [confirmAccountNumber, setConfirmAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
   const [bankStatement, setBankStatement] = useState<File | null>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
 
   const { profile, transactions, orders, stats, isLoading: dashboardLoading } = useUserDashboard();
   const { payoutRequests, isLoading: payoutsLoading, createPayout, isCreatingPayout } = usePayoutRequests();
@@ -93,14 +95,14 @@ const UserPayments: React.FC = () => {
   const totalOrderValue = orders.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
   const totalProfit = stats.totalRevenue;
 
-  const handleRequestPayout = (e: React.FormEvent) => {
+  const handleRequestPayout = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(payoutAmount);
     
     if (amount < minPayoutAmount) {
       toast({
         title: 'Invalid Amount',
-        description: `Minimum payout amount is $${minPayoutAmount}.`,
+        description: `Minimum payout amount is ${currencySymbol}${minPayoutAmount}.`,
         variant: 'destructive',
       });
       return;
@@ -133,10 +135,36 @@ const UserPayments: React.FC = () => {
         });
         return;
       }
+
+      // Upload bank statement if provided
+      let bankStatementUrl = '';
+      if (bankStatement && user) {
+        setIsUploadingFile(true);
+        const fileExt = bankStatement.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('payout-documents')
+          .upload(fileName, bankStatement);
+        
+        setIsUploadingFile(false);
+        
+        if (uploadError) {
+          toast({
+            title: 'Upload Failed',
+            description: 'Failed to upload bank statement. Please try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        bankStatementUrl = uploadData.path;
+      }
+
       paymentDetails.account_name = accountName;
       paymentDetails.account_number = accountNumber;
       paymentDetails.ifsc_code = ifscCode;
-      paymentDetails.has_bank_statement = bankStatement ? 'Yes' : 'No';
+      paymentDetails.bank_statement_path = bankStatementUrl;
     }
 
     createPayout({
@@ -315,10 +343,10 @@ const UserPayments: React.FC = () => {
                   <Button type="button" variant="outline" onClick={() => setIsPayoutDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isCreatingPayout} className="gap-2">
-                    {isCreatingPayout && <Loader2 className="w-4 h-4 animate-spin" />}
+                  <Button type="submit" disabled={isCreatingPayout || isUploadingFile} className="gap-2">
+                    {(isCreatingPayout || isUploadingFile) && <Loader2 className="w-4 h-4 animate-spin" />}
                     <Send className="w-4 h-4" />
-                    Request Payout
+                    {isUploadingFile ? 'Uploading...' : 'Request Payout'}
                   </Button>
                 </DialogFooter>
               </form>
