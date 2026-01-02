@@ -117,8 +117,8 @@ const AdminOrders: React.FC = () => {
     setIsViewDialogOpen(true);
   };
 
-  const handleStatusChange = (orderId: string, newStatus: AdminOrder['status'], order?: AdminOrder) => {
-    updateStatus({ orderId, status: newStatus, order });
+  const handleStatusChange = (orderId: string, newStatus: AdminOrder['status']) => {
+    updateStatus({ orderId, status: newStatus });
   };
 
   const handleOpenPaymentLinkDialog = (order: AdminOrder) => {
@@ -329,7 +329,7 @@ const AdminOrders: React.FC = () => {
                   <TableCell>
                     <Select
                       value={order.status}
-                      onValueChange={(value) => handleStatusChange(order.id, value as AdminOrder['status'], order)}
+                      onValueChange={(value) => handleStatusChange(order.id, value as AdminOrder['status'])}
                       disabled={isUpdatingStatus}
                     >
                       <SelectTrigger className={cn("w-[140px] h-8 text-xs border", statusColors[order.status])}>
@@ -389,7 +389,7 @@ const AdminOrders: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleStatusChange(order.id, 'completed', order)}
+                          onClick={() => handleStatusChange(order.id, 'completed')}
                           disabled={isUpdatingStatus}
                         >
                           <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -538,7 +538,7 @@ const AdminOrders: React.FC = () => {
                   {selectedOrder.status !== 'completed' && selectedOrder.status !== 'cancelled' && (
                     <Button 
                       onClick={() => {
-                        handleStatusChange(selectedOrder.id, 'completed', selectedOrder);
+                        handleStatusChange(selectedOrder.id, 'completed');
                         setIsViewDialogOpen(false);
                       }}
                       disabled={isUpdatingStatus}

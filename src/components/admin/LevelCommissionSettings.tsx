@@ -5,24 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { Award, Save, Loader2, Percent, ShoppingBag } from 'lucide-react';
+import { Award, Save, Loader2, ShoppingBag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const LEVEL_CONFIG = [
-  { key: 'bronze', label: 'Bronze', color: 'bg-amber-700', settingKey: 'commission_rate_bronze', thresholdKey: null },
-  { key: 'silver', label: 'Silver', color: 'bg-gray-400', settingKey: 'commission_rate_silver', thresholdKey: 'level_threshold_silver' },
-  { key: 'gold', label: 'Gold', color: 'bg-yellow-500', settingKey: 'commission_rate_gold', thresholdKey: 'level_threshold_gold' },
+  { key: 'bronze', label: 'Bronze', color: 'bg-amber-700', thresholdKey: null },
+  { key: 'silver', label: 'Silver', color: 'bg-gray-400', thresholdKey: 'level_threshold_silver' },
+  { key: 'gold', label: 'Gold', color: 'bg-yellow-500', thresholdKey: 'level_threshold_gold' },
 ] as const;
 
 export const LevelCommissionSettings: React.FC = () => {
   const { settingsMap, updateSetting, isUpdating } = usePlatformSettings();
   const { toast } = useToast();
-
-  const [rates, setRates] = useState({
-    bronze: settingsMap.commission_rate_bronze,
-    silver: settingsMap.commission_rate_silver,
-    gold: settingsMap.commission_rate_gold,
-  });
 
   const [thresholds, setThresholds] = useState({
     silver: settingsMap.level_threshold_silver,
@@ -32,19 +26,11 @@ export const LevelCommissionSettings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setRates({
-      bronze: settingsMap.commission_rate_bronze,
-      silver: settingsMap.commission_rate_silver,
-      gold: settingsMap.commission_rate_gold,
-    });
     setThresholds({
       silver: settingsMap.level_threshold_silver,
       gold: settingsMap.level_threshold_gold,
     });
   }, [
-    settingsMap.commission_rate_bronze, 
-    settingsMap.commission_rate_silver, 
-    settingsMap.commission_rate_gold,
     settingsMap.level_threshold_silver,
     settingsMap.level_threshold_gold
   ]);
@@ -52,24 +38,6 @@ export const LevelCommissionSettings: React.FC = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Save commission rates
-      for (const level of LEVEL_CONFIG) {
-        const newValue = rates[level.key as keyof typeof rates];
-        const oldValue = settingsMap[level.settingKey as keyof typeof settingsMap];
-        
-        if (newValue !== oldValue) {
-          await new Promise<void>((resolve, reject) => {
-            updateSetting(
-              { key: level.settingKey, value: String(newValue), oldValue: String(oldValue) },
-              {
-                onSuccess: () => resolve(),
-                onError: (error) => reject(error),
-              }
-            );
-          });
-        }
-      }
-
       // Save thresholds
       if (thresholds.silver !== settingsMap.level_threshold_silver) {
         await new Promise<void>((resolve, reject) => {
@@ -97,7 +65,7 @@ export const LevelCommissionSettings: React.FC = () => {
       
       toast({
         title: 'Settings Updated',
-        description: 'Level commission rates and order thresholds have been saved successfully.',
+        description: 'Level badge thresholds have been saved successfully.',
       });
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -112,9 +80,6 @@ export const LevelCommissionSettings: React.FC = () => {
   };
 
   const hasChanges =
-    rates.bronze !== settingsMap.commission_rate_bronze ||
-    rates.silver !== settingsMap.commission_rate_silver ||
-    rates.gold !== settingsMap.commission_rate_gold ||
     thresholds.silver !== settingsMap.level_threshold_silver ||
     thresholds.gold !== settingsMap.level_threshold_gold;
 
@@ -123,10 +88,10 @@ export const LevelCommissionSettings: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Award className="w-5 h-5" />
-          Commission Rates by Level
+          User Level Badges
         </CardTitle>
         <CardDescription>
-          Configure commission rates and order thresholds for each user level. Users automatically upgrade when they reach the required number of completed orders.
+          Configure order thresholds for each user level badge. Users automatically earn badges based on their completed orders.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -138,33 +103,9 @@ export const LevelCommissionSettings: React.FC = () => {
                   {level.label}
                 </Badge>
               </div>
-              
-              {/* Commission Rate */}
-              <div className="space-y-1">
-                <Label htmlFor={`rate-${level.key}`} className="flex items-center gap-1 text-xs">
-                  <Percent className="w-3 h-3" />
-                  Commission Rate
-                </Label>
-                <div className="relative">
-                  <Input
-                    id={`rate-${level.key}`}
-                    type="number"
-                    min="0"
-                    max="100"
-                    step="0.5"
-                    value={rates[level.key as keyof typeof rates]}
-                    onChange={(e) => setRates(prev => ({
-                      ...prev,
-                      [level.key]: parseFloat(e.target.value) || 0
-                    }))}
-                    className="pr-8"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
 
               {/* Order Threshold (only for Silver and Gold) */}
-              {level.thresholdKey && (
+              {level.thresholdKey ? (
                 <div className="space-y-1">
                   <Label htmlFor={`threshold-${level.key}`} className="flex items-center gap-1 text-xs">
                     <ShoppingBag className="w-3 h-3" />
@@ -181,11 +122,15 @@ export const LevelCommissionSettings: React.FC = () => {
                     }))}
                   />
                 </div>
+              ) : (
+                <div className="h-[52px] flex items-center">
+                  <p className="text-sm text-muted-foreground">Default level</p>
+                </div>
               )}
 
               {/* Description */}
               <p className="text-xs text-muted-foreground">
-                {level.key === 'bronze' && 'Starting level for new users'}
+                {level.key === 'bronze' && 'Starting badge for new users'}
                 {level.key === 'silver' && `Unlocks at ${thresholds.silver}+ completed orders`}
                 {level.key === 'gold' && `Unlocks at ${thresholds.gold}+ completed orders`}
               </p>
@@ -214,9 +159,8 @@ export const LevelCommissionSettings: React.FC = () => {
 
         <div className="p-4 bg-muted rounded-lg">
           <p className="text-sm text-muted-foreground">
-            <strong>How it works:</strong> User level badges are automatically assigned based on completed order count. 
+            <strong>How it works:</strong> User level badges are honor badges automatically assigned based on completed order count. 
             Bronze is the default level, Silver unlocks at {thresholds.silver} orders, and Gold at {thresholds.gold} orders.
-            Commission rates determine the percentage of profit earned on each order.
           </p>
         </div>
       </CardContent>

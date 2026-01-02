@@ -2,38 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-import { calculateUserLevel, UserLevel } from '@/lib/userLevelUtils';
-
-// Calculate commission based on user level
-const calculateLevelBasedCommission = (
-  sellingPrice: number,
-  basePrice: number,
-  quantity: number,
-  userLevel: UserLevel,
-  commissionRateBronze: number,
-  commissionRateSilver: number,
-  commissionRateGold: number
-): number => {
-  const profit = (sellingPrice - basePrice) * quantity;
-  
-  // Get commission rate based on user level
-  let commissionRate: number;
-  switch (userLevel) {
-    case 'gold':
-      commissionRate = commissionRateGold;
-      break;
-    case 'silver':
-      commissionRate = commissionRateSilver;
-      break;
-    case 'bronze':
-    default:
-      commissionRate = commissionRateBronze;
-      break;
-  }
-  
-  return profit * (commissionRate / 100);
-};
 export interface AdminOrder {
   id: string;
   order_number: string;
@@ -72,7 +40,6 @@ export const useAdminOrders = () => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { settingsMap } = usePlatformSettings();
 
   const ordersQuery = useQuery({
     queryKey: ['admin-orders'],
@@ -150,7 +117,7 @@ export const useAdminOrders = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status, order }: { orderId: string; status: AdminOrder['status']; order?: AdminOrder }) => {
+    mutationFn: async ({ orderId, status }: { orderId: string; status: AdminOrder['status'] }) => {
       const updates: Record<string, unknown> = { status };
       
       if (status === 'completed') {
@@ -163,84 +130,13 @@ export const useAdminOrders = () => {
         .eq('id', orderId);
 
       if (error) throw error;
-
-      // Auto-credit commission to affiliate wallet when order is completed
-      if (status === 'completed' && settingsMap.auto_credit_on_complete && order) {
-        // Fetch user's wallet balance and count completed orders to calculate level
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('wallet_balance')
-          .eq('user_id', order.affiliate_user_id)
-          .single();
-
-        // Count completed orders for this user (including this one)
-        const { count: completedOrderCount } = await supabase
-          .from('orders')
-          .select('*', { count: 'exact', head: true })
-          .eq('affiliate_user_id', order.affiliate_user_id)
-          .eq('status', 'completed');
-
-        if (!profileError && profile) {
-          // Calculate user level based on completed orders
-          const userLevel = calculateUserLevel(
-            (completedOrderCount || 0) + 1, // +1 for the order being completed
-            settingsMap.level_threshold_silver,
-            settingsMap.level_threshold_gold
-          );
-          
-          const commission = calculateLevelBasedCommission(
-            order.selling_price,
-            order.base_price,
-            order.quantity,
-            userLevel,
-            settingsMap.commission_rate_bronze,
-            settingsMap.commission_rate_silver,
-            settingsMap.commission_rate_gold
-          );
-
-          if (commission > 0) {
-            const newBalance = Number(profile.wallet_balance) + commission;
-
-            // Update wallet balance
-            await supabase
-              .from('profiles')
-              .update({ wallet_balance: newBalance })
-              .eq('user_id', order.affiliate_user_id);
-
-            // Create transaction record
-            await supabase
-              .from('wallet_transactions')
-              .insert({
-                user_id: order.affiliate_user_id,
-                amount: commission,
-                type: 'commission',
-                description: `Commission for order ${order.order_number} (${userLevel} level: ${userLevel === 'gold' ? settingsMap.commission_rate_gold : userLevel === 'silver' ? settingsMap.commission_rate_silver : settingsMap.commission_rate_bronze}%)`,
-                order_id: orderId,
-              });
-          }
-
-          return { commissioned: true, amount: commission, level: userLevel };
-        }
-      }
-
-      return { commissioned: false };
     },
-    onSuccess: (result, variables) => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'] });
-      
-      if (result.commissioned && result.amount) {
-        toast({
-          title: 'Order Completed',
-          description: `Status updated. $${result.amount.toFixed(2)} commission credited (${result.level} level).`,
-        });
-      } else {
-        toast({
-          title: 'Order Updated',
-          description: `Order status changed to ${variables.status.replace(/_/g, ' ')}.`,
-        });
-      }
+      toast({
+        title: 'Order Updated',
+        description: `Order status changed to ${variables.status.replace(/_/g, ' ')}.`,
+      });
     },
     onError: (error) => {
       console.error('Error updating order status:', error);

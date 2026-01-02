@@ -80,7 +80,6 @@ const statusConfig: Record<UserStatus, { label: string; color: string; icon: Rea
 const AdminUsers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isCommissionDialogOpen, setIsCommissionDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AffiliateUser | null>(null);
@@ -89,8 +88,6 @@ const AdminUsers: React.FC = () => {
     storefrontName: '',
     storefrontSlug: '',
   });
-  const [commissionOverride, setCommissionOverride] = useState('');
-  const [useDefaultCommission, setUseDefaultCommission] = useState(true);
   
   const { 
     affiliates, 
@@ -101,8 +98,6 @@ const AdminUsers: React.FC = () => {
     isUpdatingProfile,
     updateUserStatus,
     isUpdatingUserStatus,
-    updateCommission,
-    isUpdatingCommission,
     deleteUser,
     isDeletingUser,
     updateUserLevel,
@@ -131,13 +126,6 @@ const AdminUsers: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleOpenCommission = (user: AffiliateUser) => {
-    setSelectedUser(user);
-    setUseDefaultCommission(user.commission_override === null);
-    setCommissionOverride(user.commission_override?.toString() || settingsMap.commission_rate.toString());
-    setIsCommissionDialogOpen(true);
-  };
-
   const handleSaveEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
@@ -149,16 +137,6 @@ const AdminUsers: React.FC = () => {
       storefrontSlug: editForm.storefrontSlug,
     });
     setIsEditDialogOpen(false);
-  };
-
-  const handleSaveCommission = () => {
-    if (!selectedUser) return;
-    
-    updateCommission({
-      userId: selectedUser.user_id,
-      commissionOverride: useDefaultCommission ? null : parseFloat(commissionOverride),
-    });
-    setIsCommissionDialogOpen(false);
   };
 
   const handleUpdateStatus = (user: AffiliateUser, status: UserStatus) => {
@@ -279,10 +257,6 @@ const AdminUsers: React.FC = () => {
                       <Edit className="w-4 h-4 mr-2" />
                       Edit Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleOpenCommission(user)}>
-                      <Percent className="w-4 h-4 mr-2" />
-                      Set Commission
-                    </DropdownMenuItem>
                     {user.storefront_slug && (
                       <DropdownMenuItem onClick={() => handleViewStorefront(user)}>
                         <ExternalLink className="w-4 h-4 mr-2" />
@@ -353,12 +327,6 @@ const AdminUsers: React.FC = () => {
                   <Calendar className="w-4 h-4" />
                   Joined {format(new Date(user.created_at), 'MMM dd, yyyy')}
                 </div>
-                {user.commission_override !== null && (
-                  <div className="flex items-center gap-2 text-sm text-violet-600">
-                    <Percent className="w-4 h-4" />
-                    Custom: {user.commission_override}%
-                  </div>
-                )}
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-border">
@@ -486,55 +454,6 @@ const AdminUsers: React.FC = () => {
                 </Button>
               </DialogFooter>
             </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* Commission Dialog */}
-        <Dialog open={isCommissionDialogOpen} onOpenChange={setIsCommissionDialogOpen}>
-          <DialogContent className="sm:max-w-[400px]">
-            <DialogHeader>
-              <DialogTitle>Set Commission Rate</DialogTitle>
-              <DialogDescription>
-                Override the default commission for {selectedUser?.name}.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="flex items-center gap-4">
-                <input
-                  type="checkbox"
-                  id="use-default"
-                  checked={useDefaultCommission}
-                  onChange={(e) => setUseDefaultCommission(e.target.checked)}
-                  className="rounded"
-                />
-                <Label htmlFor="use-default">Use default commission ({settingsMap.commission_rate}%)</Label>
-              </div>
-              {!useDefaultCommission && (
-              <div className="grid gap-2">
-                  <Label>Custom Commission Rate</Label>
-                  <div className="relative max-w-xs">
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={commissionOverride}
-                      onChange={(e) => setCommissionOverride(e.target.value)}
-                      className="pr-8"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">%</span>
-                  </div>
-                </div>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCommissionDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveCommission} disabled={isUpdatingCommission}>
-                {isUpdatingCommission && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Save Commission
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 

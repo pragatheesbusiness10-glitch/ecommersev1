@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, 
-  Calendar, 
   DollarSign, 
   Package,
   ChevronDown,
@@ -39,7 +38,7 @@ const levelColors: Record<string, string> = {
 };
 
 export const CommissionHistory: React.FC = () => {
-  const { orders, profile, transactions } = useUserDashboard();
+  const { orders } = useUserDashboard();
   const { settingsMap } = usePlatformSettings();
   const [timeFilter, setTimeFilter] = useState('all');
   const [showDetails, setShowDetails] = useState(false);
@@ -53,17 +52,6 @@ export const CommissionHistory: React.FC = () => {
     settingsMap.level_threshold_silver,
     settingsMap.level_threshold_gold
   );
-  
-  // Get commission rate based on level
-  const getCommissionRate = (level: string) => {
-    switch (level) {
-      case 'gold': return settingsMap.commission_rate_gold;
-      case 'silver': return settingsMap.commission_rate_silver;
-      default: return settingsMap.commission_rate_bronze;
-    }
-  };
-
-  const currentCommissionRate = getCommissionRate(userLevel);
 
   // Filter by time period
   const getFilteredOrders = () => {
@@ -99,39 +87,30 @@ export const CommissionHistory: React.FC = () => {
 
   const filteredOrders = getFilteredOrders();
 
-  // Calculate commission for each order
-  const ordersWithCommission = filteredOrders.map(order => {
+  // Calculate order stats
+  const ordersWithStats = filteredOrders.map(order => {
     const profit = (order.selling_price - order.base_price) * order.quantity;
-    // For simplicity, we'll use current rate. In production, you'd store the rate at time of completion
-    const commission = profit * (currentCommissionRate / 100);
     return {
       ...order,
       profit,
-      commission,
     };
   });
 
   // Calculate totals
-  const totalOrderValue = ordersWithCommission.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
-  const totalProfit = ordersWithCommission.reduce((sum, o) => sum + o.profit, 0);
-  const totalCommission = ordersWithCommission.reduce((sum, o) => sum + o.commission, 0);
-
-  // Get commission transactions from wallet
-  const commissionTransactions = transactions.filter(t => 
-    t.type === 'commission' || t.description?.toLowerCase().includes('commission')
-  );
+  const totalOrderValue = ordersWithStats.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
+  const totalProfit = ordersWithStats.reduce((sum, o) => sum + o.profit, 0);
 
   // Group by month for summary
-  const monthlyStats = ordersWithCommission.reduce((acc, order) => {
+  const monthlyStats = ordersWithStats.reduce((acc, order) => {
     const month = format(new Date(order.completed_at || order.created_at), 'MMM yyyy');
     if (!acc[month]) {
-      acc[month] = { orders: 0, commission: 0, revenue: 0 };
+      acc[month] = { orders: 0, revenue: 0, profit: 0 };
     }
     acc[month].orders += 1;
-    acc[month].commission += order.commission;
     acc[month].revenue += order.selling_price * order.quantity;
+    acc[month].profit += order.profit;
     return acc;
-  }, {} as Record<string, { orders: number; commission: number; revenue: number }>);
+  }, {} as Record<string, { orders: number; revenue: number; profit: number }>);
 
   return (
     <Card>
@@ -142,16 +121,16 @@ export const CommissionHistory: React.FC = () => {
               <TrendingUp className="w-5 h-5 text-emerald-600" />
             </div>
             <div>
-              <CardTitle>Commission Statement</CardTitle>
+              <CardTitle>Order History</CardTitle>
               <CardDescription>
-                Track your earnings and commission history
+                Track your completed orders and earnings
               </CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Badge className={cn("gap-1", levelColors[userLevel])}>
               <Award className="w-3 h-3" />
-              {userLevel.charAt(0).toUpperCase() + userLevel.slice(1)} • {currentCommissionRate}%
+              {userLevel.charAt(0).toUpperCase() + userLevel.slice(1)}
             </Badge>
             <Select value={timeFilter} onValueChange={setTimeFilter}>
               <SelectTrigger className="w-[140px]">
@@ -170,10 +149,10 @@ export const CommissionHistory: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div className="p-4 rounded-lg bg-muted/50 text-center">
             <Package className="w-5 h-5 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-2xl font-bold">{ordersWithCommission.length}</p>
+            <p className="text-2xl font-bold">{ordersWithStats.length}</p>
             <p className="text-xs text-muted-foreground">Completed Orders</p>
           </div>
           <div className="p-4 rounded-lg bg-muted/50 text-center">
@@ -181,15 +160,10 @@ export const CommissionHistory: React.FC = () => {
             <p className="text-2xl font-bold">{currencySymbol}{totalOrderValue.toFixed(2)}</p>
             <p className="text-xs text-muted-foreground">Total Revenue</p>
           </div>
-          <div className="p-4 rounded-lg bg-blue-500/10 text-center">
-            <TrendingUp className="w-5 h-5 mx-auto mb-2 text-blue-600" />
-            <p className="text-2xl font-bold text-blue-600">{currencySymbol}{totalProfit.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Total Profit</p>
-          </div>
           <div className="p-4 rounded-lg bg-emerald-500/10 text-center">
-            <Award className="w-5 h-5 mx-auto mb-2 text-emerald-600" />
-            <p className="text-2xl font-bold text-emerald-600">{currencySymbol}{totalCommission.toFixed(2)}</p>
-            <p className="text-xs text-muted-foreground">Commission Earned</p>
+            <TrendingUp className="w-5 h-5 mx-auto mb-2 text-emerald-600" />
+            <p className="text-2xl font-bold text-emerald-600">{currencySymbol}{totalProfit.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Total Profit</p>
           </div>
         </div>
 
@@ -212,8 +186,8 @@ export const CommissionHistory: React.FC = () => {
                       <span>{currencySymbol}{stats.revenue.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Commission:</span>
-                      <span className="text-emerald-600 font-medium">{currencySymbol}{stats.commission.toFixed(2)}</span>
+                      <span className="text-muted-foreground">Profit:</span>
+                      <span className="text-emerald-600 font-medium">{currencySymbol}{stats.profit.toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
@@ -228,7 +202,7 @@ export const CommissionHistory: React.FC = () => {
             onClick={() => setShowDetails(!showDetails)}
             className="w-full justify-between"
           >
-            <span>Order Details ({ordersWithCommission.length})</span>
+            <span>Order Details ({ordersWithStats.length})</span>
             {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
 
@@ -242,18 +216,17 @@ export const CommissionHistory: React.FC = () => {
                     <TableHead>Product</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-right">Profit</TableHead>
-                    <TableHead className="text-right">Commission</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {ordersWithCommission.length === 0 ? (
+                  {ordersWithStats.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         No completed orders found for this period
                       </TableCell>
                     </TableRow>
                   ) : (
-                    ordersWithCommission.map((order) => (
+                    ordersWithStats.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(order.completed_at || order.created_at), 'MMM d, yyyy')}
@@ -263,11 +236,8 @@ export const CommissionHistory: React.FC = () => {
                         <TableCell className="text-right">
                           {currencySymbol}{(order.selling_price * order.quantity).toFixed(2)}
                         </TableCell>
-                        <TableCell className="text-right text-blue-600">
-                          {currencySymbol}{order.profit.toFixed(2)}
-                        </TableCell>
                         <TableCell className="text-right font-medium text-emerald-600">
-                          {currencySymbol}{order.commission.toFixed(2)}
+                          {currencySymbol}{order.profit.toFixed(2)}
                         </TableCell>
                       </TableRow>
                     ))
@@ -278,24 +248,24 @@ export const CommissionHistory: React.FC = () => {
           )}
         </div>
 
-        {/* Commission Rate Info */}
+        {/* Badge Level Info */}
         <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
           <h4 className="font-medium mb-2 flex items-center gap-2">
             <Award className="w-4 h-4" />
-            Commission Rates by Level
+            Honor Badges by Level
           </h4>
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div className={cn("p-2 rounded text-center", userLevel === 'bronze' && "ring-2 ring-primary")}>
               <Badge className={levelColors.bronze}>Bronze</Badge>
-              <p className="mt-1 font-bold">{settingsMap.commission_rate_bronze}%</p>
+              <p className="mt-1 text-xs text-muted-foreground">0+ orders</p>
             </div>
             <div className={cn("p-2 rounded text-center", userLevel === 'silver' && "ring-2 ring-primary")}>
               <Badge className={levelColors.silver}>Silver</Badge>
-              <p className="mt-1 font-bold">{settingsMap.commission_rate_silver}%</p>
+              <p className="mt-1 text-xs text-muted-foreground">{settingsMap.level_threshold_silver}+ orders</p>
             </div>
             <div className={cn("p-2 rounded text-center", userLevel === 'gold' && "ring-2 ring-primary")}>
               <Badge className={levelColors.gold}>Gold</Badge>
-              <p className="mt-1 font-bold">{settingsMap.commission_rate_gold}%</p>
+              <p className="mt-1 text-xs text-muted-foreground">{settingsMap.level_threshold_gold}+ orders</p>
             </div>
           </div>
         </div>
