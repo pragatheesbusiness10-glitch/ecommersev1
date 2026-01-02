@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, CheckCircle, Clock, XCircle, Shield, Award } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { User, CheckCircle, Clock, XCircle, Shield, Award, ShoppingBag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useKYC } from '@/hooks/useKYC';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { maskAadhaar, maskPAN } from '@/lib/maskingUtils';
-
-type UserLevel = 'bronze' | 'silver' | 'gold';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { calculateUserLevel, getLevelProgress, UserLevel } from '@/lib/userLevelUtils';
 
 interface UserProfile {
-  user_level: UserLevel;
   wallet_balance: number;
   name: string;
   email: string;
@@ -47,6 +47,7 @@ const kycStatusConfig = {
 export const UserProfileCard: React.FC = () => {
   const { user } = useAuth();
   const { kycSubmission, kycStatus, isLoading: kycLoading } = useKYC();
+  const { settingsMap } = usePlatformSettings();
   const [faceImageUrl, setFaceImageUrl] = useState<string | null>(null);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -55,12 +56,29 @@ export const UserProfileCard: React.FC = () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_level, wallet_balance, name, email')
+        .select('wallet_balance, name, email')
         .eq('user_id', user.id)
         .single();
       
       if (error) throw error;
       return data as UserProfile;
+    },
+    enabled: !!user?.id,
+  });
+
+  // Fetch completed order count for calculating level
+  const { data: completedOrderCount = 0, isLoading: ordersLoading } = useQuery({
+    queryKey: ['user-completed-orders-count', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      const { count, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('affiliate_user_id', user.id)
+        .eq('status', 'completed');
+      
+      if (error) throw error;
+      return count || 0;
     },
     enabled: !!user?.id,
   });
@@ -81,11 +99,25 @@ export const UserProfileCard: React.FC = () => {
     fetchSignedUrl();
   }, [kycSubmission?.face_image_url]);
 
-  const isLoading = kycLoading || profileLoading;
-  const userLevel = (profile?.user_level || 'bronze') as UserLevel;
+  const isLoading = kycLoading || profileLoading || ordersLoading;
+  
+  // Calculate user level based on completed orders
+  const userLevel = calculateUserLevel(
+    completedOrderCount,
+    settingsMap.level_threshold_silver,
+    settingsMap.level_threshold_gold
+  );
+  
+  const levelProgress = getLevelProgress(
+    completedOrderCount,
+    settingsMap.level_threshold_silver,
+    settingsMap.level_threshold_gold
+  );
+  
   const levelInfo = levelConfig[userLevel];
   const kycInfo = kycStatusConfig[kycStatus as keyof typeof kycStatusConfig] || kycStatusConfig.not_submitted;
   const KycIcon = kycInfo.icon;
+
   if (isLoading) {
     return (
       <Card>
@@ -139,6 +171,33 @@ export const UserProfileCard: React.FC = () => {
               </Badge>
             </div>
           </div>
+        </div>
+
+        {/* Level Progress */}
+        <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-foreground flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              Level Progress
+            </h3>
+            <span className="text-sm text-muted-foreground">
+              {completedOrderCount} orders completed
+            </span>
+          </div>
+          
+          {levelProgress.nextLevel ? (
+            <>
+              <Progress value={levelProgress.progressPercent} className="h-2" />
+              <p className="text-xs text-muted-foreground">
+                {levelProgress.ordersToNextLevel} more order{levelProgress.ordersToNextLevel !== 1 ? 's' : ''} to reach{' '}
+                <span className="font-medium capitalize">{levelProgress.nextLevel}</span> level
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              🎉 Congratulations! You've reached the highest level.
+            </p>
+          )}
         </div>
 
         {/* KYC Details - Read Only */}

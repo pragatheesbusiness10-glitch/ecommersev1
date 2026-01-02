@@ -63,6 +63,9 @@ export interface SettingsMap {
   commission_rate_bronze: number;
   commission_rate_silver: number;
   commission_rate_gold: number;
+  // Level order thresholds (how many completed orders to reach each level)
+  level_threshold_silver: number;
+  level_threshold_gold: number;
   // Auto-payout settings
   auto_payout_enabled: boolean;
   auto_payout_threshold: number;
@@ -152,6 +155,9 @@ export const usePlatformSettings = () => {
       commission_rate_bronze: 5,
       commission_rate_silver: 7,
       commission_rate_gold: 10,
+      // Level order thresholds
+      level_threshold_silver: 10,
+      level_threshold_gold: 50,
       // Auto-payout settings
       auto_payout_enabled: false,
       auto_payout_threshold: 1000,
@@ -279,6 +285,12 @@ export const usePlatformSettings = () => {
           break;
         case 'commission_rate_gold':
           map.commission_rate_gold = parseFloat(setting.value) || 10;
+          break;
+        case 'level_threshold_silver':
+          map.level_threshold_silver = parseInt(setting.value) || 10;
+          break;
+        case 'level_threshold_gold':
+          map.level_threshold_gold = parseInt(setting.value) || 50;
           break;
         case 'auto_payout_enabled':
           map.auto_payout_enabled = setting.value === 'true';
