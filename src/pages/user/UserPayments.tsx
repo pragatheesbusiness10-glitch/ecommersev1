@@ -306,7 +306,7 @@ const UserPayments: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               <div className="text-center">
                 <p className="text-xl md:text-2xl font-bold">{currencySymbol}{totalOrderValue.toFixed(2)}</p>
-                <p className="text-xs text-primary-foreground/70">Total Order Value</p>
+                <p className="text-xs text-primary-foreground/70">Available Balance</p>
               </div>
               <div className="text-center">
                 <p className="text-xl md:text-2xl font-bold text-emerald-300">{currencySymbol}{totalProfit.toFixed(2)}</p>
