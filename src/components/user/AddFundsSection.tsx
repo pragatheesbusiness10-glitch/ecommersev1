@@ -21,7 +21,7 @@ const paymentMethods: PaymentMethod[] = [
   { id: 'upi', name: 'UPI', icon: Smartphone, enabledKey: 'payment_method_upi_enabled', messageKey: 'payment_method_upi_message' },
   { id: 'card', name: 'Card', icon: CreditCard, enabledKey: 'payment_method_card_enabled', messageKey: 'payment_method_card_message' },
   { id: 'bank', name: 'Bank Transfer', icon: Building, enabledKey: 'payment_method_bank_enabled', messageKey: 'payment_method_bank_message' },
-  { id: 'usd_wallet', name: 'Admin USD Wallet', icon: Wallet, enabledKey: 'payment_method_usd_wallet_enabled', messageKey: 'payment_method_usd_wallet_message' },
+  { id: 'usd_wallet', name: 'USD Wallet', icon: Wallet, enabledKey: 'payment_method_usd_wallet_enabled', messageKey: 'payment_method_usd_wallet_message' },
 ];
 
 export const AddFundsSection: React.FC = () => {
@@ -168,7 +168,7 @@ export const AddFundsSection: React.FC = () => {
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-foreground flex items-center gap-2">
                       <Wallet className="w-4 h-4" />
-                      Admin Provided USD Wallet ID
+                      USD Wallet ID
                     </p>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 bg-background px-3 py-2 rounded border text-sm font-mono break-all">
