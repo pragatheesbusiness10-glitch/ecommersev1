@@ -59,6 +59,15 @@ export interface SettingsMap {
   payment_gateway_wire_iban: string;
   // USD Wallet ID for user payments
   usd_wallet_id: string;
+  // Payment method settings
+  payment_method_upi_enabled: boolean;
+  payment_method_upi_message: string;
+  payment_method_card_enabled: boolean;
+  payment_method_card_message: string;
+  payment_method_bank_enabled: boolean;
+  payment_method_bank_message: string;
+  payment_method_usd_wallet_enabled: boolean;
+  payment_method_usd_wallet_message: string;
   // Level-based commission rates
   commission_rate_bronze: number;
   commission_rate_silver: number;
@@ -151,6 +160,15 @@ export const usePlatformSettings = () => {
       payment_gateway_wire_iban: '',
       // USD Wallet ID
       usd_wallet_id: '',
+      // Payment method settings
+      payment_method_upi_enabled: false,
+      payment_method_upi_message: 'UPI payment is not available for your account.',
+      payment_method_card_enabled: false,
+      payment_method_card_message: 'Card payments are disabled. Please contact admin.',
+      payment_method_bank_enabled: false,
+      payment_method_bank_message: 'Bank transfer is not supported for this user.',
+      payment_method_usd_wallet_enabled: true,
+      payment_method_usd_wallet_message: 'Send USD to the wallet ID above and notify admin for fund credit.',
       // Level-based commission rates
       commission_rate_bronze: 5,
       commission_rate_silver: 7,
@@ -276,6 +294,31 @@ export const usePlatformSettings = () => {
           break;
         case 'usd_wallet_id':
           map.usd_wallet_id = setting.value || '';
+          break;
+        // Payment method settings
+        case 'payment_method_upi_enabled':
+          map.payment_method_upi_enabled = setting.value === 'true';
+          break;
+        case 'payment_method_upi_message':
+          map.payment_method_upi_message = setting.value || 'UPI payment is not available for your account.';
+          break;
+        case 'payment_method_card_enabled':
+          map.payment_method_card_enabled = setting.value === 'true';
+          break;
+        case 'payment_method_card_message':
+          map.payment_method_card_message = setting.value || 'Card payments are disabled. Please contact admin.';
+          break;
+        case 'payment_method_bank_enabled':
+          map.payment_method_bank_enabled = setting.value === 'true';
+          break;
+        case 'payment_method_bank_message':
+          map.payment_method_bank_message = setting.value || 'Bank transfer is not supported for this user.';
+          break;
+        case 'payment_method_usd_wallet_enabled':
+          map.payment_method_usd_wallet_enabled = setting.value === 'true';
+          break;
+        case 'payment_method_usd_wallet_message':
+          map.payment_method_usd_wallet_message = setting.value || 'Send USD to the wallet ID above and notify admin for fund credit.';
           break;
         case 'commission_rate_bronze':
           map.commission_rate_bronze = parseFloat(setting.value) || 5;
