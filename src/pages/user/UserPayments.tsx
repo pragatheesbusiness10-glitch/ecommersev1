@@ -50,6 +50,8 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AddFundsSection } from '@/components/user/AddFundsSection';
 import { CommissionHistory } from '@/components/user/CommissionHistory';
+import { EarningsChart } from '@/components/user/EarningsChart';
+import { TransactionExport } from '@/components/user/TransactionExport';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-600',
@@ -303,11 +305,7 @@ const UserPayments: React.FC = () => {
                 <p className="text-4xl font-bold">{currencySymbol}{totalOrderValue.toFixed(2)}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              <div className="text-center">
-                <p className="text-xl md:text-2xl font-bold text-emerald-300">{currencySymbol}{totalProfit.toFixed(2)}</p>
-                <p className="text-xs text-primary-foreground/70">Total Profit</p>
-              </div>
+            <div className="grid grid-cols-3 gap-4 md:gap-6">
               <div className="text-center">
                 <p className="text-xl md:text-2xl font-bold text-emerald-300">{currencySymbol}{totalProfit.toFixed(2)}</p>
                 <p className="text-xs text-primary-foreground/70">Total Profit</p>
@@ -335,6 +333,9 @@ const UserPayments: React.FC = () => {
             You need at least {currencySymbol}{minPayoutAmount} in your wallet to request a payout. Current balance: {currencySymbol}{walletBalance.toFixed(2)}
           </div>
         )}
+
+        {/* Earnings Chart */}
+        <EarningsChart orders={orders} currencySymbol={currencySymbol} />
 
         {/* Commission History */}
         <CommissionHistory />
@@ -384,7 +385,10 @@ const UserPayments: React.FC = () => {
 
         {/* Transaction History */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-foreground">Transaction History</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-foreground">Transaction History</h2>
+            <TransactionExport transactions={transactions} currencySymbol={currencySymbol} />
+          </div>
           <div className="dashboard-card divide-y divide-border">
             {transactions.length === 0 ? (
               <p className="text-center py-8 text-muted-foreground">No transactions yet.</p>
