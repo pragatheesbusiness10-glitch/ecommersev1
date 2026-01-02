@@ -169,8 +169,8 @@ const Storefront: React.FC = () => {
     } catch (error) {
       console.error('Order error:', error);
       toast({
-        title: 'Order Not Available',
-        description: error instanceof Error ? error.message : 'Could not place order. Please contact the store owner.',
+        title: 'Order Failed',
+        description: 'Order not available in India or you are using VPN, fake order.',
         variant: 'destructive',
       });
       throw error;
