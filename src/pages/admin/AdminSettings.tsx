@@ -59,6 +59,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { PaymentGatewaySettings } from '@/components/admin/PaymentGatewaySettings';
 import { USDWalletSettings } from '@/components/admin/USDWalletSettings';
+import { PaymentMethodSettings } from '@/components/admin/PaymentMethodSettings';
 import { LevelCommissionSettings } from '@/components/admin/LevelCommissionSettings';
 import { AutoPayoutSettings } from '@/components/admin/AutoPayoutSettings';
 import { FAQSettings } from '@/components/admin/FAQSettings';
@@ -966,8 +967,8 @@ const AdminSettings: React.FC = () => {
         {/* Payment Gateway Settings */}
         <PaymentGatewaySettings />
 
-        {/* USD Wallet Settings */}
-        <USDWalletSettings />
+        {/* Payment Method Settings (includes USD Wallet) */}
+        <PaymentMethodSettings />
 
         {/* Level-Based Commission Settings */}
         <LevelCommissionSettings />
