@@ -3,8 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
-
-type UserLevel = 'bronze' | 'silver' | 'gold';
+import { calculateUserLevel, UserLevel } from '@/lib/userLevelUtils';
 
 // Calculate commission based on user level
 const calculateLevelBasedCommission = (
@@ -167,15 +166,27 @@ export const useAdminOrders = () => {
 
       // Auto-credit commission to affiliate wallet when order is completed
       if (status === 'completed' && settingsMap.auto_credit_on_complete && order) {
-        // Fetch user's level to calculate level-based commission
+        // Fetch user's wallet balance and count completed orders to calculate level
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('wallet_balance, user_level')
+          .select('wallet_balance')
           .eq('user_id', order.affiliate_user_id)
           .single();
 
+        // Count completed orders for this user (including this one)
+        const { count: completedOrderCount } = await supabase
+          .from('orders')
+          .select('*', { count: 'exact', head: true })
+          .eq('affiliate_user_id', order.affiliate_user_id)
+          .eq('status', 'completed');
+
         if (!profileError && profile) {
-          const userLevel = (profile as any).user_level as UserLevel || 'bronze';
+          // Calculate user level based on completed orders
+          const userLevel = calculateUserLevel(
+            (completedOrderCount || 0) + 1, // +1 for the order being completed
+            settingsMap.level_threshold_silver,
+            settingsMap.level_threshold_gold
+          );
           
           const commission = calculateLevelBasedCommission(
             order.selling_price,

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { calculateUserLevel } from '@/lib/userLevelUtils';
 
 const levelColors: Record<string, string> = {
   bronze: 'bg-amber-600/10 text-amber-700 border-amber-600/20',
@@ -44,7 +45,14 @@ export const CommissionHistory: React.FC = () => {
   const [showDetails, setShowDetails] = useState(false);
 
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
-  const userLevel = profile?.user_level || 'bronze';
+  
+  // Calculate user level based on completed orders
+  const completedOrders = orders.filter(o => o.status === 'completed');
+  const userLevel = calculateUserLevel(
+    completedOrders.length,
+    settingsMap.level_threshold_silver,
+    settingsMap.level_threshold_gold
+  );
   
   // Get commission rate based on level
   const getCommissionRate = (level: string) => {
@@ -56,9 +64,6 @@ export const CommissionHistory: React.FC = () => {
   };
 
   const currentCommissionRate = getCommissionRate(userLevel);
-
-  // Filter completed orders (which generate commissions)
-  const completedOrders = orders.filter(o => o.status === 'completed');
 
   // Filter by time period
   const getFilteredOrders = () => {
