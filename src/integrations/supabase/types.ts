@@ -237,6 +237,7 @@ export type Database = {
           processed_at: string | null
           processed_by: string | null
           status: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -249,6 +250,7 @@ export type Database = {
           processed_at?: string | null
           processed_by?: string | null
           status?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -261,6 +263,7 @@ export type Database = {
           processed_at?: string | null
           processed_by?: string | null
           status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
