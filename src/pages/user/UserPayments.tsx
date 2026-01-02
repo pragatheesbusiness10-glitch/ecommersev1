@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Wallet, 
   ArrowUpRight, 
@@ -14,7 +15,8 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  DollarSign
+  DollarSign,
+  Save
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -88,6 +90,18 @@ const UserPayments: React.FC = () => {
     loading: boolean;
   }>({ valid: null, loading: false });
   const [accountNumberError, setAccountNumberError] = useState('');
+  
+  // UPI state
+  const [upiId, setUpiId] = useState('');
+  const [upiIdError, setUpiIdError] = useState('');
+  
+  // Save payment details state
+  const [savePaymentDetails, setSavePaymentDetails] = useState(false);
+  const [savedPaymentDetails, setSavedPaymentDetails] = useState<{
+    bank?: { accountName: string; accountNumber: string; ifscCode: string; bankName?: string; branchName?: string };
+    upi?: { upiId: string };
+  } | null>(null);
+  const [useSavedDetails, setUseSavedDetails] = useState(false);
 
   const { profile, transactions, orders, stats, isLoading: dashboardLoading } = useUserDashboard();
   const { payoutRequests, isLoading: payoutsLoading, createPayout, isCreatingPayout } = usePayoutRequests();
@@ -102,6 +116,54 @@ const UserPayments: React.FC = () => {
   // Calculate total order value and profit
   const totalOrderValue = orders.reduce((sum, o) => sum + (o.selling_price * o.quantity), 0);
   const totalProfit = stats.totalRevenue;
+
+  // Load saved payment details from profile
+  useEffect(() => {
+    if (profile?.saved_payment_details) {
+      const details = profile.saved_payment_details as typeof savedPaymentDetails;
+      setSavedPaymentDetails(details);
+    }
+  }, [profile]);
+
+  // Apply saved details when checkbox is toggled
+  useEffect(() => {
+    if (useSavedDetails && savedPaymentDetails) {
+      if (paymentMethod === 'bank_transfer' && savedPaymentDetails.bank) {
+        setAccountName(savedPaymentDetails.bank.accountName);
+        setAccountNumber(savedPaymentDetails.bank.accountNumber);
+        setConfirmAccountNumber(savedPaymentDetails.bank.accountNumber);
+        setIfscCode(savedPaymentDetails.bank.ifscCode);
+        if (savedPaymentDetails.bank.bankName) {
+          setIfscValidation({
+            valid: true,
+            bank: savedPaymentDetails.bank.bankName,
+            branch: savedPaymentDetails.bank.branchName,
+            loading: false
+          });
+        }
+      } else if (paymentMethod === 'upi' && savedPaymentDetails.upi) {
+        setUpiId(savedPaymentDetails.upi.upiId);
+      }
+    }
+  }, [useSavedDetails, paymentMethod, savedPaymentDetails]);
+
+  // Validate UPI ID format
+  const validateUpiId = (id: string): boolean => {
+    // UPI ID format: username@bankhandle (e.g., name@upi, phone@paytm)
+    const upiPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/;
+    return upiPattern.test(id);
+  };
+
+  const handleUpiIdChange = (value: string) => {
+    const lowercaseValue = value.toLowerCase();
+    setUpiId(lowercaseValue);
+    
+    if (lowercaseValue.length > 0 && !validateUpiId(lowercaseValue)) {
+      setUpiIdError('Invalid UPI ID format (e.g., name@upi, phone@paytm)');
+    } else {
+      setUpiIdError('');
+    }
+  };
 
   // Validate IFSC code with API
   const validateIfsc = async (code: string) => {
@@ -249,6 +311,50 @@ const UserPayments: React.FC = () => {
       paymentDetails.account_number = accountNumber;
       paymentDetails.ifsc_code = ifscCode;
       paymentDetails.bank_statement_path = bankStatementUrl;
+      
+      // Save bank details to profile if checkbox is checked
+      if (savePaymentDetails && user) {
+        const newSavedDetails = {
+          ...savedPaymentDetails,
+          bank: {
+            accountName,
+            accountNumber,
+            ifscCode,
+            bankName: ifscValidation.bank,
+            branchName: ifscValidation.branch
+          }
+        };
+        await supabase
+          .from('profiles')
+          .update({ saved_payment_details: newSavedDetails })
+          .eq('user_id', user.id);
+        setSavedPaymentDetails(newSavedDetails);
+      }
+    }
+
+    if (paymentMethod === 'upi') {
+      if (!upiId || !validateUpiId(upiId)) {
+        toast({
+          title: 'Invalid UPI ID',
+          description: 'Please enter a valid UPI ID (e.g., name@upi).',
+          variant: 'destructive',
+        });
+        return;
+      }
+      paymentDetails.upi_id = upiId;
+      
+      // Save UPI details to profile if checkbox is checked
+      if (savePaymentDetails && user) {
+        const newSavedDetails = {
+          ...savedPaymentDetails,
+          upi: { upiId }
+        };
+        await supabase
+          .from('profiles')
+          .update({ saved_payment_details: newSavedDetails })
+          .eq('user_id', user.id);
+        setSavedPaymentDetails(newSavedDetails);
+      }
     }
 
     createPayout({
@@ -264,6 +370,11 @@ const UserPayments: React.FC = () => {
     setConfirmAccountNumber('');
     setIfscCode('');
     setBankStatement(null);
+    setUpiId('');
+    setUpiIdError('');
+    setSavePaymentDetails(false);
+    setUseSavedDetails(false);
+    setIfscValidation({ valid: null, loading: false });
   };
 
   if (dashboardLoading || payoutsLoading) {
@@ -359,17 +470,83 @@ const UserPayments: React.FC = () => {
 
                   <div className="grid gap-2">
                     <Label>Payment Method</Label>
-                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <Select value={paymentMethod} onValueChange={(v) => {
+                      setPaymentMethod(v);
+                      setUseSavedDetails(false);
+                    }}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
                         <SelectItem value="paypal">PayPal</SelectItem>
                         <SelectItem value="crypto">Cryptocurrency</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Use saved details option */}
+                  {((paymentMethod === 'bank_transfer' && savedPaymentDetails?.bank) ||
+                    (paymentMethod === 'upi' && savedPaymentDetails?.upi)) && (
+                    <div className="flex items-center gap-2 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <Checkbox
+                        id="use-saved"
+                        checked={useSavedDetails}
+                        onCheckedChange={(checked) => setUseSavedDetails(checked === true)}
+                      />
+                      <Label htmlFor="use-saved" className="text-sm cursor-pointer flex-1">
+                        Use saved {paymentMethod === 'bank_transfer' ? 'bank' : 'UPI'} details
+                        {paymentMethod === 'bank_transfer' && savedPaymentDetails?.bank && (
+                          <span className="text-muted-foreground ml-1">
+                            (****{savedPaymentDetails.bank.accountNumber.slice(-4)})
+                          </span>
+                        )}
+                        {paymentMethod === 'upi' && savedPaymentDetails?.upi && (
+                          <span className="text-muted-foreground ml-1">
+                            ({savedPaymentDetails.upi.upiId})
+                          </span>
+                        )}
+                      </Label>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'upi' && (
+                    <div className="space-y-3">
+                      <div className="grid gap-2">
+                        <Label htmlFor="upi-id">UPI ID</Label>
+                        <Input
+                          id="upi-id"
+                          value={upiId}
+                          onChange={(e) => handleUpiIdChange(e.target.value)}
+                          placeholder="Enter UPI ID (e.g., name@upi)"
+                          disabled={useSavedDetails}
+                          className={cn(
+                            upiId && !upiIdError && "border-emerald-500",
+                            upiIdError && "border-red-500"
+                          )}
+                        />
+                        {upiIdError && (
+                          <p className="text-xs text-red-500">{upiIdError}</p>
+                        )}
+                        {upiId && !upiIdError && (
+                          <p className="text-xs text-emerald-600">✓ Valid UPI ID format</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="save-upi"
+                          checked={savePaymentDetails}
+                          onCheckedChange={(checked) => setSavePaymentDetails(checked === true)}
+                          disabled={useSavedDetails}
+                        />
+                        <Label htmlFor="save-upi" className="text-sm cursor-pointer">
+                          <Save className="w-3 h-3 inline mr-1" />
+                          Save UPI ID for future payouts
+                        </Label>
+                      </div>
+                    </div>
+                  )}
 
                   {paymentMethod === 'bank_transfer' && (
                     <div className="space-y-3">
@@ -380,6 +557,7 @@ const UserPayments: React.FC = () => {
                           value={accountName}
                           onChange={(e) => setAccountName(e.target.value)}
                           placeholder="Enter account holder name"
+                          disabled={useSavedDetails}
                         />
                       </div>
                       <div className="grid gap-2">
@@ -390,6 +568,7 @@ const UserPayments: React.FC = () => {
                           onChange={(e) => handleAccountNumberChange(e.target.value)}
                           placeholder="Enter account number (9-18 digits)"
                           maxLength={18}
+                          disabled={useSavedDetails}
                         />
                         {accountNumberError && (
                           <p className="text-xs text-red-500">{accountNumberError}</p>
@@ -403,6 +582,7 @@ const UserPayments: React.FC = () => {
                           onChange={(e) => setConfirmAccountNumber(e.target.value.replace(/\D/g, ''))}
                           placeholder="Re-enter account number"
                           maxLength={18}
+                          disabled={useSavedDetails}
                         />
                         {confirmAccountNumber && accountNumber !== confirmAccountNumber && (
                           <p className="text-xs text-red-500">Account numbers do not match</p>
@@ -417,6 +597,7 @@ const UserPayments: React.FC = () => {
                             onChange={(e) => handleIfscChange(e.target.value)}
                             placeholder="Enter IFSC code (e.g., SBIN0001234)"
                             maxLength={11}
+                            disabled={useSavedDetails}
                             className={cn(
                               ifscValidation.valid === true && "border-emerald-500 focus-visible:ring-emerald-500",
                               ifscValidation.valid === false && "border-red-500 focus-visible:ring-red-500"
@@ -451,6 +632,18 @@ const UserPayments: React.FC = () => {
                           className="cursor-pointer"
                         />
                         <p className="text-xs text-muted-foreground">Upload PDF or image (optional)</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="save-bank"
+                          checked={savePaymentDetails}
+                          onCheckedChange={(checked) => setSavePaymentDetails(checked === true)}
+                          disabled={useSavedDetails}
+                        />
+                        <Label htmlFor="save-bank" className="text-sm cursor-pointer">
+                          <Save className="w-3 h-3 inline mr-1" />
+                          Save bank details for future payouts
+                        </Label>
                       </div>
                     </div>
                   )}
