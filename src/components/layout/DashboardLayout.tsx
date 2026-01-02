@@ -24,7 +24,9 @@ import {
   Send,
   Shield,
   MessageCircle,
-  LifeBuoy
+  LifeBuoy,
+  Bot,
+  HelpCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserChatWidget } from '@/components/chat/UserChatWidget';
@@ -56,6 +58,9 @@ const userNavItems: NavItem[] = [
   { icon: ShoppingCart, label: 'Orders', href: '/dashboard/orders' },
   { icon: Wallet, label: 'Payments', href: '/dashboard/payments' },
   { icon: Shield, label: 'KYC Verification', href: '/dashboard/kyc' },
+  { icon: MessageCircle, label: 'Chat Support', href: '/dashboard/chat' },
+  { icon: Bot, label: 'AI Assistant', href: '/dashboard/ai' },
+  { icon: HelpCircle, label: 'FAQ & Help', href: '/dashboard/help' },
   { icon: LifeBuoy, label: 'Raise Ticket', href: '/dashboard/support' },
 ];
 

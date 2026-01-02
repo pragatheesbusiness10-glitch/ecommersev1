@@ -32,6 +32,9 @@ import UserPayments from "./pages/user/UserPayments";
 import UserKYC from "./pages/user/UserKYC";
 import UserSupport from "./pages/user/UserSupport";
 import UserProfile from "./pages/user/UserProfile";
+import UserChat from "./pages/user/UserChat";
+import UserAI from "./pages/user/UserAI";
+import UserHelp from "./pages/user/UserHelp";
 
 // Storefront
 import Storefront from "./pages/storefront/Storefront";
@@ -112,6 +115,9 @@ const AppRoutes = () => {
       <Route path="/dashboard/kyc" element={<ProtectedRoute allowedRoles={['user']}><UserKYC /></ProtectedRoute>} />
       <Route path="/dashboard/support" element={<ProtectedRoute allowedRoles={['user']}><UserSupport /></ProtectedRoute>} />
       <Route path="/dashboard/profile" element={<ProtectedRoute allowedRoles={['user']}><UserProfile /></ProtectedRoute>} />
+      <Route path="/dashboard/chat" element={<ProtectedRoute allowedRoles={['user']}><UserChat /></ProtectedRoute>} />
+      <Route path="/dashboard/ai" element={<ProtectedRoute allowedRoles={['user']}><UserAI /></ProtectedRoute>} />
+      <Route path="/dashboard/help" element={<ProtectedRoute allowedRoles={['user']}><UserHelp /></ProtectedRoute>} />
       
       {/* Catch All */}
       <Route path="*" element={<NotFound />} />
