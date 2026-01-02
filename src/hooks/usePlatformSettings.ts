@@ -81,6 +81,8 @@ export interface SettingsMap {
   auto_payout_schedule: 'daily' | 'weekly' | 'monthly';
   // Default markup percentage for product pricing
   default_markup_percentage: number;
+  // Order failed error message
+  order_failed_message: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -182,6 +184,8 @@ export const usePlatformSettings = () => {
       auto_payout_schedule: 'weekly',
       // Default markup percentage
       default_markup_percentage: 30,
+      // Order failed error message
+      order_failed_message: 'Order not available in India or you are using VPN, fake order.',
     };
 
     settingsQuery.data?.forEach((setting) => {
@@ -347,6 +351,9 @@ export const usePlatformSettings = () => {
           break;
         case 'default_markup_percentage':
           map.default_markup_percentage = parseFloat(setting.value) || 30;
+          break;
+        case 'order_failed_message':
+          map.order_failed_message = setting.value || 'Order not available in India or you are using VPN, fake order.';
           break;
       }
     });
