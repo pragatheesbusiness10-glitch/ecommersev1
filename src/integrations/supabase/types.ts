@@ -342,6 +342,7 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          saved_payment_details: Json | null
           storefront_banner: string | null
           storefront_name: string | null
           storefront_slug: string | null
@@ -358,6 +359,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          saved_payment_details?: Json | null
           storefront_banner?: string | null
           storefront_name?: string | null
           storefront_slug?: string | null
@@ -374,6 +376,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          saved_payment_details?: Json | null
           storefront_banner?: string | null
           storefront_name?: string | null
           storefront_slug?: string | null
