@@ -73,9 +73,11 @@ const UserPayments: React.FC = () => {
   const [isPayoutDialogOpen, setIsPayoutDialogOpen] = useState(false);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
-  const [bankName, setBankName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
   const [accountName, setAccountName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [confirmAccountNumber, setConfirmAccountNumber] = useState('');
+  const [ifscCode, setIfscCode] = useState('');
+  const [bankStatement, setBankStatement] = useState<File | null>(null);
 
   const { profile, transactions, orders, stats, isLoading: dashboardLoading } = useUserDashboard();
   const { payoutRequests, isLoading: payoutsLoading, createPayout, isCreatingPayout } = usePayoutRequests();
@@ -115,7 +117,7 @@ const UserPayments: React.FC = () => {
 
     const paymentDetails: Record<string, string> = {};
     if (paymentMethod === 'bank_transfer') {
-      if (!bankName || !accountNumber || !accountName) {
+      if (!accountName || !accountNumber || !confirmAccountNumber || !ifscCode) {
         toast({
           title: 'Missing Details',
           description: 'Please fill in all bank details.',
@@ -123,9 +125,18 @@ const UserPayments: React.FC = () => {
         });
         return;
       }
-      paymentDetails.bank_name = bankName;
-      paymentDetails.account_number = accountNumber;
+      if (accountNumber !== confirmAccountNumber) {
+        toast({
+          title: 'Account Number Mismatch',
+          description: 'Account numbers do not match.',
+          variant: 'destructive',
+        });
+        return;
+      }
       paymentDetails.account_name = accountName;
+      paymentDetails.account_number = accountNumber;
+      paymentDetails.ifsc_code = ifscCode;
+      paymentDetails.has_bank_statement = bankStatement ? 'Yes' : 'No';
     }
 
     createPayout({
@@ -136,9 +147,11 @@ const UserPayments: React.FC = () => {
 
     setIsPayoutDialogOpen(false);
     setPayoutAmount('');
-    setBankName('');
-    setAccountNumber('');
     setAccountName('');
+    setAccountNumber('');
+    setConfirmAccountNumber('');
+    setIfscCode('');
+    setBankStatement(null);
   };
 
   if (dashboardLoading || payoutsLoading) {
@@ -249,12 +262,12 @@ const UserPayments: React.FC = () => {
                   {paymentMethod === 'bank_transfer' && (
                     <div className="space-y-3">
                       <div className="grid gap-2">
-                        <Label htmlFor="bank-name">Bank Name</Label>
+                        <Label htmlFor="account-name">Account Holder Name</Label>
                         <Input
-                          id="bank-name"
-                          value={bankName}
-                          onChange={(e) => setBankName(e.target.value)}
-                          placeholder="Enter bank name"
+                          id="account-name"
+                          value={accountName}
+                          onChange={(e) => setAccountName(e.target.value)}
+                          placeholder="Enter account holder name"
                         />
                       </div>
                       <div className="grid gap-2">
@@ -267,13 +280,33 @@ const UserPayments: React.FC = () => {
                         />
                       </div>
                       <div className="grid gap-2">
-                        <Label htmlFor="account-name">Account Holder Name</Label>
+                        <Label htmlFor="confirm-account-number">Confirm Account Number</Label>
                         <Input
-                          id="account-name"
-                          value={accountName}
-                          onChange={(e) => setAccountName(e.target.value)}
-                          placeholder="Enter account holder name"
+                          id="confirm-account-number"
+                          value={confirmAccountNumber}
+                          onChange={(e) => setConfirmAccountNumber(e.target.value)}
+                          placeholder="Re-enter account number"
                         />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="ifsc-code">IFSC Code</Label>
+                        <Input
+                          id="ifsc-code"
+                          value={ifscCode}
+                          onChange={(e) => setIfscCode(e.target.value.toUpperCase())}
+                          placeholder="Enter IFSC code"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="bank-statement">Passbook Or 3 Months Bank Statement</Label>
+                        <Input
+                          id="bank-statement"
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => setBankStatement(e.target.files?.[0] || null)}
+                          className="cursor-pointer"
+                        />
+                        <p className="text-xs text-muted-foreground">Upload PDF or image (optional)</p>
                       </div>
                     </div>
                   )}
