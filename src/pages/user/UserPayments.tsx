@@ -704,16 +704,7 @@ const UserPayments: React.FC = () => {
           </div>
         )}
 
-        {/* Earnings Chart */}
-        <EarningsChart orders={orders} currencySymbol={currencySymbol} />
-
-        {/* Commission History */}
-        <CommissionHistory />
-
-        {/* Add Funds Section */}
-        <AddFundsSection />
-
-        {/* Payout Requests */}
+        {/* Payout Requests - Moved to top */}
         {payoutRequests.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">Payout Requests</h2>
@@ -752,6 +743,15 @@ const UserPayments: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Earnings Chart */}
+        <EarningsChart orders={orders} currencySymbol={currencySymbol} />
+
+        {/* Commission History */}
+        <CommissionHistory />
+
+        {/* Add Funds Section */}
+        <AddFundsSection />
 
         {/* Transaction History */}
         <div className="space-y-4">
