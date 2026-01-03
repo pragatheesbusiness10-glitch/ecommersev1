@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { NotificationCenter } from '@/components/admin/NotificationCenter';
+import { LiveIndicator } from '@/components/ui/LiveIndicator';
+import { useRealtimeConnection } from '@/hooks/useRealtimeSubscription';
 import { 
   LayoutDashboard, 
   Package, 
@@ -70,6 +72,7 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { settingsMap } = usePlatformSettings();
+  const { isConnected } = useRealtimeConnection();
   
   const siteName = settingsMap.site_name || 'Afflux';
   const logoUrl = settingsMap.site_logo_url;
@@ -160,8 +163,11 @@ export const DashboardLayout: React.FC<{ children: React.ReactNode }> = ({ child
                 </p>
               </div>
             </div>
-            {/* Admin Notification Center */}
-            {user?.role === 'admin' && <NotificationCenter />}
+            <div className="flex items-center gap-2">
+              <LiveIndicator isConnected={isConnected} />
+              {/* Admin Notification Center */}
+              {user?.role === 'admin' && <NotificationCenter />}
+            </div>
           </div>
 
           {/* Navigation */}
