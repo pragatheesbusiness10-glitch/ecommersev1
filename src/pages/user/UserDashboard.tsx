@@ -189,7 +189,7 @@ const UserDashboard: React.FC = () => {
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-2xl font-bold">{currencySymbol}{user.walletBalance.toFixed(2)}</p>
-                <p className="text-xs text-primary-foreground/70">Wallet Balance</p>
+                <p className="text-xs text-primary-foreground/70">Available Balance</p>
               </div>
               <Button variant="secondary" size="sm" asChild>
                 <Link to="/dashboard/payments">Manage Wallet</Link>
