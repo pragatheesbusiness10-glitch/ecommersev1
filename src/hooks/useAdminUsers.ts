@@ -273,44 +273,34 @@ export const useAdminUsers = () => {
 
   const deleteUserMutation = useMutation({
     mutationFn: async ({ userId }: { userId: string }) => {
-      // Delete user role first
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (roleError) throw roleError;
-
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (profileError) throw profileError;
-      
-      // Log the action
-      await supabase.rpc('create_audit_log', {
-        _action_type: 'user_deleted',
-        _entity_type: 'profile',
-        _entity_id: userId,
-        _user_id: userId,
-        _admin_id: user?.id,
-        _reason: 'User permanently deleted by admin',
+      // Call edge function to delete user completely (including auth.users)
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
       });
+
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to delete user');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-affiliates'] });
       toast({
         title: 'User Deleted',
-        description: 'The user has been permanently deleted.',
+        description: 'The user has been permanently deleted and can no longer login.',
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Error deleting user:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete user. They may have associated data.',
+        description: error.message || 'Failed to delete user.',
         variant: 'destructive',
       });
     },
