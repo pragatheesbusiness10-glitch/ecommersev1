@@ -6,7 +6,7 @@ import { useUserDashboard, DashboardOrder } from '@/hooks/useUserDashboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, CreditCard, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
+import { Search, CreditCard, AlertCircle, Loader2, ExternalLink, CheckCircle2, Wallet, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import {
@@ -218,7 +218,66 @@ const UserOrders: React.FC = () => {
             </DialogHeader>
             {selectedOrder && (
               <div className="py-4 space-y-4">
-                <div className="p-4 rounded-xl bg-muted/50 space-y-3">
+                {/* Step-by-Step Guide */}
+                <div className="p-4 rounded-xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/20">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">How It Works</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex flex-col items-center text-center flex-1">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1",
+                        selectedOrder.status === 'pending_payment' 
+                          ? "bg-primary text-primary-foreground" 
+                          : "bg-green-500 text-white"
+                      )}>
+                        {selectedOrder.status !== 'pending_payment' ? <CheckCircle2 className="w-4 h-4" /> : "1"}
+                      </div>
+                      <p className="text-[10px] leading-tight text-muted-foreground">Pay Base Price<br/>to Admin</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
+                    <div className="flex flex-col items-center text-center flex-1">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1",
+                        selectedOrder.status === 'completed' 
+                          ? "bg-green-500 text-white" 
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        {selectedOrder.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : "2"}
+                      </div>
+                      <p className="text-[10px] leading-tight text-muted-foreground">Admin Marks<br/>Complete</p>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
+                    <div className="flex flex-col items-center text-center flex-1">
+                      <div className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1",
+                        selectedOrder.status === 'completed' 
+                          ? "bg-green-500 text-white" 
+                          : "bg-muted text-muted-foreground"
+                      )}>
+                        {selectedOrder.status === 'completed' ? <CheckCircle2 className="w-4 h-4" /> : "3"}
+                      </div>
+                      <p className="text-[10px] leading-tight text-muted-foreground">Full Amount<br/>to Wallet</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PROMINENT Amount Payable to Admin */}
+                <div className="p-5 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-2 border-amber-500/50 shadow-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wallet className="w-5 h-5 text-amber-600" />
+                    <span className="text-sm font-semibold text-amber-800 dark:text-amber-200 uppercase tracking-wide">
+                      Amount You Pay to Admin
+                    </span>
+                  </div>
+                  <div className="text-4xl font-bold text-amber-700 dark:text-amber-300">
+                    ${(selectedOrder.base_price * selectedOrder.quantity).toFixed(2)}
+                  </div>
+                  <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-1">
+                    Base price × {selectedOrder.quantity} unit(s)
+                  </p>
+                </div>
+
+                {/* Order Details */}
+                <div className="p-4 rounded-xl bg-muted/50 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Order ID</span>
                     <span className="font-medium">{selectedOrder.order_number}</span>
@@ -228,25 +287,25 @@ const UserOrders: React.FC = () => {
                     <span className="font-medium">{selectedOrder.product?.name || 'Unknown'}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Quantity</span>
-                    <span className="font-medium">{selectedOrder.quantity}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Customer Price</span>
+                    <span className="text-muted-foreground">Customer Paid</span>
                     <span className="font-medium">${(selectedOrder.selling_price * selectedOrder.quantity).toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-border pt-3 flex justify-between">
-                    <span className="font-semibold">Amount Payable to Admin</span>
-                    <span className="font-bold text-lg text-accent">
-                      ${(selectedOrder.base_price * selectedOrder.quantity).toFixed(2)}
-                    </span>
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
-                  <p className="text-sm text-green-700 dark:text-green-300">
-                    <strong>Your Profit:</strong> ${((selectedOrder.selling_price - selectedOrder.base_price) * selectedOrder.quantity).toFixed(2)}
-                  </p>
+                {/* Profit & Wallet Credit Info */}
+                <div className="p-4 rounded-xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-green-700 dark:text-green-300">After Completion, Your Wallet Gets:</span>
+                    <span className="font-bold text-lg text-green-600 dark:text-green-400">
+                      ${(selectedOrder.selling_price * selectedOrder.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-green-600 dark:text-green-400">Your Net Profit:</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400">
+                      ${((selectedOrder.selling_price - selectedOrder.base_price) * selectedOrder.quantity).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Payment Link Section */}
@@ -260,7 +319,7 @@ const UserOrders: React.FC = () => {
                       href={selectedOrder.payment_link} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors w-full justify-center"
+                      className="inline-flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors w-full justify-center font-semibold text-lg"
                       onClick={async () => {
                         await supabase
                           .from('orders')
@@ -269,8 +328,8 @@ const UserOrders: React.FC = () => {
                         refetchOrders();
                       }}
                     >
-                      <ExternalLink className="w-4 h-4" />
-                      Open Payment Link
+                      <ExternalLink className="w-5 h-5" />
+                      Pay ${(selectedOrder.base_price * selectedOrder.quantity).toFixed(2)} Now
                     </a>
                     <p className="text-xs text-muted-foreground text-center">
                       After payment, click "Confirm Payment" below
