@@ -5,6 +5,9 @@ export interface PublicSettings {
   storefront_greeting_message: string;
   storefront_ordering_enabled: boolean;
   storefront_ordering_disabled_message: string;
+  payout_enabled: boolean;
+  payout_disabled_message: string;
+  chat_greeting_message: string;
 }
 
 export const usePublicSettings = () => {
@@ -18,6 +21,9 @@ export const usePublicSettings = () => {
           'storefront_greeting_message',
           'storefront_ordering_enabled',
           'storefront_ordering_disabled_message',
+          'payout_enabled',
+          'payout_disabled_message',
+          'chat_greeting_message',
         ]);
 
       if (error) {
@@ -29,6 +35,9 @@ export const usePublicSettings = () => {
         storefront_greeting_message: 'Welcome to our store! Browse our amazing products.',
         storefront_ordering_enabled: true,
         storefront_ordering_disabled_message: 'Ordering is currently disabled. Please contact the store owner for assistance.',
+        payout_enabled: true,
+        payout_disabled_message: 'Payout requests are currently disabled. Please contact admin for assistance.',
+        chat_greeting_message: 'Hello! How can I help you today?',
       };
 
       data?.forEach((setting) => {
@@ -42,6 +51,15 @@ export const usePublicSettings = () => {
           case 'storefront_ordering_disabled_message':
             settings.storefront_ordering_disabled_message = setting.value || settings.storefront_ordering_disabled_message;
             break;
+          case 'payout_enabled':
+            settings.payout_enabled = setting.value !== 'false';
+            break;
+          case 'payout_disabled_message':
+            settings.payout_disabled_message = setting.value || settings.payout_disabled_message;
+            break;
+          case 'chat_greeting_message':
+            settings.chat_greeting_message = setting.value || settings.chat_greeting_message;
+            break;
         }
       });
 
@@ -54,6 +72,9 @@ export const usePublicSettings = () => {
       storefront_greeting_message: 'Welcome to our store! Browse our amazing products.',
       storefront_ordering_enabled: true,
       storefront_ordering_disabled_message: 'Ordering is currently disabled. Please contact the store owner for assistance.',
+      payout_enabled: true,
+      payout_disabled_message: 'Payout requests are currently disabled. Please contact admin for assistance.',
+      chat_greeting_message: 'Hello! How can I help you today?',
     },
     isLoading: query.isLoading,
     error: query.error,
