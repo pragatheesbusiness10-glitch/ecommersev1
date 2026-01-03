@@ -219,10 +219,21 @@ export const useOrderRealtimeUser = (userId?: string) => {
 
 // Hook for user to listen to wallet transaction changes
 export const useWalletRealtimeUser = (userId?: string) => {
+  const { refreshUser } = useAuth();
+
   useRealtimeSubscription({
     table: 'wallet_transactions',
-    queryKeys: [['wallet-transactions'], ['user-profile']],
+    queryKeys: [['wallet-transactions'], ['user-profile'], ['user-dashboard']],
     filter: userId ? { column: 'user_id', value: userId } : undefined,
+    showToast: true,
+    toastMessages: {
+      insert: 'Wallet Updated',
+    },
+    onInsert: (payload) => {
+      // Refresh user data to update wallet balance in header
+      refreshUser();
+      console.log('Wallet transaction received:', payload);
+    },
   });
 };
 
@@ -234,9 +245,14 @@ export const useProfileRealtimeUser = (userId?: string) => {
     table: 'profiles',
     queryKeys: [['user-profile'], ['user-dashboard'], ['user-payout-requests'], ['wallet-transactions']],
     filter: userId ? { column: 'user_id', value: userId } : undefined,
-    onUpdate: () => {
+    showToast: true,
+    toastMessages: {
+      update: 'Balance Updated',
+    },
+    onUpdate: (payload) => {
       // Keep AuthContext in sync so wallet balance updates everywhere instantly
       refreshUser();
+      console.log('Profile updated, new wallet balance:', payload?.wallet_balance);
     },
   });
 };
