@@ -51,6 +51,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { maskSensitiveField } from '@/lib/maskingUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { usePayoutRealtimeAdmin, useProfileRealtimeAdmin } from '@/hooks/useRealtimeSubscription';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
@@ -82,6 +83,9 @@ const AdminPayouts: React.FC = () => {
   const { settingsMap } = usePlatformSettings();
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
 
+  // Enable real-time updates
+  usePayoutRealtimeAdmin();
+  useProfileRealtimeAdmin();
   const filteredPayouts = payoutRequests.filter(payout =>
     payout.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     payout.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||

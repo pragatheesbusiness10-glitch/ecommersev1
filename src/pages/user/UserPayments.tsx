@@ -57,6 +57,7 @@ import { AddFundsSection } from '@/components/user/AddFundsSection';
 import { CommissionHistory } from '@/components/user/CommissionHistory';
 import { EarningsChart } from '@/components/user/EarningsChart';
 import { TransactionExport } from '@/components/user/TransactionExport';
+import { usePayoutRealtimeUser, useWalletRealtimeUser, useProfileRealtimeUser } from '@/hooks/useRealtimeSubscription';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/10 text-amber-600',
@@ -111,6 +112,10 @@ const UserPayments: React.FC = () => {
   const { settings: publicSettings, isLoading: isLoadingPublicSettings } = usePublicSettings();
   const { isKYCApproved } = useKYC();
 
+  // Enable real-time updates
+  usePayoutRealtimeUser(user?.id);
+  useWalletRealtimeUser(user?.id);
+  useProfileRealtimeUser(user?.id);
   const walletBalance = profile?.wallet_balance || 0;
   const minPayoutAmount = settingsMap.min_payout_amount;
   // Use public settings for payout enabled/disabled status

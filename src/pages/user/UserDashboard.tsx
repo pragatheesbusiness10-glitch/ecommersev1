@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { useLevelMilestone } from '@/hooks/useLevelMilestone';
+import { useOrderRealtimeUser, useProfileRealtimeUser, useWalletRealtimeUser } from '@/hooks/useRealtimeSubscription';
 import { 
   ShoppingCart, 
   Clock, 
@@ -39,6 +40,11 @@ const UserDashboard: React.FC = () => {
   
   // Hook for milestone notifications (runs in background)
   useLevelMilestone();
+  
+  // Enable real-time updates
+  useOrderRealtimeUser(user?.id);
+  useProfileRealtimeUser(user?.id);
+  useWalletRealtimeUser(user?.id);
   
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
   const tutorialVideoUrl = settingsMap.user_dashboard_video_url;

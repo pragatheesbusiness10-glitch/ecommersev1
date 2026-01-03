@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { ChatMessage } from '@/hooks/useChat';
 import { supabase } from '@/integrations/supabase/client';
+import { useChatRealtimeAdmin } from '@/hooks/useRealtimeSubscription';
 
 interface UserProfile {
   user_id: string;
@@ -46,6 +47,9 @@ const AdminChat: React.FC = () => {
     isSending,
     markAsRead,
   } = useAdminChat();
+
+  // Enable real-time updates
+  useChatRealtimeAdmin();
 
   const [selectedConversation, setSelectedConversation] = useState<ChatConversation | null>(null);
   const [inputMessage, setInputMessage] = useState('');

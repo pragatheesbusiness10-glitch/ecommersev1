@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useChatRealtimeUser } from '@/hooks/useRealtimeSubscription';
 
 const UserChat: React.FC = () => {
   const { user } = useAuth();
@@ -26,6 +27,8 @@ const UserChat: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
 
+  // Enable real-time updates
+  useChatRealtimeUser(user?.id);
   // Check notification permission on mount
   useEffect(() => {
     if ('Notification' in window) {
