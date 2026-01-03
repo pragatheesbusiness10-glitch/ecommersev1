@@ -687,28 +687,50 @@ const UserPayments: React.FC = () => {
 
         {/* Wallet Balance Card */}
         <div className="dashboard-card bg-gradient-to-br from-primary to-primary/80 text-primary-foreground">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-primary-foreground/20 flex items-center justify-center">
-                <Wallet className="w-8 h-8" />
+          <div className="flex flex-col gap-6">
+            {/* Main Balance Section */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl bg-primary-foreground/20 flex items-center justify-center">
+                  <Wallet className="w-8 h-8" />
+                </div>
+                <div>
+                  <p className="text-primary-foreground/70 text-sm">Available Balance</p>
+                  <p className="text-4xl font-bold">{currencySymbol}{walletBalance.toFixed(2)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-primary-foreground/70 text-sm">Available Balance</p>
-                <p className="text-4xl font-bold">{currencySymbol}{walletBalance.toFixed(2)}</p>
+              <div className="grid grid-cols-3 gap-4 md:gap-6">
+                <div className="text-center">
+                  <p className="text-xl md:text-2xl font-bold text-emerald-300">{currencySymbol}{totalProfit.toFixed(2)}</p>
+                  <p className="text-xs text-primary-foreground/70">Total Profit</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xl md:text-2xl font-bold text-amber-300">{currencySymbol}{totalPendingPayout.toFixed(2)}</p>
+                  <p className="text-xs text-primary-foreground/70">Pending Payouts</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xl md:text-2xl font-bold">{pendingPayouts.length}</p>
+                  <p className="text-xs text-primary-foreground/70">Pending Requests</p>
+                </div>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4 md:gap-6">
-              <div className="text-center">
-                <p className="text-xl md:text-2xl font-bold text-emerald-300">{currencySymbol}{totalProfit.toFixed(2)}</p>
-                <p className="text-xs text-primary-foreground/70">Total Profit</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl md:text-2xl font-bold text-amber-300">{currencySymbol}{totalPendingPayout.toFixed(2)}</p>
-                <p className="text-xs text-primary-foreground/70">Pending Payouts</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl md:text-2xl font-bold">{pendingPayouts.length}</p>
-                <p className="text-xs text-primary-foreground/70">Pending Requests</p>
+            
+            {/* Balance Breakdown */}
+            <div className="border-t border-primary-foreground/20 pt-4">
+              <p className="text-xs text-primary-foreground/70 mb-3 font-medium">Balance Breakdown</p>
+              <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="bg-primary-foreground/10 rounded-lg p-3">
+                  <p className="text-primary-foreground/70 text-xs mb-1">Total Wallet</p>
+                  <p className="font-semibold">{currencySymbol}{(walletBalance + totalPendingPayout).toFixed(2)}</p>
+                </div>
+                <div className="bg-primary-foreground/10 rounded-lg p-3">
+                  <p className="text-primary-foreground/70 text-xs mb-1">On Hold (Payouts)</p>
+                  <p className="font-semibold text-amber-300">-{currencySymbol}{totalPendingPayout.toFixed(2)}</p>
+                </div>
+                <div className="bg-primary-foreground/10 rounded-lg p-3">
+                  <p className="text-primary-foreground/70 text-xs mb-1">Available</p>
+                  <p className="font-semibold text-emerald-300">{currencySymbol}{walletBalance.toFixed(2)}</p>
+                </div>
               </div>
             </div>
           </div>
