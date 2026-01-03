@@ -125,6 +125,7 @@ const AdminPayouts: React.FC = () => {
       amount: selectedPayout.amount,
       userName: selectedPayout.user_name,
       userEmail: selectedPayout.user_email,
+      previousStatus: selectedPayout.status,
     });
     setIsProcessDialogOpen(false);
   };
@@ -143,6 +144,7 @@ const AdminPayouts: React.FC = () => {
       amount: selectedPayout.amount,
       userName: selectedPayout.user_name,
       userEmail: selectedPayout.user_email,
+      previousStatus: selectedPayout.status,
     });
     setIsStatusDialogOpen(false);
   };
