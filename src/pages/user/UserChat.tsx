@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, Loader2, Paperclip, Image as ImageIcon } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { MessageCircle, Send, Loader2, Paperclip, Bell, BellOff } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useTypingIndicator } from '@/hooks/useTypingIndicator';
+import { usePublicSettings } from '@/hooks/usePublicSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -18,9 +20,31 @@ const UserChat: React.FC = () => {
   const { toast } = useToast();
   const { messages, isLoading, sendMessage, isSending, markAsRead, unreadCount } = useChat();
   const { isOtherTyping } = useTypingIndicator(user?.id || '');
+  const { settings: publicSettings } = usePublicSettings();
   const [inputMessage, setInputMessage] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+
+  // Check notification permission on mount
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, []);
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      if (permission === 'granted') {
+        toast({
+          title: 'Notifications Enabled',
+          description: 'You will now receive notifications for new messages.',
+        });
+      }
+    }
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -171,6 +195,26 @@ const UserChat: React.FC = () => {
           </p>
         </div>
 
+        {/* Notification Permission Alert */}
+        {notificationPermission !== 'granted' && (
+          <Alert className="border-amber-500/50 bg-amber-500/10">
+            <BellOff className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200">Enable Notifications</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              Enable notifications to receive alerts when support replies to your messages.
+              <Button
+                variant="outline"
+                size="sm"
+                className="ml-4 border-amber-500 text-amber-700 hover:bg-amber-500/20"
+                onClick={requestNotificationPermission}
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                Enable Notifications
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Chat Card */}
         <Card className="h-[600px] flex flex-col">
           <CardHeader className="border-b shrink-0">
@@ -198,25 +242,38 @@ const UserChat: React.FC = () => {
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
-              ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                  <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
-                  <p className="font-medium">Start a conversation</p>
-                  <p className="text-sm">Send a message to begin chatting with our support team</p>
-                </div>
               ) : (
                 <div className="space-y-4">
-                  {messages.map(renderMessage)}
-                  {isOtherTyping && (
+                  {/* Greeting Message */}
+                  {publicSettings.chat_greeting_message && (
                     <div className="flex justify-start">
-                      <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </div>
+                      <div className="max-w-[80%] rounded-2xl rounded-bl-md px-4 py-2 bg-muted text-foreground">
+                        <p className="text-sm whitespace-pre-wrap">{publicSettings.chat_greeting_message}</p>
+                        <p className="text-[10px] mt-1 text-muted-foreground">Support</p>
                       </div>
                     </div>
+                  )}
+                  {messages.length === 0 && !publicSettings.chat_greeting_message ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-12">
+                      <MessageCircle className="w-12 h-12 mb-3 opacity-50" />
+                      <p className="font-medium">Start a conversation</p>
+                      <p className="text-sm">Send a message to begin chatting with our support team</p>
+                    </div>
+                  ) : (
+                    <>
+                      {messages.map(renderMessage)}
+                      {isOtherTyping && (
+                        <div className="flex justify-start">
+                          <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
+                            <div className="flex gap-1">
+                              <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '0ms' }} />
+                              <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '150ms' }} />
+                              <span className="w-2 h-2 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                   <div ref={scrollRef} />
                 </div>

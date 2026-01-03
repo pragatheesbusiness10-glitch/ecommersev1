@@ -92,6 +92,8 @@ export interface SettingsMap {
   // Payout enabled/disabled
   payout_enabled: boolean;
   payout_disabled_message: string;
+  // Chat greeting message
+  chat_greeting_message: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -204,6 +206,8 @@ export const usePlatformSettings = () => {
       // Payout enabled/disabled
       payout_enabled: true,
       payout_disabled_message: 'Payout requests are currently disabled. Please contact admin for assistance.',
+      // Chat greeting message
+      chat_greeting_message: 'Hello! How can I help you today?',
     };
 
     settingsQuery.data?.forEach((setting) => {
@@ -387,6 +391,9 @@ export const usePlatformSettings = () => {
           break;
         case 'payout_disabled_message':
           map.payout_disabled_message = setting.value || 'Payout requests are currently disabled. Please contact admin for assistance.';
+          break;
+        case 'chat_greeting_message':
+          map.chat_greeting_message = setting.value || 'Hello! How can I help you today?';
           break;
       }
     });

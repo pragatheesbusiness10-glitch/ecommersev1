@@ -49,6 +49,7 @@ import { format } from 'date-fns';
 import { usePayoutRequests } from '@/hooks/usePayoutRequests';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
+import { usePublicSettings } from '@/hooks/usePublicSettings';
 import { useKYC } from '@/hooks/useKYC';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -107,12 +108,14 @@ const UserPayments: React.FC = () => {
   const { profile, transactions, orders, stats, isLoading: dashboardLoading } = useUserDashboard();
   const { payoutRequests, isLoading: payoutsLoading, createPayout, isCreatingPayout } = usePayoutRequests();
   const { settingsMap } = usePlatformSettings();
+  const { settings: publicSettings, isLoading: isLoadingPublicSettings } = usePublicSettings();
   const { isKYCApproved } = useKYC();
 
   const walletBalance = profile?.wallet_balance || 0;
   const minPayoutAmount = settingsMap.min_payout_amount;
-  const payoutEnabled = settingsMap.payout_enabled;
-  const payoutDisabledMessage = settingsMap.payout_disabled_message;
+  // Use public settings for payout enabled/disabled status
+  const payoutEnabled = publicSettings.payout_enabled;
+  const payoutDisabledMessage = publicSettings.payout_disabled_message;
   const canRequestPayout = payoutEnabled && isKYCApproved && walletBalance >= minPayoutAmount;
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
   
@@ -380,7 +383,7 @@ const UserPayments: React.FC = () => {
     setIfscValidation({ valid: null, loading: false });
   };
 
-  if (dashboardLoading || payoutsLoading) {
+  if (dashboardLoading || payoutsLoading || isLoadingPublicSettings) {
     return (
       <DashboardLayout>
         <div className="space-y-6">

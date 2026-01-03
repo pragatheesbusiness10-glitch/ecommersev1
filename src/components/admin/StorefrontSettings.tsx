@@ -15,6 +15,7 @@ export const StorefrontSettings: React.FC = () => {
   const [greetingMessage, setGreetingMessage] = useState('');
   const [orderingEnabled, setOrderingEnabled] = useState(true);
   const [orderingDisabledMessage, setOrderingDisabledMessage] = useState('');
+  const [chatGreetingMessage, setChatGreetingMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -29,7 +30,8 @@ export const StorefrontSettings: React.FC = () => {
     setGreetingMessage(settingsMap.storefront_greeting_message || 'Welcome to our store! Browse our amazing products.');
     setOrderingEnabled(settingsMap.storefront_ordering_enabled !== false);
     setOrderingDisabledMessage(settingsMap.storefront_ordering_disabled_message || 'Ordering is currently disabled. Please contact the store owner for assistance.');
-  }, [settingsMap.order_failed_message, settingsMap.storefront_greeting_message, settingsMap.storefront_ordering_enabled, settingsMap.storefront_ordering_disabled_message]);
+    setChatGreetingMessage(settingsMap.chat_greeting_message || 'Hello! How can I help you today?');
+  }, [settingsMap.order_failed_message, settingsMap.storefront_greeting_message, settingsMap.storefront_ordering_enabled, settingsMap.storefront_ordering_disabled_message, settingsMap.chat_greeting_message]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -54,6 +56,11 @@ export const StorefrontSettings: React.FC = () => {
           key: 'storefront_ordering_disabled_message',
           value: orderingDisabledMessage,
           oldValue: getRawValue('storefront_ordering_disabled_message')
+        }),
+        updateSettingAsync({
+          key: 'chat_greeting_message',
+          value: chatGreetingMessage,
+          oldValue: getRawValue('chat_greeting_message')
         }),
       ]);
       setSaved(true);
@@ -178,6 +185,32 @@ export const StorefrontSettings: React.FC = () => {
             <p className="text-xs text-muted-foreground">
               This message appears when orders are blocked from India or VPN/proxy users.
             </p>
+          </div>
+        </div>
+
+        {/* Chat Greeting Message */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center shrink-0">
+              <MessageSquare className="w-5 h-5 text-blue-600" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-medium">Chat Greeting Message</h4>
+              <p className="text-sm text-muted-foreground">
+                This message is displayed as the first message when users open chat support.
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="chat-greeting-message">Chat Greeting Message</Label>
+            <Textarea
+              id="chat-greeting-message"
+              value={chatGreetingMessage}
+              onChange={(e) => setChatGreetingMessage(e.target.value)}
+              placeholder="Enter a greeting message for chat support"
+              rows={2}
+            />
           </div>
         </div>
 
