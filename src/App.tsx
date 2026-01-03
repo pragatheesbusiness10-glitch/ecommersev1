@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "next-themes";
 
@@ -50,7 +51,15 @@ const ProtectedRoute: React.FC<{
   children: React.ReactNode; 
   allowedRoles?: ('admin' | 'user')[];
 }> = ({ children, allowedRoles }) => {
-  const { isAuthenticated, user, isLoading } = useAuth();
+  const { isAuthenticated, user, isLoading, refreshUser } = useAuth();
+  const location = useLocation();
+
+  // If an admin deletes this account while it still has a live browser session,
+  // refresh the profile on navigation to immediately revoke dashboard access.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void refreshUser();
+  }, [isAuthenticated, location.pathname, refreshUser]);
   
   if (isLoading) {
     return (

@@ -38,7 +38,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserProfile = async (userId: string): Promise<AuthUser | null> => {
+  const signOutAndClear = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setUser(null);
+      setSession(null);
+    }
+  }, []);
+
+  const fetchUserProfile = useCallback(async (userId: string): Promise<AuthUser | null> => {
     try {
       // Fetch profile
       const { data: profile, error: profileError } = await supabase
@@ -86,25 +95,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error in fetchUserProfile:', error);
       return null;
     }
-  };
+  }, []);
 
   const refreshUser = useCallback(async () => {
-    if (session?.user) {
-      const userProfile = await fetchUserProfile(session.user.id);
-      setUser(userProfile);
+    if (!session?.user) return;
+
+    // Validate the current session against the auth server.
+    // If the user was deleted, this will fail and we immediately sign out.
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData?.user) {
+      await signOutAndClear();
+      return;
     }
-  }, [session]);
+
+    const userProfile = await fetchUserProfile(session.user.id);
+
+    if (!userProfile) {
+      await signOutAndClear();
+      return;
+    }
+
+    if (userProfile.userStatus === 'disabled' || (!userProfile.isActive && userProfile.role === 'user')) {
+      await signOutAndClear();
+      return;
+    }
+
+    setUser(userProfile);
+  }, [session, fetchUserProfile, signOutAndClear]);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         setSession(currentSession);
-        
+
         if (currentSession?.user) {
           // Defer Supabase calls with setTimeout to prevent deadlock
           setTimeout(async () => {
             const userProfile = await fetchUserProfile(currentSession.user.id);
+
+            if (!userProfile) {
+              await signOutAndClear();
+              setIsLoading(false);
+              return;
+            }
+
+            if (userProfile.userStatus === 'disabled' || (!userProfile.isActive && userProfile.role === 'user')) {
+              await signOutAndClear();
+              setIsLoading(false);
+              return;
+            }
+
             setUser(userProfile);
             setIsLoading(false);
           }, 0);
@@ -116,21 +157,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
+    supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
       setSession(existingSession);
-      
+
       if (existingSession?.user) {
-        fetchUserProfile(existingSession.user.id).then((userProfile) => {
-          setUser(userProfile);
+        const userProfile = await fetchUserProfile(existingSession.user.id);
+
+        if (!userProfile) {
+          await signOutAndClear();
           setIsLoading(false);
-        });
+          return;
+        }
+
+        if (userProfile.userStatus === 'disabled' || (!userProfile.isActive && userProfile.role === 'user')) {
+          await signOutAndClear();
+          setIsLoading(false);
+          return;
+        }
+
+        setUser(userProfile);
+        setIsLoading(false);
       } else {
         setIsLoading(false);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchUserProfile, signOutAndClear]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -145,18 +198,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (data.user) {
         const userProfile = await fetchUserProfile(data.user.id);
-        
+
+        // If the auth account exists but the profile is missing (e.g. deleted), block access.
+        if (!userProfile) {
+          await supabase.auth.signOut();
+          return { success: false, error: 'Account not found. Please contact admin.' };
+        }
+
         // Check if user is disabled
-        if (userProfile && userProfile.userStatus === 'disabled') {
+        if (userProfile.userStatus === 'disabled') {
           await supabase.auth.signOut();
           return { success: false, error: 'Your account has been disabled. Please contact admin.' };
         }
-        
-        if (userProfile && !userProfile.isActive && userProfile.role === 'user') {
+
+        if (!userProfile.isActive && userProfile.role === 'user') {
           await supabase.auth.signOut();
           return { success: false, error: 'Your account has been deactivated. Please contact admin.' };
         }
-        
+
         setUser(userProfile);
       }
 
@@ -165,7 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Login error:', error);
       return { success: false, error: 'An unexpected error occurred' };
     }
-  }, []);
+  }, [fetchUserProfile]);
 
   const signup = useCallback(async (email: string, password: string, name: string) => {
     try {
