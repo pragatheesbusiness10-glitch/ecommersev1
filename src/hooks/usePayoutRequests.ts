@@ -4,6 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { playNotificationSound } from '@/lib/notificationSound';
 
+export interface PayoutStatusHistory {
+  id: string;
+  payout_id: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  changed_by_name?: string;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface PayoutRequest {
   id: string;
   user_id: string;
