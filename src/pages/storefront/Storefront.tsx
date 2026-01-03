@@ -418,51 +418,68 @@ const Storefront: React.FC = () => {
                 )}
                 style={{ animationDelay: `${index * 80}ms`, animationFillMode: 'forwards' }}
               >
-                <div className="relative aspect-square overflow-hidden">
-                  {sp.product.image_url ? (
-                    <img
-                      src={sp.product.image_url}
-                      alt={sp.product.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
-                      <span className="text-muted-foreground">No image</span>
-                    </div>
-                  )}
-                  {sp.product.category && (
-                    <div className="absolute top-4 right-4">
-                      <Badge variant="secondary" className="bg-card/95 backdrop-blur-sm shadow-lg">
-                        {sp.product.category}
-                      </Badge>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                </div>
-
-                <div className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-accent transition-colors duration-300">
-                      {sp.product.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1 min-h-[40px]">
-                      {sp.custom_description || sp.product.description || 'Premium quality product'}
-                    </p>
+                <Link to={`/store/${slug}/product/${sp.id}`} className="block">
+                  <div className="relative aspect-square overflow-hidden">
+                    {sp.product.image_url ? (
+                      <img
+                        src={sp.product.image_url}
+                        alt={sp.product.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center">
+                        <span className="text-muted-foreground">No image</span>
+                      </div>
+                    )}
+                    {sp.product.category && (
+                      <div className="absolute top-4 right-4">
+                        <Badge variant="secondary" className="bg-card/95 backdrop-blur-sm shadow-lg">
+                          {sp.product.category}
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   </div>
 
+                  <div className="p-5 space-y-4">
+                    <div>
+                      <h3 className="font-bold text-lg text-foreground line-clamp-1 group-hover:text-accent transition-colors duration-300">
+                        {sp.product.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1 min-h-[40px]">
+                        {sp.custom_description || sp.product.description || 'Premium quality product'}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+
+                <div className="px-5 pb-5">
                   <div className="flex items-center justify-between pt-3 border-t border-border">
                     <div>
                       <p className="text-2xl font-bold text-foreground">
                         ₹{sp.selling_price.toFixed(2)}
                       </p>
                     </div>
-                    <Button
-                      className="rounded-full gap-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-                      onClick={() => addToCart(sp)}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        asChild
+                      >
+                        <Link to={`/store/${slug}/product/${sp.id}`}>
+                          Buy Now
+                        </Link>
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="rounded-full gap-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                        onClick={() => addToCart(sp)}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

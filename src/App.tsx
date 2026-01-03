@@ -38,6 +38,7 @@ import UserHelp from "./pages/user/UserHelp";
 
 // Storefront
 import Storefront from "./pages/storefront/Storefront";
+import ProductPage from "./pages/storefront/ProductPage";
 
 // Track Order
 import TrackOrder from "./pages/TrackOrder";
@@ -90,6 +91,7 @@ const AppRoutes = () => {
       
       {/* Storefront (Public) */}
       <Route path="/store/:slug" element={<Storefront />} />
+      <Route path="/store/:slug/product/:productId" element={<ProductPage />} />
       
       {/* Track Order (Public) */}
       <Route path="/track-order" element={<TrackOrder />} />
