@@ -89,6 +89,9 @@ export interface SettingsMap {
   storefront_ordering_enabled: boolean;
   // Storefront ordering disabled message
   storefront_ordering_disabled_message: string;
+  // Payout enabled/disabled
+  payout_enabled: boolean;
+  payout_disabled_message: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -198,6 +201,9 @@ export const usePlatformSettings = () => {
       storefront_ordering_enabled: true,
       // Storefront ordering disabled message
       storefront_ordering_disabled_message: 'Ordering is currently disabled. Please contact the store owner for assistance.',
+      // Payout enabled/disabled
+      payout_enabled: true,
+      payout_disabled_message: 'Payout requests are currently disabled. Please contact admin for assistance.',
     };
 
     settingsQuery.data?.forEach((setting) => {
@@ -375,6 +381,12 @@ export const usePlatformSettings = () => {
           break;
         case 'storefront_ordering_disabled_message':
           map.storefront_ordering_disabled_message = setting.value || 'Ordering is currently disabled. Please contact the store owner for assistance.';
+          break;
+        case 'payout_enabled':
+          map.payout_enabled = setting.value !== 'false';
+          break;
+        case 'payout_disabled_message':
+          map.payout_disabled_message = setting.value || 'Payout requests are currently disabled. Please contact admin for assistance.';
           break;
       }
     });
