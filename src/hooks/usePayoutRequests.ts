@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { playNotificationSound } from '@/lib/notificationSound';
 
 export interface PayoutRequest {
   id: string;
@@ -209,13 +210,17 @@ export const useAdminPayouts = () => {
       status, 
       adminNotes,
       userId,
-      amount
+      amount,
+      userName,
+      userEmail
     }: { 
       payoutId: string; 
       status: 'approved' | 'rejected' | 'completed' | 'pending';
       adminNotes?: string;
       userId: string;
       amount: number;
+      userName?: string;
+      userEmail?: string;
     }) => {
       if (!payoutId || !userId) {
         throw new Error('Invalid payout data');
@@ -278,15 +283,45 @@ export const useAdminPayouts = () => {
         }
       }
 
+      // Send email notification for status changes (not for pending)
+      if (status !== 'pending' && userEmail) {
+        const emailType = status === 'approved' 
+          ? 'payout_approved' 
+          : status === 'rejected' 
+            ? 'payout_rejected' 
+            : 'payout_completed';
+        
+        try {
+          await supabase.functions.invoke('send-notification-email', {
+            body: {
+              type: emailType,
+              userName: userName || 'User',
+              userEmail: userEmail,
+              amount: amount,
+              adminNotes: adminNotes,
+              recipientEmail: userEmail,
+            },
+          });
+          console.log('Payout notification email sent successfully');
+        } catch (emailError) {
+          console.error('Failed to send payout notification email:', emailError);
+          // Don't throw - email failure shouldn't block the payout process
+        }
+      }
+
       return { status };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-payout-requests'] });
       queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'] });
+      
+      // Play notification sound
+      playNotificationSound();
+      
       const statusMessages: Record<string, { title: string; description: string }> = {
-        approved: { title: 'Payout Approved', description: 'The payout has been approved for processing.' },
-        rejected: { title: 'Payout Rejected', description: 'The payout has been rejected and funds returned to the affiliate.' },
-        completed: { title: 'Payout Completed', description: 'The payout has been marked as completed.' },
+        approved: { title: 'Payout Approved', description: 'The payout has been approved and affiliate notified.' },
+        rejected: { title: 'Payout Rejected', description: 'The payout has been rejected and affiliate notified.' },
+        completed: { title: 'Payout Completed', description: 'The payout is complete and affiliate notified.' },
         pending: { title: 'Payout Reverted', description: 'The payout status has been reverted to pending.' },
       };
       const msg = statusMessages[result.status] || { title: 'Payout Updated', description: 'The payout status has been updated.' };
