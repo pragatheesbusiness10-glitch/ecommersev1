@@ -103,7 +103,25 @@ export const usePayoutRequests = () => {
         throw new Error(`Minimum payout amount is $${minPayout}`);
       }
 
-      // Create payout request
+      // Prevent multiple pending payout requests exceeding wallet balance
+      const { data: pendingPayouts, error: pendingError } = await supabase
+        .from('payout_requests')
+        .select('amount')
+        .eq('user_id', user?.id)
+        .eq('status', 'pending');
+
+      if (pendingError) throw pendingError;
+
+      const pendingTotal = (pendingPayouts || []).reduce((sum, p) => sum + Number(p.amount), 0);
+      const availableToWithdraw = currentBalance - pendingTotal;
+
+      if (amount > availableToWithdraw) {
+        throw new Error(
+          `Insufficient available balance. Pending payouts on hold: ${pendingTotal.toFixed(2)}`
+        );
+      }
+
+      // Create payout request (wallet balance is adjusted when admin approves/completes)
       const { data, error } = await supabase
         .from('payout_requests')
         .insert({
@@ -118,22 +136,7 @@ export const usePayoutRequests = () => {
 
       if (error) throw error;
 
-      // Deduct from wallet balance (hold funds)
-      const newBalance = currentBalance - amount;
-      await supabase
-        .from('profiles')
-        .update({ wallet_balance: newBalance })
-        .eq('user_id', user?.id);
-
-      // Create transaction record
-      await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: user?.id,
-          amount: -amount,
-          type: 'payout_request',
-          description: `Payout request - ${paymentMethod}`,
-        });
+      return data;
 
       return data;
     },
@@ -271,53 +274,108 @@ export const useAdminPayouts = () => {
         // Don't throw - history logging shouldn't block the main operation
       }
 
-      // If rejected OR reverted to pending from approved/completed, refund the amount back to wallet
-      const shouldRefund = status === 'rejected' || 
-        (status === 'pending' && previousStatus && ['approved', 'completed'].includes(previousStatus));
+       // If approving/completing for the first time (from pending), deduct funds from wallet
+       const shouldDebit =
+         (status === 'approved' || status === 'completed') &&
+         (!previousStatus || !['approved', 'completed'].includes(previousStatus));
 
-      if (shouldRefund) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('wallet_balance')
-          .eq('user_id', userId)
-          .single();
+       if (shouldDebit) {
+         const { data: profile, error: profileError } = await supabase
+           .from('profiles')
+           .select('wallet_balance')
+           .eq('user_id', userId)
+           .single();
 
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-          throw profileError;
-        }
+         if (profileError) {
+           console.error('Profile fetch error:', profileError);
+           throw profileError;
+         }
 
-        if (profile) {
-          const newBalance = Number(profile.wallet_balance) + amount;
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ wallet_balance: newBalance })
-            .eq('user_id', userId);
+         const currentBalance = Number(profile.wallet_balance);
+         if (amount > currentBalance) {
+           throw new Error('Insufficient wallet balance to approve this payout');
+         }
 
-          if (updateError) {
-            console.error('Balance update error:', updateError);
-            throw updateError;
-          }
+         const newBalance = currentBalance - amount;
+         const { error: updateError } = await supabase
+           .from('profiles')
+           .update({ wallet_balance: newBalance })
+           .eq('user_id', userId);
 
-          const description = status === 'rejected' 
-            ? 'Payout request rejected - funds returned'
-            : 'Payout request reverted to pending - funds returned';
+         if (updateError) {
+           console.error('Balance update error:', updateError);
+           throw updateError;
+         }
 
-          const { error: txError } = await supabase
-            .from('wallet_transactions')
-            .insert({
-              user_id: userId,
-              amount: amount,
-              type: status === 'rejected' ? 'payout_refund' : 'payout_reverted',
-              description,
-            });
+         const { error: txError } = await supabase
+           .from('wallet_transactions')
+           .insert({
+             user_id: userId,
+             amount: -amount,
+             type: status === 'approved' ? 'payout_approved' : 'payout_completed',
+             description:
+               status === 'approved'
+                 ? 'Payout approved - funds deducted'
+                 : 'Payout completed - funds deducted',
+           });
 
-          if (txError) {
-            console.error('Transaction insert error:', txError);
-            throw txError;
-          }
-        }
-      }
+         if (txError) {
+           console.error('Transaction insert error:', txError);
+           throw txError;
+         }
+       }
+
+       // Refund ONLY if funds had been deducted previously
+       const shouldRefund =
+         (status === 'rejected' &&
+           !!previousStatus &&
+           ['approved', 'completed'].includes(previousStatus)) ||
+         (status === 'pending' &&
+           !!previousStatus &&
+           ['approved', 'completed'].includes(previousStatus));
+
+       if (shouldRefund) {
+         const { data: profile, error: profileError } = await supabase
+           .from('profiles')
+           .select('wallet_balance')
+           .eq('user_id', userId)
+           .single();
+
+         if (profileError) {
+           console.error('Profile fetch error:', profileError);
+           throw profileError;
+         }
+
+         if (profile) {
+           const newBalance = Number(profile.wallet_balance) + amount;
+           const { error: updateError } = await supabase
+             .from('profiles')
+             .update({ wallet_balance: newBalance })
+             .eq('user_id', userId);
+
+           if (updateError) {
+             console.error('Balance update error:', updateError);
+             throw updateError;
+           }
+
+           const description =
+             status === 'rejected'
+               ? 'Payout rejected - funds returned'
+               : 'Payout reverted to pending - funds returned';
+
+           const { error: txError } = await supabase.from('wallet_transactions').insert({
+             user_id: userId,
+             amount: amount,
+             type: status === 'rejected' ? 'payout_refund' : 'payout_reverted',
+             description,
+           });
+
+           if (txError) {
+             console.error('Transaction insert error:', txError);
+             throw txError;
+           }
+         }
+       }
 
       // Send email notification for status changes (not for pending)
       if (status !== 'pending' && userEmail) {
