@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { usePublicSettings } from '@/hooks/usePublicSettings';
 import { 
   ArrowLeft, 
   ShoppingBag, 
@@ -13,7 +15,8 @@ import {
   Minus, 
   Plus,
   Store,
-  AlertTriangle
+  AlertTriangle,
+  MessageSquare
 } from 'lucide-react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ShopifyCheckout, CheckoutData } from '@/components/checkout/ShopifyCheckout';
@@ -47,6 +50,7 @@ const ProductPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { settings: publicSettings } = usePublicSettings();
 
   // Fetch product details
   const { data: product, isLoading, error } = useQuery({
@@ -116,6 +120,16 @@ const ProductPage = () => {
   const handleBuyNow = () => {
     if (!product) return;
     
+    // Check if ordering is enabled
+    if (!publicSettings.storefront_ordering_enabled) {
+      toast({
+        title: 'Ordering Disabled',
+        description: publicSettings.storefront_ordering_disabled_message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (product.product.stock <= 0) {
       toast({
         title: 'Out of Stock',
@@ -233,6 +247,16 @@ const ProductPage = () => {
 
       {/* Product Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Ordering Disabled Banner */}
+        {!publicSettings.storefront_ordering_enabled && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {publicSettings.storefront_ordering_disabled_message}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Image */}
           <div className="space-y-4">
@@ -331,13 +355,17 @@ const ProductPage = () => {
               className={cn(
                 "w-full h-14 text-lg font-semibold rounded-2xl gap-3",
                 "shadow-lg hover:shadow-xl transition-all duration-300",
-                isOutOfStock && "opacity-50 cursor-not-allowed"
+                (isOutOfStock || !publicSettings.storefront_ordering_enabled) && "opacity-50 cursor-not-allowed"
               )}
               onClick={handleBuyNow}
-              disabled={isOutOfStock}
+              disabled={isOutOfStock || !publicSettings.storefront_ordering_enabled}
             >
               <ShoppingBag className="w-5 h-5" />
-              {isOutOfStock ? 'Out of Stock' : 'Buy Now'}
+              {!publicSettings.storefront_ordering_enabled 
+                ? 'Ordering Disabled' 
+                : isOutOfStock 
+                  ? 'Out of Stock' 
+                  : 'Buy Now'}
             </Button>
 
             {/* Additional Info */}

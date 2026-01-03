@@ -83,6 +83,12 @@ export interface SettingsMap {
   default_markup_percentage: number;
   // Order failed error message
   order_failed_message: string;
+  // Storefront greeting message
+  storefront_greeting_message: string;
+  // Storefront ordering enabled
+  storefront_ordering_enabled: boolean;
+  // Storefront ordering disabled message
+  storefront_ordering_disabled_message: string;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -186,6 +192,12 @@ export const usePlatformSettings = () => {
       default_markup_percentage: 30,
       // Order failed error message
       order_failed_message: 'Order not available in India or you are using VPN, fake order.',
+      // Storefront greeting message
+      storefront_greeting_message: 'Welcome to our store! Browse our amazing products.',
+      // Storefront ordering enabled
+      storefront_ordering_enabled: true,
+      // Storefront ordering disabled message
+      storefront_ordering_disabled_message: 'Ordering is currently disabled. Please contact the store owner for assistance.',
     };
 
     settingsQuery.data?.forEach((setting) => {
@@ -354,6 +366,15 @@ export const usePlatformSettings = () => {
           break;
         case 'order_failed_message':
           map.order_failed_message = setting.value || 'Order not available in India or you are using VPN, fake order.';
+          break;
+        case 'storefront_greeting_message':
+          map.storefront_greeting_message = setting.value || 'Welcome to our store! Browse our amazing products.';
+          break;
+        case 'storefront_ordering_enabled':
+          map.storefront_ordering_enabled = setting.value !== 'false';
+          break;
+        case 'storefront_ordering_disabled_message':
+          map.storefront_ordering_disabled_message = setting.value || 'Ordering is currently disabled. Please contact the store owner for assistance.';
           break;
       }
     });
