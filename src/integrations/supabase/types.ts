@@ -83,6 +83,30 @@ export type Database = {
         }
         Relationships: []
       }
+      force_logout_events: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string
+          triggered_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason: string
+          triggered_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string
+          triggered_by?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       kyc_submissions: {
         Row: {
           aadhaar_back_url: string

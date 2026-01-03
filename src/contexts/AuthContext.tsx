@@ -185,6 +185,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, [fetchUserProfile, signOutAndClear]);
 
+  // Listen for force logout events in real-time
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const channel = supabase
+      .channel('force-logout-listener')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'force_logout_events',
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        async (payload) => {
+          console.log('Force logout event received:', payload);
+          // Immediately sign out the user
+          await signOutAndClear();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id, signOutAndClear]);
+
   const login = useCallback(async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({

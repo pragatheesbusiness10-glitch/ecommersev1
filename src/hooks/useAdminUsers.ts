@@ -151,6 +151,17 @@ export const useAdminUsers = () => {
 
       if (error) throw error;
       
+      // If disabling user, broadcast force logout event
+      if (status === 'disabled') {
+        await supabase
+          .from('force_logout_events')
+          .insert({
+            user_id: userId,
+            reason: 'account_disabled',
+            triggered_by: user?.id,
+          });
+      }
+      
       // Log the action
       await supabase.rpc('create_audit_log', {
         _action_type: 'user_status_change',
