@@ -255,6 +255,22 @@ export const useAdminPayouts = () => {
         throw error;
       }
 
+      // Log the status change to history
+      const { error: historyError } = await supabase
+        .from('payout_status_history')
+        .insert({
+          payout_id: payoutId,
+          old_status: previousStatus || null,
+          new_status: status,
+          changed_by: user?.id,
+          notes: adminNotes || null,
+        });
+
+      if (historyError) {
+        console.error('Status history insert error:', historyError);
+        // Don't throw - history logging shouldn't block the main operation
+      }
+
       // If rejected OR reverted to pending from approved/completed, refund the amount back to wallet
       const shouldRefund = status === 'rejected' || 
         (status === 'pending' && previousStatus && ['approved', 'completed'].includes(previousStatus));
@@ -369,5 +385,60 @@ export const useAdminPayouts = () => {
     refetch: payoutsQuery.refetch,
     processPayout: processPayoutMutation.mutate,
     isProcessingPayout: processPayoutMutation.isPending,
+  };
+};
+
+// Hook to fetch payout status history
+export const usePayoutStatusHistory = (payoutId: string | null) => {
+  const { user, session } = useAuth();
+
+  const historyQuery = useQuery({
+    queryKey: ['payout-status-history', payoutId],
+    queryFn: async () => {
+      if (!payoutId) return [];
+
+      const { data, error } = await supabase
+        .from('payout_status_history')
+        .select('*')
+        .eq('payout_id', payoutId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching payout status history:', error);
+        throw error;
+      }
+
+      // Fetch admin names
+      const changedByIds = [...new Set((data || []).map(h => h.changed_by).filter(Boolean))];
+      let adminMap = new Map<string, string>();
+      
+      if (changedByIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', changedByIds as string[]);
+        
+        adminMap = new Map((profiles || []).map(p => [p.user_id, p.name]));
+      }
+
+      return (data || []).map((h): PayoutStatusHistory => ({
+        id: h.id,
+        payout_id: h.payout_id,
+        old_status: h.old_status,
+        new_status: h.new_status,
+        changed_by: h.changed_by,
+        changed_by_name: h.changed_by ? adminMap.get(h.changed_by) || 'Admin' : 'System',
+        notes: h.notes,
+        created_at: h.created_at,
+      }));
+    },
+    enabled: !!payoutId && !!user && !!session,
+  });
+
+  return {
+    history: historyQuery.data || [],
+    isLoading: historyQuery.isLoading,
+    error: historyQuery.error,
+    refetch: historyQuery.refetch,
   };
 };

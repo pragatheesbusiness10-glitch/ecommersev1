@@ -17,7 +17,9 @@ import {
   RotateCcw,
   EyeOff,
   Download,
-  FileText
+  FileText,
+  History,
+  ArrowRight
 } from 'lucide-react';
 import {
   Dialog,
@@ -44,7 +46,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useAdminPayouts, PayoutRequest } from '@/hooks/usePayoutRequests';
+import { useAdminPayouts, PayoutRequest, usePayoutStatusHistory } from '@/hooks/usePayoutRequests';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -86,6 +88,10 @@ const AdminPayouts: React.FC = () => {
   // Enable real-time updates
   usePayoutRealtimeAdmin();
   useProfileRealtimeAdmin();
+
+  // Fetch status history for selected payout
+  const { history: statusHistory, isLoading: isLoadingHistory } = usePayoutStatusHistory(selectedPayout?.id || null);
+
   const filteredPayouts = payoutRequests.filter(payout =>
     payout.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     payout.user_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -410,6 +416,57 @@ const AdminPayouts: React.FC = () => {
                     <p className="text-sm text-muted-foreground italic">
                       Note: {selectedPayout.admin_notes}
                     </p>
+                  )}
+                </div>
+
+                {/* Status History / Audit Trail */}
+                <div className="pt-4 border-t">
+                  <div className="flex items-center gap-2 mb-3">
+                    <History className="w-4 h-4 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground">Status History</p>
+                  </div>
+                  {isLoadingHistory ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ) : statusHistory.length === 0 ? (
+                    <p className="text-sm text-muted-foreground italic">No status changes recorded yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {statusHistory.map((entry) => (
+                        <div key={entry.id} className="bg-muted/50 rounded-lg p-3 text-sm">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              {entry.old_status ? (
+                                <>
+                                  <Badge variant="outline" className="text-xs capitalize">
+                                    {entry.old_status}
+                                  </Badge>
+                                  <ArrowRight className="w-3 h-3 text-muted-foreground" />
+                                </>
+                              ) : null}
+                              <Badge className={cn("text-xs border capitalize", statusColors[entry.new_status] || '')}>
+                                {entry.new_status}
+                              </Badge>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(entry.created_at), 'MMM d, yyyy h:mm a')}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              By: {entry.changed_by_name}
+                            </span>
+                            {entry.notes && (
+                              <span className="text-xs text-muted-foreground italic truncate max-w-[200px]">
+                                "{entry.notes}"
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
