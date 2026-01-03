@@ -867,6 +867,13 @@ const AdminSettings: React.FC = () => {
                 Affiliates must have at least {CURRENCY_SYMBOLS[defaultCurrency]}{minPayoutAmount} in their wallet to request a payout.
               </p>
             </div>
+            
+            <div className="pt-4 border-t">
+              <Button onClick={handleSaveAll} disabled={isUpdating} className="gap-2">
+                {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save Payout Settings
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
