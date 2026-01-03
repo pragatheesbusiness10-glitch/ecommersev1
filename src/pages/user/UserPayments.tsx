@@ -16,7 +16,8 @@ import {
   XCircle,
   Loader2,
   DollarSign,
-  Save
+  Save,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -110,7 +111,9 @@ const UserPayments: React.FC = () => {
 
   const walletBalance = profile?.wallet_balance || 0;
   const minPayoutAmount = settingsMap.min_payout_amount;
-  const canRequestPayout = isKYCApproved && walletBalance >= minPayoutAmount;
+  const payoutEnabled = settingsMap.payout_enabled;
+  const payoutDisabledMessage = settingsMap.payout_disabled_message;
+  const canRequestPayout = payoutEnabled && isKYCApproved && walletBalance >= minPayoutAmount;
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
   
   // Calculate total order value and profit
@@ -398,6 +401,17 @@ const UserPayments: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        {/* Payout Disabled Warning */}
+        {!payoutEnabled && (
+          <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">Payout Requests Disabled</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">{payoutDisabledMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

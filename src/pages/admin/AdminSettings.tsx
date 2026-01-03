@@ -85,6 +85,10 @@ const AdminSettings: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   
+  // Payout settings
+  const [payoutEnabled, setPayoutEnabled] = useState(true);
+  const [payoutDisabledMessage, setPayoutDisabledMessage] = useState('');
+  
   // Branding settings
   const [siteName, setSiteName] = useState('Affiliate Platform');
   const [siteLogoUrl, setSiteLogoUrl] = useState('');
@@ -179,6 +183,9 @@ const AdminSettings: React.FC = () => {
       setAutoUserApproval(settingsMap.auto_user_approval);
       setDefaultCurrency(settingsMap.default_currency);
       setDefaultMarkupPercentage(settingsMap.default_markup_percentage.toString());
+      // Load payout settings
+      setPayoutEnabled(settingsMap.payout_enabled);
+      setPayoutDisabledMessage(settingsMap.payout_disabled_message);
       // Load branding settings
       setSiteName(settingsMap.site_name);
       setSiteLogoUrl(settingsMap.site_logo_url);
@@ -205,9 +212,11 @@ const AdminSettings: React.FC = () => {
       autoCreditOnComplete !== settingsMap.auto_credit_on_complete ||
       autoUserApproval !== settingsMap.auto_user_approval ||
       defaultCurrency !== settingsMap.default_currency ||
-      defaultMarkupPercentage !== settingsMap.default_markup_percentage.toString();
+      defaultMarkupPercentage !== settingsMap.default_markup_percentage.toString() ||
+      payoutEnabled !== settingsMap.payout_enabled ||
+      payoutDisabledMessage !== settingsMap.payout_disabled_message;
     setHasChanges(changed);
-  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, autoUserApproval, defaultCurrency, defaultMarkupPercentage, settingsMap]);
+  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, autoUserApproval, defaultCurrency, defaultMarkupPercentage, payoutEnabled, payoutDisabledMessage, settingsMap]);
 
   const handleSaveAll = async () => {
     try {
@@ -219,6 +228,8 @@ const AdminSettings: React.FC = () => {
         updateSettingAsync({ key: 'auto_user_approval', value: autoUserApproval.toString(), oldValue: settingsMap.auto_user_approval.toString() }),
         updateSettingAsync({ key: 'default_currency', value: defaultCurrency, oldValue: settingsMap.default_currency }),
         updateSettingAsync({ key: 'default_markup_percentage', value: defaultMarkupPercentage, oldValue: settingsMap.default_markup_percentage.toString() }),
+        updateSettingAsync({ key: 'payout_enabled', value: payoutEnabled.toString(), oldValue: settingsMap.payout_enabled.toString() }),
+        updateSettingAsync({ key: 'payout_disabled_message', value: payoutDisabledMessage, oldValue: settingsMap.payout_disabled_message }),
       ]);
       setHasChanges(false);
       toast({
@@ -808,6 +819,35 @@ const AdminSettings: React.FC = () => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Enable Payout Requests</Label>
+                <p className="text-sm text-muted-foreground">
+                  {payoutEnabled 
+                    ? 'Affiliates can request payouts from their wallet balance.'
+                    : 'Payout requests are disabled. Users will see your custom message.'}
+                </p>
+              </div>
+              <Switch
+                checked={payoutEnabled}
+                onCheckedChange={setPayoutEnabled}
+              />
+            </div>
+            
+            {!payoutEnabled && (
+              <div className="grid gap-2">
+                <Label>Disabled Message</Label>
+                <Input
+                  value={payoutDisabledMessage}
+                  onChange={(e) => setPayoutDisabledMessage(e.target.value)}
+                  placeholder="Enter a message to show users when payouts are disabled"
+                />
+                <p className="text-sm text-muted-foreground">
+                  This message will be displayed to users when they try to request a payout.
+                </p>
+              </div>
+            )}
+            
             <div className="grid gap-2">
               <Label>Minimum Payout Amount</Label>
               <div className="relative max-w-xs">
