@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePublicStorefront, PublicStorefrontProduct } from '@/hooks/usePublicStorefront';
+import { usePublicSettings } from '@/hooks/usePublicSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   ShoppingCart, 
   Search, 
@@ -14,7 +16,9 @@ import {
   Store,
   Loader2,
   Sparkles,
-  Star
+  Star,
+  MessageSquare,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -45,6 +49,7 @@ const Storefront: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { toast } = useToast();
   const { store, products, isLoading, isStoreNotFound } = usePublicStorefront(slug);
+  const { settings: publicSettings, isLoading: isLoadingSettings } = usePublicSettings();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -60,6 +65,16 @@ const Storefront: React.FC = () => {
   );
 
   const addToCart = (product: PublicStorefrontProduct) => {
+    // Check if ordering is enabled
+    if (!publicSettings.storefront_ordering_enabled) {
+      toast({
+        title: 'Ordering Disabled',
+        description: publicSettings.storefront_ordering_disabled_message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Check if product is in stock
     if (product.product.stock <= 0) {
       toast({
@@ -129,6 +144,14 @@ const Storefront: React.FC = () => {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleCheckout = () => {
+    if (!publicSettings.storefront_ordering_enabled) {
+      toast({
+        title: 'Ordering Disabled',
+        description: publicSettings.storefront_ordering_disabled_message,
+        variant: 'destructive',
+      });
+      return;
+    }
     setIsCartOpen(false);
     setIsCheckoutOpen(true);
   };
@@ -387,6 +410,30 @@ const Storefront: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Greeting Message */}
+      {publicSettings.storefront_greeting_message && (
+        <div className="container mx-auto px-4 pt-8">
+          <Alert className="bg-primary/5 border-primary/20">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-foreground">
+              {publicSettings.storefront_greeting_message}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {/* Ordering Disabled Banner */}
+      {!publicSettings.storefront_ordering_enabled && (
+        <div className="container mx-auto px-4 pt-4">
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {publicSettings.storefront_ordering_disabled_message}
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
 
       {/* Products */}
       <main className="container mx-auto px-4 py-12">

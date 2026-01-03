@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ShoppingCart, Save, Loader2, Check, AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ShoppingCart, Save, Loader2, Check, AlertTriangle, MessageSquare, ShoppingBag } from 'lucide-react';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { useToast } from '@/hooks/use-toast';
 
@@ -11,6 +12,9 @@ export const StorefrontSettings: React.FC = () => {
   const { settingsMap, updateSettingAsync, isUpdating, settings } = usePlatformSettings();
   const { toast } = useToast();
   const [orderFailedMessage, setOrderFailedMessage] = useState('');
+  const [greetingMessage, setGreetingMessage] = useState('');
+  const [orderingEnabled, setOrderingEnabled] = useState(true);
+  const [orderingDisabledMessage, setOrderingDisabledMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -22,16 +26,36 @@ export const StorefrontSettings: React.FC = () => {
 
   useEffect(() => {
     setOrderFailedMessage(settingsMap.order_failed_message || 'Order not available in India or you are using VPN, fake order.');
-  }, [settingsMap.order_failed_message]);
+    setGreetingMessage(settingsMap.storefront_greeting_message || 'Welcome to our store! Browse our amazing products.');
+    setOrderingEnabled(settingsMap.storefront_ordering_enabled !== false);
+    setOrderingDisabledMessage(settingsMap.storefront_ordering_disabled_message || 'Ordering is currently disabled. Please contact the store owner for assistance.');
+  }, [settingsMap.order_failed_message, settingsMap.storefront_greeting_message, settingsMap.storefront_ordering_enabled, settingsMap.storefront_ordering_disabled_message]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateSettingAsync({
-        key: 'order_failed_message',
-        value: orderFailedMessage,
-        oldValue: getRawValue('order_failed_message')
-      });
+      await Promise.all([
+        updateSettingAsync({
+          key: 'order_failed_message',
+          value: orderFailedMessage,
+          oldValue: getRawValue('order_failed_message')
+        }),
+        updateSettingAsync({
+          key: 'storefront_greeting_message',
+          value: greetingMessage,
+          oldValue: getRawValue('storefront_greeting_message')
+        }),
+        updateSettingAsync({
+          key: 'storefront_ordering_enabled',
+          value: orderingEnabled.toString(),
+          oldValue: getRawValue('storefront_ordering_enabled')
+        }),
+        updateSettingAsync({
+          key: 'storefront_ordering_disabled_message',
+          value: orderingDisabledMessage,
+          oldValue: getRawValue('storefront_ordering_disabled_message')
+        }),
+      ]);
       setSaved(true);
       toast({
         title: 'Settings Saved',
@@ -65,6 +89,70 @@ export const StorefrontSettings: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Greeting Message */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+              <MessageSquare className="w-5 h-5 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-medium">Greeting Message</h4>
+              <p className="text-sm text-muted-foreground">
+                This message is displayed at the top of the storefront to welcome customers.
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="greeting-message">Custom Greeting Message</Label>
+            <Textarea
+              id="greeting-message"
+              value={greetingMessage}
+              onChange={(e) => setGreetingMessage(e.target.value)}
+              placeholder="Enter a welcome message for your customers"
+              rows={2}
+            />
+          </div>
+        </div>
+
+        {/* Ordering Toggle */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium">Enable Customer Ordering</h4>
+                <Switch
+                  checked={orderingEnabled}
+                  onCheckedChange={setOrderingEnabled}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                When disabled, customers will see a custom message instead of being able to place orders.
+              </p>
+            </div>
+          </div>
+          
+          {!orderingEnabled && (
+            <div className="space-y-2">
+              <Label htmlFor="ordering-disabled-message">Ordering Disabled Message</Label>
+              <Textarea
+                id="ordering-disabled-message"
+                value={orderingDisabledMessage}
+                onChange={(e) => setOrderingDisabledMessage(e.target.value)}
+                placeholder="Enter the message shown when ordering is disabled"
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                This message will be shown to customers when they try to place an order.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Order Failed Message */}
         <div className="border rounded-lg p-4 space-y-4">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
