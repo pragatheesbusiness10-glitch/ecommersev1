@@ -119,12 +119,18 @@ const UserPayments: React.FC = () => {
   usePayoutRealtimeUser(user?.id);
   useWalletRealtimeUser(user?.id);
   useProfileRealtimeUser(user?.id);
+
   const walletBalance = Number(profile?.wallet_balance ?? 0);
+  const pendingHold = payoutRequests
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + p.amount, 0);
+  const availableBalance = Math.max(0, walletBalance - pendingHold);
+
   const minPayoutAmount = settingsMap.min_payout_amount;
   // Use public settings for payout enabled/disabled status
   const payoutEnabled = publicSettings.payout_enabled;
   const payoutDisabledMessage = publicSettings.payout_disabled_message;
-  const canRequestPayout = payoutEnabled && isKYCApproved && walletBalance >= minPayoutAmount;
+  const canRequestPayout = payoutEnabled && isKYCApproved && availableBalance >= minPayoutAmount;
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
   
   // Calculate total order value and profit
@@ -257,10 +263,10 @@ const UserPayments: React.FC = () => {
       return;
     }
 
-    if (amount > walletBalance) {
+    if (amount > availableBalance) {
       toast({
         title: 'Insufficient Balance',
-        description: 'You do not have enough funds in your wallet.',
+        description: `You only have ${currencySymbol}${availableBalance.toFixed(2)} available right now (pending payouts are on hold).`,
         variant: 'destructive',
       });
       return;
@@ -406,11 +412,11 @@ const UserPayments: React.FC = () => {
     );
   }
 
-  // Calculate pending/approved payouts (funds on hold)
-  const onHoldPayouts = payoutRequests.filter(p => p.status === 'pending' || p.status === 'approved');
+  // Calculate pending payouts (funds on hold until admin approval)
+  const onHoldPayouts = payoutRequests.filter(p => p.status === 'pending');
   const totalOnHold = onHoldPayouts.reduce((sum, p) => sum + p.amount, 0);
-  const pendingPayouts = payoutRequests.filter(p => p.status === 'pending');
-  const totalPendingPayout = pendingPayouts.reduce((sum, p) => sum + p.amount, 0);
+  const pendingPayouts = onHoldPayouts;
+  const totalPendingPayout = totalOnHold;
   
   // Generate PDF receipt for completed payout
   const generatePayoutReceipt = (payout: typeof payoutRequests[0]) => {
@@ -569,52 +575,52 @@ const UserPayments: React.FC = () => {
                     Withdraw your earnings to your bank account. Minimum: {currencySymbol}{minPayoutAmount}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="py-4 space-y-4">
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">Available Balance:</span>
-                      <span className="font-bold text-lg">{currencySymbol}{walletBalance.toFixed(2)}</span>
+                  <div className="py-4 space-y-4">
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Available Balance:</span>
+                        <span className="font-bold text-lg">{currencySymbol}{availableBalance.toFixed(2)}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="grid gap-2">
-                    <Label htmlFor="payout-amount">Amount ({currencySymbol})</Label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        id="payout-amount"
-                        type="number"
-                        step="0.01"
-                        min={minPayoutAmount}
-                        max={walletBalance}
-                        value={payoutAmount}
-                        onChange={(e) => setPayoutAmount(e.target.value)}
-                        placeholder={minPayoutAmount.toString()}
-                        className="pl-10"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      {[500, 1000, 2500].filter(v => v <= walletBalance).map(preset => (
+                    <div className="grid gap-2">
+                      <Label htmlFor="payout-amount">Amount ({currencySymbol})</Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          id="payout-amount"
+                          type="number"
+                          step="0.01"
+                          min={minPayoutAmount}
+                          max={availableBalance}
+                          value={payoutAmount}
+                          onChange={(e) => setPayoutAmount(e.target.value)}
+                          placeholder={minPayoutAmount.toString()}
+                          className="pl-10"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        {[500, 1000, 2500].filter(v => v <= availableBalance).map(preset => (
+                          <Button
+                            key={preset}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPayoutAmount(preset.toString())}
+                          >
+                            {currencySymbol}{preset}
+                          </Button>
+                        ))}
                         <Button
-                          key={preset}
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setPayoutAmount(preset.toString())}
+                          onClick={() => setPayoutAmount(availableBalance.toString())}
                         >
-                          {currencySymbol}{preset}
+                          Max
                         </Button>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setPayoutAmount(walletBalance.toString())}
-                      >
-                        Max
-                      </Button>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="grid gap-2">
                     <Label>Payment Method</Label>
@@ -822,7 +828,7 @@ const UserPayments: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-primary-foreground/70 text-sm">Available Balance</p>
-                  <p className="text-4xl font-bold">{currencySymbol}{walletBalance.toFixed(2)}</p>
+                  <p className="text-4xl font-bold">{currencySymbol}{availableBalance.toFixed(2)}</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4 md:gap-6">
@@ -847,15 +853,15 @@ const UserPayments: React.FC = () => {
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div className="bg-primary-foreground/10 rounded-lg p-3">
                   <p className="text-primary-foreground/70 text-xs mb-1">Total Wallet</p>
-                  <p className="font-semibold">{currencySymbol}{(walletBalance + totalOnHold).toFixed(2)}</p>
+                  <p className="font-semibold">{currencySymbol}{walletBalance.toFixed(2)}</p>
                 </div>
                 <div className="bg-primary-foreground/10 rounded-lg p-3">
-                  <p className="text-primary-foreground/70 text-xs mb-1">On Hold (Payouts)</p>
+                  <p className="text-primary-foreground/70 text-xs mb-1">On Hold (Pending)</p>
                   <p className="font-semibold text-amber-300">-{currencySymbol}{totalOnHold.toFixed(2)}</p>
                 </div>
                 <div className="bg-primary-foreground/10 rounded-lg p-3">
                   <p className="text-primary-foreground/70 text-xs mb-1">Available</p>
-                  <p className="font-semibold text-emerald-300">{currencySymbol}{walletBalance.toFixed(2)}</p>
+                  <p className="font-semibold text-emerald-300">{currencySymbol}{availableBalance.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -868,9 +874,9 @@ const UserPayments: React.FC = () => {
           </div>
         )}
 
-        {isKYCApproved && walletBalance < minPayoutAmount && (
+        {isKYCApproved && availableBalance < minPayoutAmount && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm text-amber-700">
-            You need at least {currencySymbol}{minPayoutAmount} in your wallet to request a payout. Current balance: {currencySymbol}{walletBalance.toFixed(2)}
+            You need at least {currencySymbol}{minPayoutAmount} available to request a payout. Available: {currencySymbol}{availableBalance.toFixed(2)}
           </div>
         )}
 
