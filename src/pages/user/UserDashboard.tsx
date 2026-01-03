@@ -4,6 +4,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { OrdersTableNew } from '@/components/dashboard/OrdersTableNew';
 import { KYCStatusBanner } from '@/components/kyc/KYCStatusBanner';
 import { AffiliateLeaderboard } from '@/components/user/AffiliateLeaderboard';
+import { WalletTransactionHistory } from '@/components/user/WalletTransactionHistory';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
@@ -34,7 +35,7 @@ import {
 const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { recentOrders, stats, profile, isLoading, refetchOrders } = useUserDashboard();
+  const { recentOrders, stats, profile, transactions, isLoading, refetchOrders } = useUserDashboard();
   const { settingsMap } = usePlatformSettings();
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   
@@ -285,6 +286,13 @@ const UserDashboard: React.FC = () => {
                 </Link>
               </Button>
             </div>
+
+            {/* Wallet Transaction History */}
+            <WalletTransactionHistory 
+              transactions={transactions} 
+              currencySymbol={currencySymbol}
+              maxItems={10}
+            />
 
             {/* Affiliate Leaderboard */}
             <AffiliateLeaderboard />
