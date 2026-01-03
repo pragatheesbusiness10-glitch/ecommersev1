@@ -107,6 +107,24 @@ Deno.serve(async (req) => {
       // Continue anyway - the auth user deletion is more important
     }
 
+    // Broadcast force logout event BEFORE deleting the user
+    // This gives the user's active sessions a chance to receive the signal
+    const { error: forceLogoutError } = await supabaseAdmin
+      .from("force_logout_events")
+      .insert({
+        user_id: userId,
+        reason: "account_deleted",
+        triggered_by: callingUser.id,
+      });
+
+    if (forceLogoutError) {
+      console.error("Error inserting force logout event:", forceLogoutError);
+      // Continue anyway - deletion is more important
+    }
+
+    // Small delay to allow realtime to propagate
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     // Delete the user from auth.users
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
