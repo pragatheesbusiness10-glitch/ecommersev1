@@ -116,7 +116,7 @@ const UserPayments: React.FC = () => {
   usePayoutRealtimeUser(user?.id);
   useWalletRealtimeUser(user?.id);
   useProfileRealtimeUser(user?.id);
-  const walletBalance = profile?.wallet_balance || 0;
+  const walletBalance = Number(profile?.wallet_balance ?? 0);
   const minPayoutAmount = settingsMap.min_payout_amount;
   // Use public settings for payout enabled/disabled status
   const payoutEnabled = publicSettings.payout_enabled;
@@ -447,7 +447,7 @@ const UserPayments: React.FC = () => {
                   <div className="bg-muted/50 rounded-lg p-4">
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Available Balance:</span>
-                      <span className="font-bold text-lg">{currencySymbol}{totalOrderValue.toFixed(2)}</span>
+                      <span className="font-bold text-lg">{currencySymbol}{walletBalance.toFixed(2)}</span>
                     </div>
                   </div>
 
@@ -694,7 +694,7 @@ const UserPayments: React.FC = () => {
               </div>
               <div>
                 <p className="text-primary-foreground/70 text-sm">Available Balance</p>
-                <p className="text-4xl font-bold">{currencySymbol}{totalOrderValue.toFixed(2)}</p>
+                <p className="text-4xl font-bold">{currencySymbol}{walletBalance.toFixed(2)}</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-4 md:gap-6">
