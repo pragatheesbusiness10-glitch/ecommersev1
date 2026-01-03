@@ -19,6 +19,8 @@ export interface AffiliateUser {
   wallet_balance: number;
   commission_override: number | null;
   created_at: string;
+  last_ip_address: string | null;
+  last_login_at: string | null;
 }
 
 export const useAdminUsers = () => {
@@ -71,6 +73,8 @@ export const useAdminUsers = () => {
         wallet_balance: Number(p.wallet_balance),
         commission_override: p.commission_override ? Number(p.commission_override) : null,
         created_at: p.created_at,
+        last_ip_address: (p as any).last_ip_address || null,
+        last_login_at: (p as any).last_login_at || null,
       }));
     },
     enabled: user?.role === 'admin' && !!session,

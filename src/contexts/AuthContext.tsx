@@ -243,6 +243,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'Your account has been deactivated. Please contact admin.' };
         }
 
+        // Capture IP address on login (best effort - won't fail login if it fails)
+        try {
+          const ipResponse = await fetch('https://api.ipify.org?format=json');
+          if (ipResponse.ok) {
+            const ipData = await ipResponse.json();
+            await supabase
+              .from('profiles')
+              .update({ 
+                last_ip_address: ipData.ip,
+                last_login_at: new Date().toISOString()
+              })
+              .eq('user_id', data.user.id);
+          }
+        } catch (ipError) {
+          console.warn('Failed to capture IP address:', ipError);
+        }
+
         setUser(userProfile);
       }
 

@@ -29,6 +29,7 @@ export interface KYCFormData {
   first_name: string;
   last_name: string;
   date_of_birth: string;
+  mobile_number: string;
   aadhaar_number: string;
   pan_number: string;
   aadhaar_front: File | null;
@@ -106,6 +107,7 @@ export const useKYC = () => {
         first_name: formData.first_name,
         last_name: formData.last_name,
         date_of_birth: formData.date_of_birth,
+        mobile_number: formData.mobile_number,
         aadhaar_number: formData.aadhaar_number,
         pan_number: formData.pan_number.toUpperCase(),
         aadhaar_front_url: aadhaarFrontUrl,

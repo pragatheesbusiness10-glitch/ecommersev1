@@ -94,6 +94,9 @@ export interface SettingsMap {
   payout_disabled_message: string;
   // Chat greeting message
   chat_greeting_message: string;
+  // Selling percentage settings (user markup limits)
+  selling_percentage_min: number;
+  selling_percentage_max: number;
 }
 
 export const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -208,6 +211,9 @@ export const usePlatformSettings = () => {
       payout_disabled_message: 'Payout requests are currently disabled. Please contact admin for assistance.',
       // Chat greeting message
       chat_greeting_message: 'Hello! How can I help you today?',
+      // Selling percentage settings
+      selling_percentage_min: 2,
+      selling_percentage_max: 5,
     };
 
     settingsQuery.data?.forEach((setting) => {
@@ -394,6 +400,12 @@ export const usePlatformSettings = () => {
           break;
         case 'chat_greeting_message':
           map.chat_greeting_message = setting.value || 'Hello! How can I help you today?';
+          break;
+        case 'selling_percentage_min':
+          map.selling_percentage_min = parseFloat(setting.value) || 2;
+          break;
+        case 'selling_percentage_max':
+          map.selling_percentage_max = parseFloat(setting.value) || 5;
           break;
       }
     });

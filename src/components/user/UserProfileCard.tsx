@@ -220,6 +220,12 @@ export const UserProfileCard: React.FC = () => {
                 <p className="text-muted-foreground">Date of Birth</p>
                 <p className="font-medium">{new Date(kycSubmission.date_of_birth).toLocaleDateString()}</p>
               </div>
+              {(kycSubmission as any).mobile_number && (
+                <div>
+                  <p className="text-muted-foreground">Mobile Number</p>
+                  <p className="font-medium font-mono">{(kycSubmission as any).mobile_number}</p>
+                </div>
+              )}
               <div>
                 <p className="text-muted-foreground">Aadhaar Number</p>
                 <p className="font-medium font-mono">{maskAadhaar(kycSubmission.aadhaar_number)}</p>

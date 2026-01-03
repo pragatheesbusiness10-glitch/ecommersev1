@@ -327,6 +327,15 @@ const AdminUsers: React.FC = () => {
                   <Calendar className="w-4 h-4" />
                   Joined {format(new Date(user.created_at), 'MMM dd, yyyy')}
                 </div>
+                {user.last_ip_address && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Shield className="w-4 h-4" />
+                    <span className="font-mono text-xs">{user.last_ip_address}</span>
+                    {user.last_login_at && (
+                      <span className="text-xs">({format(new Date(user.last_login_at), 'MMM dd, HH:mm')})</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-border">

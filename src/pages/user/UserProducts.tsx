@@ -41,6 +41,8 @@ const UserProducts: React.FC = () => {
   const { toast } = useToast();
 
   const markupPercentage = settingsMap.default_markup_percentage;
+  const minMarkup = settingsMap.selling_percentage_min;
+  const maxMarkup = settingsMap.selling_percentage_max;
 
   const filteredProducts = products.filter(product =>
     product.is_active &&
@@ -61,8 +63,8 @@ const UserProducts: React.FC = () => {
       return;
     }
     setSelectedProduct(product);
-    // Set initial price at minimum 3% markup
-    setSellingPrice((product.base_price * 1.03).toFixed(2));
+    // Set initial price at minimum markup
+    setSellingPrice((product.base_price * (1 + minMarkup / 100)).toFixed(2));
     setCustomDescription('');
     setIsAddDialogOpen(true);
   };
@@ -72,13 +74,13 @@ const UserProducts: React.FC = () => {
     if (!selectedProduct) return;
 
     const price = parseFloat(sellingPrice);
-    const minPrice = selectedProduct.base_price * 1.03; // 3% markup minimum
-    const maxPrice = selectedProduct.base_price * 1.5;  // 50% markup maximum
+    const minPrice = selectedProduct.base_price * (1 + minMarkup / 100);
+    const maxPrice = selectedProduct.base_price * (1 + maxMarkup / 100);
 
     if (price < minPrice) {
       toast({
         title: 'Invalid Price',
-        description: `Minimum markup is 3%. Price must be at least $${minPrice.toFixed(2)}.`,
+        description: `Minimum markup is ${minMarkup}%. Price must be at least $${minPrice.toFixed(2)}.`,
         variant: 'destructive',
       });
       return;
@@ -87,7 +89,7 @@ const UserProducts: React.FC = () => {
     if (price > maxPrice) {
       toast({
         title: 'Invalid Price',
-        description: `Maximum markup is 50%. Price cannot exceed $${maxPrice.toFixed(2)}.`,
+        description: `Maximum markup is ${maxMarkup}%. Price cannot exceed $${maxPrice.toFixed(2)}.`,
         variant: 'destructive',
       });
       return;
@@ -247,8 +249,8 @@ const UserProducts: React.FC = () => {
                         id="selling-price"
                         type="number"
                         step="0.01"
-                        min={(selectedProduct.base_price * 1.03).toFixed(2)}
-                        max={(selectedProduct.base_price * 1.5).toFixed(2)}
+                        min={(selectedProduct.base_price * (1 + minMarkup / 100)).toFixed(2)}
+                        max={(selectedProduct.base_price * (1 + maxMarkup / 100)).toFixed(2)}
                         value={sellingPrice}
                         onChange={(e) => {
                           const value = e.target.value;
@@ -258,7 +260,7 @@ const UserProducts: React.FC = () => {
                       />
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {[3, 10, 20, 30, 40, 50].map(percent => (
+                      {Array.from({ length: maxMarkup - minMarkup + 1 }, (_, i) => minMarkup + i).map(percent => (
                         <Button
                           key={percent}
                           type="button"
@@ -272,7 +274,7 @@ const UserProducts: React.FC = () => {
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Set your markup between 3% to 50% of base price (${(selectedProduct.base_price * 1.03).toFixed(2)} - ${(selectedProduct.base_price * 1.5).toFixed(2)})
+                      Set your markup between {minMarkup}% to {maxMarkup}% of base price (${(selectedProduct.base_price * (1 + minMarkup / 100)).toFixed(2)} - ${(selectedProduct.base_price * (1 + maxMarkup / 100)).toFixed(2)})
                     </p>
                     {parseFloat(sellingPrice) > selectedProduct.base_price && (
                       <p className="text-sm text-green-600">
@@ -280,14 +282,14 @@ const UserProducts: React.FC = () => {
                         ({((parseFloat(sellingPrice) / selectedProduct.base_price - 1) * 100).toFixed(0)}% markup)
                       </p>
                     )}
-                    {parseFloat(sellingPrice) < selectedProduct.base_price * 1.03 && (
+                    {parseFloat(sellingPrice) < selectedProduct.base_price * (1 + minMarkup / 100) && (
                       <p className="text-sm text-destructive">
-                        Minimum markup is 3% (${(selectedProduct.base_price * 1.03).toFixed(2)})
+                        Minimum markup is {minMarkup}% (${(selectedProduct.base_price * (1 + minMarkup / 100)).toFixed(2)})
                       </p>
                     )}
-                    {parseFloat(sellingPrice) > selectedProduct.base_price * 1.5 && (
+                    {parseFloat(sellingPrice) > selectedProduct.base_price * (1 + maxMarkup / 100) && (
                       <p className="text-sm text-destructive">
-                        Maximum markup is 50% (${(selectedProduct.base_price * 1.5).toFixed(2)})
+                        Maximum markup is {maxMarkup}% (${(selectedProduct.base_price * (1 + maxMarkup / 100)).toFixed(2)})
                       </p>
                     )}
                   </div>
