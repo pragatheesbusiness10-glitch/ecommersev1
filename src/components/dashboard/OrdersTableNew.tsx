@@ -63,11 +63,11 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
           <TableRow className="bg-muted/50">
             <TableHead className="font-semibold text-foreground">Order ID</TableHead>
             <TableHead className="font-semibold text-foreground">Product</TableHead>
+            <TableHead className="font-semibold text-foreground">Qty</TableHead>
             {userRole === 'admin' && <TableHead className="font-semibold text-foreground">Affiliate</TableHead>}
             <TableHead className="font-semibold text-foreground">Customer</TableHead>
             <TableHead className="font-semibold text-foreground text-right">Amount</TableHead>
-            <TableHead className="font-semibold text-foreground">Status</TableHead>
-            <TableHead className="font-semibold text-foreground">Date</TableHead>
+            <TableHead className="font-semibold text-foreground">Status & Time</TableHead>
             <TableHead className="font-semibold text-foreground text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -93,6 +93,7 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
                   </span>
                 </div>
               </TableCell>
+              <TableCell className="font-medium text-foreground">{order.quantity}</TableCell>
               {userRole === 'admin' && (
                 <TableCell className="text-muted-foreground">
                   {(order as AdminOrder).affiliate?.name || 'Unknown'}
@@ -117,12 +118,14 @@ export const OrdersTableNew: React.FC<OrdersTableNewProps> = ({
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant={statusVariants[order.status]}>
-                  {statusLabels[order.status]}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {format(new Date(order.created_at), 'MMM dd, yyyy')}
+                <div className="space-y-1">
+                  <Badge variant={statusVariants[order.status]}>
+                    {statusLabels[order.status]}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground">
+                    {format(new Date(order.created_at), 'MMM dd, yyyy HH:mm')}
+                  </p>
+                </div>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">

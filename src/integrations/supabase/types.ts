@@ -119,6 +119,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          mobile_number: string | null
           pan_document_url: string
           pan_number: string
           rejection_reason: string | null
@@ -140,6 +141,7 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
+          mobile_number?: string | null
           pan_document_url: string
           pan_number: string
           rejection_reason?: string | null
@@ -161,6 +163,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          mobile_number?: string | null
           pan_document_url?: string
           pan_number?: string
           rejection_reason?: string | null
@@ -406,6 +409,8 @@ export type Database = {
           email: string
           id: string
           is_active: boolean
+          last_ip_address: string | null
+          last_login_at: string | null
           name: string
           saved_payment_details: Json | null
           storefront_banner: string | null
@@ -423,6 +428,8 @@ export type Database = {
           email: string
           id?: string
           is_active?: boolean
+          last_ip_address?: string | null
+          last_login_at?: string | null
           name: string
           saved_payment_details?: Json | null
           storefront_banner?: string | null
@@ -440,6 +447,8 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean
+          last_ip_address?: string | null
+          last_login_at?: string | null
           name?: string
           saved_payment_details?: Json | null
           storefront_banner?: string | null

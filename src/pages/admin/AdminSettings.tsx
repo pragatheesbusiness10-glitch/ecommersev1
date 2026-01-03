@@ -89,6 +89,10 @@ const AdminSettings: React.FC = () => {
   const [payoutEnabled, setPayoutEnabled] = useState(true);
   const [payoutDisabledMessage, setPayoutDisabledMessage] = useState('');
   
+  // Selling percentage settings
+  const [sellingPercentageMin, setSellingPercentageMin] = useState('2');
+  const [sellingPercentageMax, setSellingPercentageMax] = useState('5');
+  
   // Branding settings
   const [siteName, setSiteName] = useState('Affiliate Platform');
   const [siteLogoUrl, setSiteLogoUrl] = useState('');
@@ -186,6 +190,9 @@ const AdminSettings: React.FC = () => {
       // Load payout settings
       setPayoutEnabled(settingsMap.payout_enabled);
       setPayoutDisabledMessage(settingsMap.payout_disabled_message);
+      // Load selling percentage settings
+      setSellingPercentageMin(settingsMap.selling_percentage_min.toString());
+      setSellingPercentageMax(settingsMap.selling_percentage_max.toString());
       // Load branding settings
       setSiteName(settingsMap.site_name);
       setSiteLogoUrl(settingsMap.site_logo_url);
@@ -214,9 +221,11 @@ const AdminSettings: React.FC = () => {
       defaultCurrency !== settingsMap.default_currency ||
       defaultMarkupPercentage !== settingsMap.default_markup_percentage.toString() ||
       payoutEnabled !== settingsMap.payout_enabled ||
-      payoutDisabledMessage !== settingsMap.payout_disabled_message;
+      payoutDisabledMessage !== settingsMap.payout_disabled_message ||
+      sellingPercentageMin !== settingsMap.selling_percentage_min.toString() ||
+      sellingPercentageMax !== settingsMap.selling_percentage_max.toString();
     setHasChanges(changed);
-  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, autoUserApproval, defaultCurrency, defaultMarkupPercentage, payoutEnabled, payoutDisabledMessage, settingsMap]);
+  }, [commissionType, commissionRate, minPayoutAmount, autoCreditOnComplete, autoUserApproval, defaultCurrency, defaultMarkupPercentage, payoutEnabled, payoutDisabledMessage, sellingPercentageMin, sellingPercentageMax, settingsMap]);
 
   const handleSaveAll = async () => {
     try {
@@ -230,6 +239,8 @@ const AdminSettings: React.FC = () => {
         updateSettingAsync({ key: 'default_markup_percentage', value: defaultMarkupPercentage, oldValue: settingsMap.default_markup_percentage.toString() }),
         updateSettingAsync({ key: 'payout_enabled', value: payoutEnabled.toString(), oldValue: settingsMap.payout_enabled.toString() }),
         updateSettingAsync({ key: 'payout_disabled_message', value: payoutDisabledMessage, oldValue: settingsMap.payout_disabled_message }),
+        updateSettingAsync({ key: 'selling_percentage_min', value: sellingPercentageMin, oldValue: settingsMap.selling_percentage_min.toString() }),
+        updateSettingAsync({ key: 'selling_percentage_max', value: sellingPercentageMax, oldValue: settingsMap.selling_percentage_max.toString() }),
       ]);
       setHasChanges(false);
       toast({
@@ -798,6 +809,64 @@ const AdminSettings: React.FC = () => {
               <p className="text-muted-foreground">
                 If a product has a base price of $100 and the markup is {defaultMarkupPercentage}%, 
                 the selling price will be ${(100 * (1 + parseFloat(defaultMarkupPercentage || '0') / 100)).toFixed(2)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* User Selling Percentage Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                <Percent className="w-5 h-5 text-teal-600" />
+              </div>
+              <div>
+                <CardTitle>User Selling Percentage</CardTitle>
+                <CardDescription>
+                  Configure the minimum and maximum markup percentage users can apply to products.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Minimum Markup (%)</Label>
+                <div className="relative max-w-xs">
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    value={sellingPercentageMin}
+                    onChange={(e) => setSellingPercentageMin(e.target.value)}
+                    className="pl-10"
+                    min="1"
+                    max="100"
+                    step="1"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Maximum Markup (%)</Label>
+                <div className="relative max-w-xs">
+                  <Percent className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    value={sellingPercentageMax}
+                    onChange={(e) => setSellingPercentageMax(e.target.value)}
+                    className="pl-10"
+                    min="1"
+                    max="100"
+                    step="1"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-4 text-sm">
+              <p className="font-medium mb-2">How it works:</p>
+              <p className="text-muted-foreground">
+                Users can set their product prices with a markup between {sellingPercentageMin}% and {sellingPercentageMax}% of the base price.
+                For a $100 product, they can price it between ${(100 * (1 + parseFloat(sellingPercentageMin || '0') / 100)).toFixed(2)} and ${(100 * (1 + parseFloat(sellingPercentageMax || '0') / 100)).toFixed(2)}.
               </p>
             </div>
           </CardContent>

@@ -22,10 +22,13 @@ import { CameraCapture } from './CameraCapture';
 const aadhaarRegex = /^\d{12}$/;
 const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 
+const mobileRegex = /^[6-9]\d{9}$/;
+
 const kycSchema = z.object({
   first_name: z.string().min(1, 'First name is required').max(50),
   last_name: z.string().min(1, 'Last name is required').max(50),
   date_of_birth: z.string().min(1, 'Date of birth is required'),
+  mobile_number: z.string().regex(mobileRegex, 'Mobile number must be 10 digits starting with 6-9'),
   aadhaar_number: z.string().regex(aadhaarRegex, 'Aadhaar must be 12 digits'),
   pan_number: z.string().regex(panRegex, 'Invalid PAN format (e.g., ABCDE1234F)'),
 });
@@ -37,6 +40,7 @@ export const KYCForm: React.FC = () => {
     first_name: kycSubmission?.first_name || '',
     last_name: kycSubmission?.last_name || '',
     date_of_birth: kycSubmission?.date_of_birth || '',
+    mobile_number: '',
     aadhaar_number: '',
     pan_number: '',
     aadhaar_front: null,
@@ -89,6 +93,7 @@ export const KYCForm: React.FC = () => {
       first_name: formData.first_name,
       last_name: formData.last_name,
       date_of_birth: formData.date_of_birth,
+      mobile_number: formData.mobile_number,
       aadhaar_number: formData.aadhaar_number,
       pan_number: formData.pan_number.toUpperCase(),
     });
@@ -201,7 +206,7 @@ export const KYCForm: React.FC = () => {
                 <p className="text-sm text-red-500">{errors.last_name}</p>
               )}
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="date_of_birth">Date of Birth</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -216,6 +221,21 @@ export const KYCForm: React.FC = () => {
               </div>
               {errors.date_of_birth && (
                 <p className="text-sm text-red-500">{errors.date_of_birth}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mobile_number">Mobile Number *</Label>
+              <Input
+                id="mobile_number"
+                name="mobile_number"
+                value={formData.mobile_number}
+                onChange={handleInputChange}
+                placeholder="Enter 10-digit mobile number"
+                maxLength={10}
+                className={errors.mobile_number ? 'border-red-500' : ''}
+              />
+              {errors.mobile_number && (
+                <p className="text-sm text-red-500">{errors.mobile_number}</p>
               )}
             </div>
           </CardContent>
