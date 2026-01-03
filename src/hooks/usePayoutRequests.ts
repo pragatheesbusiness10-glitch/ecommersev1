@@ -138,9 +138,9 @@ export const usePayoutRequests = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-payout-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-payout-requests'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'], exact: false });
       toast({
         title: 'Payout Requested',
         description: 'Your payout request has been submitted for review.',
@@ -348,12 +348,12 @@ export const useAdminPayouts = () => {
       return { status };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['admin-payout-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'] });
-      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
-      queryClient.invalidateQueries({ queryKey: ['user-payout-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['user-dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-payout-requests'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['user-payout-requests'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['user-dashboard'], exact: false });
       
       // Play notification sound
       playNotificationSound();

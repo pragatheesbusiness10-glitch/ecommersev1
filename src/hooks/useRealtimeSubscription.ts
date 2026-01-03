@@ -114,9 +114,9 @@ export const useRealtimeSubscription = ({
         (payload) => {
           console.log(`Realtime ${payload.eventType} on ${table}:`, payload);
           
-          // Invalidate all related queries
+          // Invalidate all related queries (use partial matching to cover keys with params like userId)
           queryKeys.forEach((key) => {
-            queryClient.invalidateQueries({ queryKey: key });
+            queryClient.invalidateQueries({ queryKey: key, exact: false });
           });
 
           // Play notification sound if enabled
@@ -228,10 +228,16 @@ export const useWalletRealtimeUser = (userId?: string) => {
 
 // Hook for profile updates (wallet balance, etc.)
 export const useProfileRealtimeUser = (userId?: string) => {
+  const { refreshUser } = useAuth();
+
   useRealtimeSubscription({
     table: 'profiles',
     queryKeys: [['user-profile'], ['user-dashboard'], ['user-payout-requests'], ['wallet-transactions']],
     filter: userId ? { column: 'user_id', value: userId } : undefined,
+    onUpdate: () => {
+      // Keep AuthContext in sync so wallet balance updates everywhere instantly
+      refreshUser();
+    },
   });
 };
 
