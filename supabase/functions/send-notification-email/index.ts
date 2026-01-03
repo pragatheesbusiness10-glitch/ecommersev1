@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: 'new_chat_message' | 'kyc_submitted' | 'payout_request' | 'new_order' | 'support_ticket' | 'affiliate_order_created';
+  type: 'new_chat_message' | 'kyc_submitted' | 'payout_request' | 'new_order' | 'support_ticket' | 'affiliate_order_created' | 'payout_approved' | 'payout_rejected' | 'payout_completed';
   userId?: string;
   userName?: string;
   userEmail?: string;
@@ -19,6 +19,8 @@ interface NotificationEmailRequest {
   ticketSubject?: string;
   productName?: string;
   customerName?: string;
+  adminNotes?: string;
+  recipientEmail?: string;
 }
 
 // HTML escape function to prevent XSS in email content
@@ -126,6 +128,8 @@ const handler = async (req: Request): Promise<Response> => {
     const ticketSubject = escapeHtml(requestData.ticketSubject);
     const productName = escapeHtml(requestData.productName);
     const customerName = escapeHtml(requestData.customerName);
+    const adminNotes = escapeHtml(requestData.adminNotes);
+    const recipientEmail = requestData.recipientEmail;
 
     let subject = "";
     let htmlContent = "";
@@ -231,12 +235,81 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         `;
         break;
+      case "payout_approved":
+        subject = `✅ Your Payout Request Has Been Approved`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">✅ Payout Approved!</h2>
+            <p>Hello ${userName},</p>
+            <p>Great news! Your payout request has been approved and is being processed.</p>
+            
+            <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+              <h3 style="margin-top: 0; color: #065f46;">Payout Details</h3>
+              <p style="margin: 10px 0;"><strong>Amount:</strong> <span style="font-size: 18px; color: #059669;">$${amount?.toFixed(2) || "0.00"}</span></p>
+              ${adminNotes !== 'N/A' ? `<p style="margin: 10px 0;"><strong>Notes:</strong> ${adminNotes}</p>` : ''}
+            </div>
+            
+            <p>Your payment will be processed shortly. You'll receive another notification once the payment is completed.</p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated notification. Please do not reply to this email.
+            </p>
+          </div>
+        `;
+        break;
+      case "payout_rejected":
+        subject = `❌ Your Payout Request Was Rejected`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #dc2626;">❌ Payout Request Rejected</h2>
+            <p>Hello ${userName},</p>
+            <p>Unfortunately, your payout request has been rejected.</p>
+            
+            <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #dc2626;">
+              <h3 style="margin-top: 0; color: #991b1b;">Payout Details</h3>
+              <p style="margin: 10px 0;"><strong>Amount:</strong> $${amount?.toFixed(2) || "0.00"}</p>
+              ${adminNotes !== 'N/A' ? `<p style="margin: 10px 0;"><strong>Reason:</strong> ${adminNotes}</p>` : ''}
+            </div>
+            
+            <p>The funds have been returned to your wallet balance. If you have questions about this decision, please contact support.</p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated notification. Please do not reply to this email.
+            </p>
+          </div>
+        `;
+        break;
+      case "payout_completed":
+        subject = `🎉 Your Payout Has Been Completed`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">🎉 Payout Completed!</h2>
+            <p>Hello ${userName},</p>
+            <p>Your payout has been successfully processed and sent to your account.</p>
+            
+            <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+              <h3 style="margin-top: 0; color: #065f46;">Payment Details</h3>
+              <p style="margin: 10px 0;"><strong>Amount Sent:</strong> <span style="font-size: 18px; color: #059669;">$${amount?.toFixed(2) || "0.00"}</span></p>
+              ${adminNotes !== 'N/A' ? `<p style="margin: 10px 0;"><strong>Notes:</strong> ${adminNotes}</p>` : ''}
+            </div>
+            
+            <p>The payment should arrive in your account within the standard processing time for your payment method.</p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated notification. Please do not reply to this email.
+            </p>
+          </div>
+        `;
+        break;
       default:
         subject = "Platform Notification";
         htmlContent = `<p>${message}</p>`;
     }
+    
+    // Determine recipient - use recipientEmail for user notifications, adminEmail for admin notifications
+    const toEmail = recipientEmail || adminEmail;
 
-    console.log("Sending email to:", adminEmail);
+    console.log("Sending email to:", toEmail);
     
     // Send email using Resend API directly
     const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -247,7 +320,7 @@ const handler = async (req: Request): Promise<Response> => {
       },
       body: JSON.stringify({
         from: "Platform <onboarding@resend.dev>",
-        to: [adminEmail],
+        to: [toEmail],
         subject,
         html: htmlContent,
       }),
