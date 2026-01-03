@@ -124,13 +124,16 @@ const UserPayments: React.FC = () => {
   const pendingHold = payoutRequests
     .filter(p => p.status === 'pending')
     .reduce((sum, p) => sum + p.amount, 0);
-  const availableBalance = Math.max(0, walletBalance - pendingHold);
+
+  // Show full balance until admin approves; still compute withdrawable to prevent over-withdrawal.
+  const availableBalance = walletBalance;
+  const withdrawableBalance = Math.max(0, walletBalance - pendingHold);
 
   const minPayoutAmount = settingsMap.min_payout_amount;
   // Use public settings for payout enabled/disabled status
   const payoutEnabled = publicSettings.payout_enabled;
   const payoutDisabledMessage = publicSettings.payout_disabled_message;
-  const canRequestPayout = payoutEnabled && isKYCApproved && availableBalance >= minPayoutAmount;
+  const canRequestPayout = payoutEnabled && isKYCApproved && withdrawableBalance >= minPayoutAmount;
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
   
   // Calculate total order value and profit
@@ -263,10 +266,10 @@ const UserPayments: React.FC = () => {
       return;
     }
 
-    if (amount > availableBalance) {
+    if (amount > withdrawableBalance) {
       toast({
         title: 'Insufficient Balance',
-        description: `You only have ${currencySymbol}${availableBalance.toFixed(2)} available right now (pending payouts are on hold).`,
+        description: `You can withdraw up to ${currencySymbol}${withdrawableBalance.toFixed(2)} right now.`,
         variant: 'destructive',
       });
       return;
@@ -592,7 +595,7 @@ const UserPayments: React.FC = () => {
                           type="number"
                           step="0.01"
                           min={minPayoutAmount}
-                          max={availableBalance}
+                          max={withdrawableBalance}
                           value={payoutAmount}
                           onChange={(e) => setPayoutAmount(e.target.value)}
                           placeholder={minPayoutAmount.toString()}
@@ -600,7 +603,7 @@ const UserPayments: React.FC = () => {
                         />
                       </div>
                       <div className="flex gap-2">
-                        {[500, 1000, 2500].filter(v => v <= availableBalance).map(preset => (
+                        {[500, 1000, 2500].filter(v => v <= withdrawableBalance).map(preset => (
                           <Button
                             key={preset}
                             type="button"
@@ -615,7 +618,7 @@ const UserPayments: React.FC = () => {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => setPayoutAmount(availableBalance.toString())}
+                          onClick={() => setPayoutAmount(withdrawableBalance.toString())}
                         >
                           Max
                         </Button>
@@ -860,8 +863,8 @@ const UserPayments: React.FC = () => {
                   <p className="font-semibold text-amber-300">-{currencySymbol}{totalOnHold.toFixed(2)}</p>
                 </div>
                 <div className="bg-primary-foreground/10 rounded-lg p-3">
-                  <p className="text-primary-foreground/70 text-xs mb-1">Available</p>
-                  <p className="font-semibold text-emerald-300">{currencySymbol}{availableBalance.toFixed(2)}</p>
+                  <p className="text-primary-foreground/70 text-xs mb-1">Withdrawable</p>
+                  <p className="font-semibold text-emerald-300">{currencySymbol}{withdrawableBalance.toFixed(2)}</p>
                 </div>
               </div>
             </div>
@@ -874,9 +877,9 @@ const UserPayments: React.FC = () => {
           </div>
         )}
 
-        {isKYCApproved && availableBalance < minPayoutAmount && (
+        {isKYCApproved && withdrawableBalance < minPayoutAmount && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 text-sm text-amber-700">
-            You need at least {currencySymbol}{minPayoutAmount} available to request a payout. Available: {currencySymbol}{availableBalance.toFixed(2)}
+            You need at least {currencySymbol}{minPayoutAmount} withdrawable to request a payout. Withdrawable: {currencySymbol}{withdrawableBalance.toFixed(2)}
           </div>
         )}
 
