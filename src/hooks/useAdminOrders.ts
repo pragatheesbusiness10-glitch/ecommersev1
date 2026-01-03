@@ -124,71 +124,13 @@ export const useAdminOrders = () => {
         updates.completed_at = new Date().toISOString();
       }
 
-      // Fetch order details first
-      const { data: order, error: fetchError } = await supabase
-        .from('orders')
-        .select('*, storefront_products!inner(product_id, user_id)')
-        .eq('id', orderId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
       const { error } = await supabase
         .from('orders')
         .update(updates)
         .eq('id', orderId);
 
       if (error) throw error;
-
-      // Credit wallet when order is completed
-      if (status === 'completed' && order) {
-        // Check if auto_credit_on_complete is enabled
-        const { data: settings } = await supabase
-          .from('platform_settings')
-          .select('value')
-          .eq('key', 'auto_credit_on_complete')
-          .single();
-
-        const autoCreditEnabled = settings?.value === 'true';
-
-        if (autoCreditEnabled) {
-          const affiliateUserId = order.affiliate_user_id;
-          const orderTotal = Number(order.selling_price) * order.quantity;
-
-          // Get current wallet balance
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('wallet_balance')
-            .eq('user_id', affiliateUserId)
-            .single();
-
-          if (profileError) throw profileError;
-
-          const currentBalance = Number(profile?.wallet_balance) || 0;
-          const newBalance = currentBalance + orderTotal;
-
-          // Update wallet balance
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ wallet_balance: newBalance })
-            .eq('user_id', affiliateUserId);
-
-          if (updateError) throw updateError;
-
-          // Create wallet transaction record
-          const { error: txError } = await supabase
-            .from('wallet_transactions')
-            .insert({
-              user_id: affiliateUserId,
-              amount: orderTotal,
-              type: 'order_commission',
-              description: `Commission for order ${order.order_number}`,
-              order_id: orderId,
-            });
-
-          if (txError) throw txError;
-        }
-      }
+      // Wallet crediting is handled by database trigger trg_credit_wallet_on_order_completed
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'], exact: false });
