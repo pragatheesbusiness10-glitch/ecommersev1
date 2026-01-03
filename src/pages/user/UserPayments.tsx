@@ -17,7 +17,9 @@ import {
   Loader2,
   DollarSign,
   Save,
-  AlertTriangle
+  AlertTriangle,
+  Download,
+  FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -46,6 +48,7 @@ import {
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
+import jsPDF from 'jspdf';
 import { usePayoutRequests } from '@/hooks/usePayoutRequests';
 import { useUserDashboard } from '@/hooks/useUserDashboard';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
@@ -403,8 +406,131 @@ const UserPayments: React.FC = () => {
     );
   }
 
+  // Calculate pending/approved payouts (funds on hold)
+  const onHoldPayouts = payoutRequests.filter(p => p.status === 'pending' || p.status === 'approved');
+  const totalOnHold = onHoldPayouts.reduce((sum, p) => sum + p.amount, 0);
   const pendingPayouts = payoutRequests.filter(p => p.status === 'pending');
   const totalPendingPayout = pendingPayouts.reduce((sum, p) => sum + p.amount, 0);
+  
+  // Generate PDF receipt for completed payout
+  const generatePayoutReceipt = (payout: typeof payoutRequests[0]) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Header
+    doc.setFillColor(30, 41, 59); // slate-800
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYOUT RECEIPT', pageWidth / 2, 25, { align: 'center' });
+    
+    // Reset text color
+    doc.setTextColor(30, 41, 59);
+    
+    // Receipt details
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    
+    let y = 55;
+    const leftMargin = 20;
+    const rightMargin = pageWidth - 20;
+    
+    // Receipt ID and Date
+    doc.setFont('helvetica', 'bold');
+    doc.text('Receipt ID:', leftMargin, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(payout.id.substring(0, 8).toUpperCase(), leftMargin + 30, y);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date:', rightMargin - 60, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(format(new Date(payout.processed_at || payout.created_at), 'PPP'), rightMargin - 45, y);
+    
+    y += 15;
+    
+    // Divider
+    doc.setDrawColor(200, 200, 200);
+    doc.line(leftMargin, y, rightMargin, y);
+    y += 15;
+    
+    // Payout Details Section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Payout Details', leftMargin, y);
+    y += 10;
+    
+    doc.setFontSize(11);
+    const details = [
+      ['Status:', 'COMPLETED'],
+      ['Amount:', `${currencySymbol}${payout.amount.toFixed(2)}`],
+      ['Payment Method:', payout.payment_method.replace(/_/g, ' ').toUpperCase()],
+      ['Requested On:', format(new Date(payout.created_at), 'PPP')],
+      ['Completed On:', payout.processed_at ? format(new Date(payout.processed_at), 'PPP') : 'N/A'],
+    ];
+    
+    details.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, leftMargin, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, leftMargin + 50, y);
+      y += 8;
+    });
+    
+    y += 10;
+    
+    // Payment Details Section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Payment Information', leftMargin, y);
+    y += 10;
+    
+    doc.setFontSize(11);
+    Object.entries(payout.payment_details).forEach(([key, value]) => {
+      if (value && key !== 'bank_statement_path') {
+        const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ':';
+        doc.setFont('helvetica', 'bold');
+        doc.text(formattedKey, leftMargin, y);
+        doc.setFont('helvetica', 'normal');
+        // Mask sensitive data
+        const maskedValue = key.includes('account_number') 
+          ? '****' + String(value).slice(-4)
+          : String(value);
+        doc.text(maskedValue, leftMargin + 50, y);
+        y += 8;
+      }
+    });
+    
+    y += 15;
+    
+    // Divider
+    doc.line(leftMargin, y, rightMargin, y);
+    y += 15;
+    
+    // Total Amount Box
+    doc.setFillColor(240, 253, 244); // green-50
+    doc.roundedRect(leftMargin, y, pageWidth - 40, 25, 3, 3, 'F');
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(22, 163, 74); // green-600
+    doc.text('Total Paid:', leftMargin + 10, y + 16);
+    doc.setFontSize(18);
+    doc.text(`${currencySymbol}${payout.amount.toFixed(2)}`, rightMargin - 10, y + 16, { align: 'right' });
+    
+    y += 40;
+    
+    // Footer
+    doc.setTextColor(100, 100, 100);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('This is a computer-generated receipt and does not require a signature.', pageWidth / 2, y, { align: 'center' });
+    doc.text(`Generated on ${format(new Date(), 'PPP p')}`, pageWidth / 2, y + 6, { align: 'center' });
+    
+    // Download the PDF
+    doc.save(`payout-receipt-${payout.id.substring(0, 8)}.pdf`);
+  };
 
   return (
     <DashboardLayout>
@@ -721,11 +847,11 @@ const UserPayments: React.FC = () => {
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div className="bg-primary-foreground/10 rounded-lg p-3">
                   <p className="text-primary-foreground/70 text-xs mb-1">Total Wallet</p>
-                  <p className="font-semibold">{currencySymbol}{(walletBalance + totalPendingPayout).toFixed(2)}</p>
+                  <p className="font-semibold">{currencySymbol}{(walletBalance + totalOnHold).toFixed(2)}</p>
                 </div>
                 <div className="bg-primary-foreground/10 rounded-lg p-3">
                   <p className="text-primary-foreground/70 text-xs mb-1">On Hold (Payouts)</p>
-                  <p className="font-semibold text-amber-300">-{currencySymbol}{totalPendingPayout.toFixed(2)}</p>
+                  <p className="font-semibold text-amber-300">-{currencySymbol}{totalOnHold.toFixed(2)}</p>
                 </div>
                 <div className="bg-primary-foreground/10 rounded-lg p-3">
                   <p className="text-primary-foreground/70 text-xs mb-1">Available</p>
@@ -760,6 +886,7 @@ const UserPayments: React.FC = () => {
                     <TableHead>Amount</TableHead>
                     <TableHead>Method</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -779,6 +906,19 @@ const UserPayments: React.FC = () => {
                           {statusIcons[payout.status]}
                           {payout.status}
                         </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {payout.status === 'completed' && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => generatePayoutReceipt(payout)}
+                            className="gap-1 text-xs"
+                          >
+                            <Download className="w-3 h-3" />
+                            Receipt
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
