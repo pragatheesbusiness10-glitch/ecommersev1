@@ -350,6 +350,10 @@ export const useAdminPayouts = () => {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin-payout-requests'] });
       queryClient.invalidateQueries({ queryKey: ['admin-affiliate-wallets'] });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user-payout-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-dashboard'] });
       
       // Play notification sound
       playNotificationSound();

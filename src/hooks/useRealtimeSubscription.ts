@@ -178,7 +178,7 @@ export const usePayoutRealtimeAdmin = () => {
 export const usePayoutRealtimeUser = (userId?: string) => {
   useRealtimeSubscription({
     table: 'payout_requests',
-    queryKeys: [['user-payout-requests'], ['user-profile']],
+    queryKeys: [['user-payout-requests'], ['user-profile'], ['user-dashboard'], ['wallet-transactions']],
     filter: userId ? { column: 'user_id', value: userId } : undefined,
     playSound: true,
     showToast: true,
@@ -230,7 +230,7 @@ export const useWalletRealtimeUser = (userId?: string) => {
 export const useProfileRealtimeUser = (userId?: string) => {
   useRealtimeSubscription({
     table: 'profiles',
-    queryKeys: [['user-profile'], ['user-dashboard']],
+    queryKeys: [['user-profile'], ['user-dashboard'], ['user-payout-requests'], ['wallet-transactions']],
     filter: userId ? { column: 'user_id', value: userId } : undefined,
   });
 };
