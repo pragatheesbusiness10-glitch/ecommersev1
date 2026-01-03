@@ -212,7 +212,8 @@ export const useAdminPayouts = () => {
       userId,
       amount,
       userName,
-      userEmail
+      userEmail,
+      previousStatus
     }: { 
       payoutId: string; 
       status: 'approved' | 'rejected' | 'completed' | 'pending';
@@ -221,6 +222,7 @@ export const useAdminPayouts = () => {
       amount: number;
       userName?: string;
       userEmail?: string;
+      previousStatus?: string;
     }) => {
       if (!payoutId || !userId) {
         throw new Error('Invalid payout data');
@@ -242,8 +244,11 @@ export const useAdminPayouts = () => {
         throw error;
       }
 
-      // If rejected, refund the amount back to wallet
-      if (status === 'rejected') {
+      // If rejected OR reverted to pending from approved/completed, refund the amount back to wallet
+      const shouldRefund = status === 'rejected' || 
+        (status === 'pending' && previousStatus && ['approved', 'completed'].includes(previousStatus));
+
+      if (shouldRefund) {
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('wallet_balance')
@@ -267,13 +272,17 @@ export const useAdminPayouts = () => {
             throw updateError;
           }
 
+          const description = status === 'rejected' 
+            ? 'Payout request rejected - funds returned'
+            : 'Payout request reverted to pending - funds returned';
+
           const { error: txError } = await supabase
             .from('wallet_transactions')
             .insert({
               user_id: userId,
               amount: amount,
-              type: 'payout_refund',
-              description: 'Payout request rejected - funds returned',
+              type: status === 'rejected' ? 'payout_refund' : 'payout_reverted',
+              description,
             });
 
           if (txError) {
