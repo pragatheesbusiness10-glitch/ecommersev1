@@ -42,7 +42,7 @@ const AdminDashboard: React.FC = () => {
 
   const handleCompleteOrder = async (order: typeof recentOrders[0]) => {
     try {
-      // Update order status
+      // Update order status – wallet crediting is handled by database trigger
       const { error } = await supabase
         .from('orders')
         .update({ 
@@ -52,53 +52,6 @@ const AdminDashboard: React.FC = () => {
         .eq('id', order.id);
 
       if (error) throw error;
-
-      // Check if auto_credit_on_complete is enabled
-      const { data: settings } = await supabase
-        .from('platform_settings')
-        .select('value')
-        .eq('key', 'auto_credit_on_complete')
-        .single();
-
-      const autoCreditEnabled = settings?.value === 'true';
-
-      if (autoCreditEnabled) {
-        const affiliateUserId = order.affiliate_user_id;
-        const orderTotal = Number(order.selling_price) * order.quantity;
-
-        // Get current wallet balance
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('wallet_balance')
-          .eq('user_id', affiliateUserId)
-          .single();
-
-        if (profileError) throw profileError;
-
-        const currentBalance = Number(profile?.wallet_balance) || 0;
-        const newBalance = currentBalance + orderTotal;
-
-        // Update wallet balance
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ wallet_balance: newBalance })
-          .eq('user_id', affiliateUserId);
-
-        if (updateError) throw updateError;
-
-        // Create wallet transaction record
-        const { error: txError } = await supabase
-          .from('wallet_transactions')
-          .insert({
-            user_id: affiliateUserId,
-            amount: orderTotal,
-            type: 'order_commission',
-            description: `Commission for order ${order.order_number}`,
-            order_id: order.id,
-          });
-
-        if (txError) throw txError;
-      }
 
       toast({
         title: 'Order Completed',
