@@ -51,6 +51,7 @@ import { BulkOrderDialog } from '@/components/admin/BulkOrderDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useOrderRealtimeAdmin } from '@/hooks/useRealtimeSubscription';
 
 type OrderStatus = AdminOrder['status'] | 'all';
 
@@ -98,6 +99,9 @@ const AdminOrders: React.FC = () => {
     bulkCreateOrders,
     isBulkCreatingOrders,
   } = useAdminOrders();
+
+  // Enable real-time updates
+  useOrderRealtimeAdmin();
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 

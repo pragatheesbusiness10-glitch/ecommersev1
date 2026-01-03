@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useOrderRealtimeUser } from '@/hooks/useRealtimeSubscription';
 
 type OrderStatusFilter = 'all' | 'pending_payment' | 'paid_by_user' | 'processing' | 'completed';
 
@@ -38,6 +39,9 @@ const UserOrders: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<DashboardOrder | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+
+  // Enable real-time updates
+  useOrderRealtimeUser(user?.id);
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 

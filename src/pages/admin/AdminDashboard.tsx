@@ -7,6 +7,7 @@ import { useAdminDashboard } from '@/hooks/useAdminDashboard';
 import { useAdminKYC } from '@/hooks/useAdminKYC';
 import { useAdminPayouts } from '@/hooks/usePayoutRequests';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
+import { useOrderRealtimeAdmin, usePayoutRealtimeAdmin, useProfileRealtimeAdmin } from '@/hooks/useRealtimeSubscription';
 import { 
   ShoppingCart, 
   Clock, 
@@ -30,6 +31,11 @@ const AdminDashboard: React.FC = () => {
   const { kycSubmissions } = useAdminKYC();
   const { pendingCount: pendingPayouts, totalPending: totalPendingPayouts } = useAdminPayouts();
   const { settingsMap } = usePlatformSettings();
+  
+  // Enable real-time updates
+  useOrderRealtimeAdmin();
+  usePayoutRealtimeAdmin();
+  useProfileRealtimeAdmin();
   
   const currencySymbol = CURRENCY_SYMBOLS[settingsMap.default_currency] || '₹';
   const pendingKYC = kycSubmissions.filter(k => k.status === 'submitted').length;
