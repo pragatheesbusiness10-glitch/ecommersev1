@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { playNotificationSound } from '@/lib/notificationSound';
+import { logIPAction } from '@/hooks/useIPLogger';
 
 export interface PayoutStatusHistory {
   id: string;
@@ -136,7 +137,10 @@ export const usePayoutRequests = () => {
 
       if (error) throw error;
 
-      return data;
+      // Log IP for payout request action
+      if (user?.id) {
+        logIPAction(user.id, 'payout_request');
+      }
 
       return data;
     },

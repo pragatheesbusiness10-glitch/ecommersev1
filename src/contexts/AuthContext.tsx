@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logIPAction } from '@/hooks/useIPLogger';
 
 type UserRole = 'admin' | 'user';
 type UserStatus = 'pending' | 'approved' | 'disabled';
@@ -243,22 +244,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { success: false, error: 'Your account has been deactivated. Please contact admin.' };
         }
 
-        // Capture IP address on login (best effort - won't fail login if it fails)
-        try {
-          const ipResponse = await fetch('https://api.ipify.org?format=json');
-          if (ipResponse.ok) {
-            const ipData = await ipResponse.json();
-            await supabase
-              .from('profiles')
-              .update({ 
-                last_ip_address: ipData.ip,
-                last_login_at: new Date().toISOString()
-              })
-              .eq('user_id', data.user.id);
-          }
-        } catch (ipError) {
-          console.warn('Failed to capture IP address:', ipError);
-        }
+        // Log IP address on login (best effort - won't fail login if it fails)
+        logIPAction(data.user.id, 'login').then(() => {
+          supabase
+            .from('profiles')
+            .update({ last_login_at: new Date().toISOString() })
+            .eq('user_id', data.user.id);
+        });
 
         setUser(userProfile);
       }
@@ -307,10 +299,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(async () => {
+    // Log IP on logout before signing out
+    if (session?.user?.id) {
+      await logIPAction(session.user.id, 'logout');
+    }
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-  }, []);
+  }, [session?.user?.id]);
 
   const isApproved = user?.role === 'admin' || user?.userStatus === 'approved';
 

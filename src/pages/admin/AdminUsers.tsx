@@ -22,7 +22,8 @@ import {
   Percent,
   Shield,
   Award,
-  History
+  History,
+  Globe
 } from 'lucide-react';
 import {
   Dialog,
@@ -54,6 +55,7 @@ import { format } from 'date-fns';
 import { useAdminUsers, AffiliateUser, UserStatus, UserLevel } from '@/hooks/useAdminUsers';
 import { UserLevelSelect } from '@/components/admin/UserLevelSelect';
 import { UserLevelHistory } from '@/components/admin/UserLevelHistory';
+import { IPLogViewer } from '@/components/admin/IPLogViewer';
 import { usePlatformSettings, CURRENCY_SYMBOLS } from '@/hooks/usePlatformSettings';
 import { useAdminKYC } from '@/hooks/useAdminKYC';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -82,6 +84,7 @@ const AdminUsers: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [isIPLogDialogOpen, setIsIPLogDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AffiliateUser | null>(null);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -268,6 +271,13 @@ const AdminUsers: React.FC = () => {
                         <Shield className="w-4 h-4 mr-2" />
                         View KYC
                       </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => {
+                      setSelectedUser(user);
+                      setIsIPLogDialogOpen(true);
+                    }}>
+                      <Globe className="w-4 h-4 mr-2" />
+                      View IP Logs
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     {user.user_status === 'pending' && (
@@ -500,6 +510,24 @@ const AdminUsers: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
             <UserLevelHistory />
+          </DialogContent>
+        </Dialog>
+
+        {/* IP Log Dialog */}
+        <Dialog open={isIPLogDialogOpen} onOpenChange={setIsIPLogDialogOpen}>
+          <DialogContent className="sm:max-w-[900px] max-h-[85vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                IP Activity Logs - {selectedUser?.name}
+              </DialogTitle>
+              <DialogDescription>
+                View all IP activity for this user
+              </DialogDescription>
+            </DialogHeader>
+            {selectedUser && (
+              <IPLogViewer userId={selectedUser.user_id} showUserColumn={false} />
+            )}
           </DialogContent>
         </Dialog>
       </div>
