@@ -28,7 +28,8 @@ import {
   MessageCircle,
   LifeBuoy,
   Bot,
-  HelpCircle
+  HelpCircle,
+  Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserChatWidget } from '@/components/chat/UserChatWidget';
@@ -47,6 +48,7 @@ const adminNavItems: NavItem[] = [
   { icon: Wallet, label: 'Wallet', href: '/admin/wallet' },
   { icon: Send, label: 'Payouts', href: '/admin/payouts' },
   { icon: Shield, label: 'KYC', href: '/admin/kyc' },
+  { icon: Globe, label: 'IP Logs', href: '/admin/ip-logs' },
   { icon: MessageCircle, label: 'Chat', href: '/admin/chat' },
   { icon: FileText, label: 'Reports', href: '/admin/reports' },
   { icon: Settings, label: 'Settings', href: '/admin/settings' },
