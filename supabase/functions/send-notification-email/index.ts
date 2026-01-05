@@ -99,20 +99,35 @@ const handler = async (req: Request): Promise<Response> => {
     const emailEnabled = settingsMap["email_notifications_enabled"] === "true";
     const adminEmail = settingsMap["admin_email"];
 
-    console.log("Email settings:", { emailEnabled, hasApiKey: !!resendApiKey, hasAdminEmail: !!adminEmail });
+    console.log("Email settings loaded:", { 
+      emailEnabled, 
+      hasApiKey: !!resendApiKey, 
+      apiKeyLength: resendApiKey?.length || 0,
+      apiKeyPrefix: resendApiKey?.substring(0, 10) || 'N/A',
+      hasAdminEmail: !!adminEmail,
+      adminEmail: adminEmail || 'N/A'
+    });
 
     if (!emailEnabled) {
-      console.log("Email notifications are disabled");
+      console.log("Email notifications are disabled in settings");
       return new Response(
         JSON.stringify({ success: false, message: "Email notifications are disabled" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    if (!resendApiKey || !adminEmail) {
-      console.log("Missing API key or admin email");
+    if (!resendApiKey) {
+      console.error("CRITICAL: Resend API key is missing from platform_settings");
       return new Response(
-        JSON.stringify({ success: false, message: "Email settings not configured" }),
+        JSON.stringify({ success: false, message: "Resend API key not configured" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (!adminEmail) {
+      console.error("CRITICAL: Admin email is missing from platform_settings");
+      return new Response(
+        JSON.stringify({ success: false, message: "Admin email not configured" }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -309,40 +324,66 @@ const handler = async (req: Request): Promise<Response> => {
     // Determine recipient - use recipientEmail for user notifications, adminEmail for admin notifications
     const toEmail = recipientEmail || adminEmail;
 
-    console.log("Sending email to:", toEmail);
+    console.log("Preparing to send email:", {
+      to: toEmail,
+      subject: subject,
+      type: type,
+      apiKeyValid: resendApiKey?.startsWith('re_')
+    });
     
     // Send email using Resend API directly
+    const emailPayload = {
+      from: "Platform <onboarding@resend.dev>",
+      to: [toEmail],
+      subject,
+      html: htmlContent,
+    };
+    
+    console.log("Resend API request payload:", JSON.stringify(emailPayload, null, 2));
+
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        from: "Platform <onboarding@resend.dev>",
-        to: [toEmail],
-        subject,
-        html: htmlContent,
-      }),
+      body: JSON.stringify(emailPayload),
     });
 
     const emailResult = await emailResponse.json();
+    
+    console.log("Resend API response status:", emailResponse.status);
+    console.log("Resend API response body:", JSON.stringify(emailResult, null, 2));
 
     if (!emailResponse.ok) {
-      console.error("Resend API error:", emailResult);
-      throw new Error(emailResult.message || "Failed to send email");
+      console.error("Resend API error - Status:", emailResponse.status, "Body:", JSON.stringify(emailResult));
+      
+      // Provide more specific error messages based on Resend error codes
+      let userMessage = "Failed to send email";
+      if (emailResult.statusCode === 401 || emailResult.message?.includes('API key')) {
+        userMessage = "Invalid Resend API key. Please check your API key in settings.";
+      } else if (emailResult.message?.includes('domain')) {
+        userMessage = "Domain not verified in Resend. Use a verified domain or send to your Resend account email.";
+      } else if (emailResult.message) {
+        userMessage = emailResult.message;
+      }
+      
+      return new Response(
+        JSON.stringify({ success: false, error: userMessage, details: emailResult }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
-    console.log("Email sent successfully:", emailResult);
+    console.log("Email sent successfully! ID:", emailResult.id);
 
     return new Response(
       JSON.stringify({ success: true, emailResponse: emailResult }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
-    console.error("Error in send-notification-email function:", error);
+    console.error("Unhandled error in send-notification-email function:", error.message, error.stack);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
