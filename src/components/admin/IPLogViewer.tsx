@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Search, RefreshCw, Globe } from 'lucide-react';
+import { CalendarIcon, Search, RefreshCw, Globe, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface IPLogViewerProps {
@@ -44,7 +44,9 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
     return (
       log.ip_address.toLowerCase().includes(query) ||
       log.user_name?.toLowerCase().includes(query) ||
-      log.user_email?.toLowerCase().includes(query)
+      log.user_email?.toLowerCase().includes(query) ||
+      log.country?.toLowerCase().includes(query) ||
+      log.city?.toLowerCase().includes(query)
     );
   });
 
@@ -53,6 +55,11 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
     setEndDate(undefined);
     setActionType('all');
     setSearchQuery('');
+  };
+
+  const formatLocation = (log: { country?: string; city?: string; region?: string }) => {
+    const parts = [log.city, log.region, log.country].filter(Boolean);
+    return parts.length > 0 ? parts.join(', ') : null;
   };
 
   return (
@@ -80,7 +87,7 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by IP, name, or email..."
+              placeholder="Search by IP, name, email, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -161,6 +168,7 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
               <TableRow>
                 {showUserColumn && <TableHead>User</TableHead>}
                 <TableHead>IP Address</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Date & Time</TableHead>
               </TableRow>
@@ -168,7 +176,7 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={showUserColumn ? 4 : 3} className="text-center py-8">
+                  <TableCell colSpan={showUserColumn ? 5 : 4} className="text-center py-8">
                     <div className="flex items-center justify-center gap-2">
                       <RefreshCw className="h-4 w-4 animate-spin" />
                       Loading logs...
@@ -177,7 +185,7 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
                 </TableRow>
               ) : filteredLogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={showUserColumn ? 4 : 3} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={showUserColumn ? 5 : 4} className="text-center py-8 text-muted-foreground">
                     No IP logs found
                   </TableCell>
                 </TableRow>
@@ -187,6 +195,7 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
                     label: log.action_type, 
                     variant: 'outline' as const 
                   };
+                  const location = formatLocation(log);
                   
                   return (
                     <TableRow key={log.id}>
@@ -202,6 +211,16 @@ export const IPLogViewer: React.FC<IPLogViewerProps> = ({ userId, showUserColumn
                         <code className="bg-muted px-2 py-1 rounded text-sm">
                           {log.ip_address}
                         </code>
+                      </TableCell>
+                      <TableCell>
+                        {location ? (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span>{location}</span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Unknown</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={actionInfo.variant}>

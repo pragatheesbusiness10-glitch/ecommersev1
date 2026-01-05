@@ -110,23 +110,32 @@ export type Database = {
       ip_logs: {
         Row: {
           action_type: string
+          city: string | null
+          country: string | null
           created_at: string
           id: string
           ip_address: string
+          region: string | null
           user_id: string
         }
         Insert: {
           action_type: string
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           ip_address: string
+          region?: string | null
           user_id: string
         }
         Update: {
           action_type?: string
+          city?: string | null
+          country?: string | null
           created_at?: string
           id?: string
           ip_address?: string
+          region?: string | null
           user_id?: string
         }
         Relationships: []
