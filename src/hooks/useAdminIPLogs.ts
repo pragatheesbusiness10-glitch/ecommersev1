@@ -7,6 +7,9 @@ interface IPLog {
   ip_address: string;
   action_type: string;
   created_at: string;
+  country?: string;
+  city?: string;
+  region?: string;
   user_name?: string;
   user_email?: string;
 }
