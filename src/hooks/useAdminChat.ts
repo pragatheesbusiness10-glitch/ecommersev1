@@ -87,6 +87,13 @@ export const useAdminChat = () => {
     mutationFn: async ({ userId, message }: { userId: string; message: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
+      // Get user profile for email notification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('user_id', userId)
+        .single();
+
       const { data, error } = await supabase
         .from('chat_messages')
         .insert({
@@ -98,6 +105,25 @@ export const useAdminChat = () => {
         .single();
 
       if (error) throw error;
+
+      // Send email notification to user
+      if (profile?.email) {
+        try {
+          await supabase.functions.invoke('send-notification-email', {
+            body: {
+              type: 'admin_chat_message',
+              userName: profile.name || 'User',
+              userEmail: profile.email,
+              message: message,
+              recipientEmail: profile.email,
+            },
+          });
+        } catch (emailError) {
+          console.error('Failed to send admin reply notification email:', emailError);
+          // Don't fail the message send if email fails
+        }
+      }
+
       return data;
     },
     onSuccess: () => {

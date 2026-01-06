@@ -7,7 +7,21 @@ const corsHeaders = {
 };
 
 interface NotificationEmailRequest {
-  type: 'new_chat_message' | 'kyc_submitted' | 'payout_request' | 'new_order' | 'support_ticket' | 'affiliate_order_created' | 'payout_approved' | 'payout_rejected' | 'payout_completed';
+  type: 
+    | 'test_email' 
+    | 'new_chat_message' 
+    | 'admin_chat_message'
+    | 'kyc_submitted' 
+    | 'payout_request' 
+    | 'new_payout_request_admin'
+    | 'new_order' 
+    | 'order_status_change'
+    | 'admin_new_order'
+    | 'support_ticket' 
+    | 'affiliate_order_created' 
+    | 'payout_approved' 
+    | 'payout_rejected' 
+    | 'payout_completed';
   userId?: string;
   userName?: string;
   userEmail?: string;
@@ -21,6 +35,8 @@ interface NotificationEmailRequest {
   customerName?: string;
   adminNotes?: string;
   recipientEmail?: string;
+  orderStatus?: string;
+  previousStatus?: string;
 }
 
 // HTML escape function to prevent XSS in email content
@@ -32,6 +48,10 @@ const escapeHtml = (str: string | undefined | null): string => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#x27;');
+};
+
+const formatStatus = (status: string): string => {
+  return status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -83,7 +103,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: settings, error: settingsError } = await supabase
       .from("platform_settings")
       .select("key, value")
-      .in("key", ["resend_api_key", "email_notifications_enabled", "admin_email"]);
+      .in("key", ["resend_api_key", "email_notifications_enabled", "admin_email", "site_name"]);
 
     if (settingsError) {
       console.error("Error fetching settings:", settingsError);
@@ -98,6 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
     const resendApiKey = settingsMap["resend_api_key"];
     const emailEnabled = settingsMap["email_notifications_enabled"] === "true";
     const adminEmail = settingsMap["admin_email"];
+    const siteName = settingsMap["site_name"] || "Platform";
 
     console.log("Email settings loaded:", { 
       emailEnabled, 
@@ -133,7 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const requestData: NotificationEmailRequest = await req.json();
-    const { type, orderId, orderNumber, amount } = requestData;
+    const { type, orderId, orderNumber, amount, orderStatus, previousStatus } = requestData;
     
     // Sanitize all user-provided input to prevent XSS
     const userName = escapeHtml(requestData.userName);
@@ -150,17 +171,71 @@ const handler = async (req: Request): Promise<Response> => {
     let htmlContent = "";
 
     switch (type) {
-      case "new_chat_message":
-        subject = `New Chat Message from ${userName}`;
+      case "test_email":
+        subject = `✅ Test Email from ${siteName}`;
         htmlContent = `
-          <h2>New Chat Message</h2>
-          <p><strong>From:</strong> ${userName} (${userEmail})</p>
-          <p><strong>Message:</strong></p>
-          <blockquote style="border-left: 3px solid #ccc; padding-left: 10px; margin: 10px 0;">
-            ${message}
-          </blockquote>
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">✅ Email Configuration Test Successful!</h2>
+            <p>Congratulations! Your email configuration is working correctly.</p>
+            
+            <div style="background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #059669;">
+              <h3 style="margin-top: 0; color: #065f46;">Configuration Details</h3>
+              <p style="margin: 10px 0;"><strong>Platform:</strong> ${siteName}</p>
+              <p style="margin: 10px 0;"><strong>Admin Email:</strong> ${adminEmail}</p>
+              <p style="margin: 10px 0;"><strong>Test Time:</strong> ${new Date().toISOString()}</p>
+            </div>
+            
+            <p>You will now receive email notifications for:</p>
+            <ul>
+              <li>New orders and order status changes</li>
+              <li>Payout requests and status updates</li>
+              <li>Chat messages</li>
+              <li>Support tickets</li>
+              <li>KYC submissions</li>
+            </ul>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated test notification from ${siteName}.
+            </p>
+          </div>
         `;
         break;
+
+      case "new_chat_message":
+        subject = `💬 New Chat Message from ${userName}`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">💬 New Chat Message</h2>
+            <p><strong>From:</strong> ${userName} (${userEmail})</p>
+            <p><strong>Message:</strong></p>
+            <blockquote style="border-left: 4px solid #2563eb; padding: 15px; margin: 15px 0; background: #eff6ff;">
+              ${message}
+            </blockquote>
+            <p style="margin-top: 20px;">
+              <a href="#" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View in Admin Panel</a>
+            </p>
+          </div>
+        `;
+        break;
+
+      case "admin_chat_message":
+        subject = `💬 Admin Reply to Your Message`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">💬 You Have a Reply!</h2>
+            <p>Hello ${userName},</p>
+            <p>An admin has responded to your message:</p>
+            <blockquote style="border-left: 4px solid #059669; padding: 15px; margin: 15px 0; background: #ecfdf5;">
+              ${message}
+            </blockquote>
+            <p>Log in to your dashboard to continue the conversation.</p>
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated notification. Please do not reply to this email.
+            </p>
+          </div>
+        `;
+        break;
+
       case "support_ticket":
         subject = `🎫 New Support Ticket from ${userName}`;
         htmlContent = `
@@ -188,30 +263,154 @@ const handler = async (req: Request): Promise<Response> => {
           </p>
         `;
         break;
+
       case "kyc_submitted":
-        subject = `New KYC Submission from ${userName}`;
+        subject = `📋 New KYC Submission from ${userName}`;
         htmlContent = `
-          <h2>New KYC Submission</h2>
-          <p><strong>User:</strong> ${userName} (${userEmail})</p>
-          <p>A new KYC submission is awaiting review.</p>
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #f59e0b;">📋 New KYC Submission</h2>
+            <p><strong>User:</strong> ${userName} (${userEmail})</p>
+            <p>A new KYC submission is awaiting your review.</p>
+            <p style="margin-top: 20px;">
+              <a href="#" style="background: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review KYC</a>
+            </p>
+          </div>
         `;
         break;
+
       case "payout_request":
-        subject = `New Payout Request from ${userName}`;
+        subject = `💰 New Payout Request from ${userName}`;
         htmlContent = `
-          <h2>New Payout Request</h2>
-          <p><strong>User:</strong> ${userName} (${userEmail})</p>
-          <p><strong>Amount:</strong> $${amount?.toFixed(2) || "0.00"}</p>
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #7c3aed;">💰 New Payout Request</h2>
+            <p><strong>User:</strong> ${userName} (${userEmail})</p>
+            <p><strong>Amount:</strong> $${amount?.toFixed(2) || "0.00"}</p>
+            <p>Please review this payout request in the admin panel.</p>
+          </div>
         `;
         break;
+
+      case "new_payout_request_admin":
+        subject = `💰 New Payout Request - $${amount?.toFixed(2) || "0.00"}`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #7c3aed;">💰 New Payout Request</h2>
+            <p>A new payout request has been submitted and is awaiting your review.</p>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #374151;">Request Details</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>User:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${userName} (${userEmail})</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0;"><strong>Amount:</strong></td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #7c3aed;">$${amount?.toFixed(2) || "0.00"}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <p style="margin-top: 20px;">
+              <a href="#" style="background: #7c3aed; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Review Payout Request</a>
+            </p>
+          </div>
+        `;
+        break;
+
       case "new_order":
-        subject = `New Order Received - ${escapeHtml(orderId)}`;
+        subject = `🛒 New Order Received - ${escapeHtml(orderId)}`;
         htmlContent = `
-          <h2>New Order Received</h2>
-          <p><strong>Order ID:</strong> ${escapeHtml(orderId)}</p>
-          <p><strong>Affiliate:</strong> ${userName}</p>
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">🛒 New Order Received</h2>
+            <p><strong>Order ID:</strong> ${escapeHtml(orderId)}</p>
+            <p><strong>Affiliate:</strong> ${userName}</p>
+          </div>
         `;
         break;
+
+      case "admin_new_order":
+        subject = `🛒 New Order Created - ${escapeHtml(orderNumber)}`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">🛒 New Order Created</h2>
+            <p>A new order has been created on the platform.</p>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #374151;">Order Details</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Order Number:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${escapeHtml(orderNumber)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Product:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${productName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Customer:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${customerName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Affiliate:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${userName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0;"><strong>Amount:</strong></td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #059669;">$${amount?.toFixed(2) || "0.00"}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <p style="margin-top: 20px;">
+              <a href="#" style="background: #059669; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">View Order</a>
+            </p>
+          </div>
+        `;
+        break;
+
+      case "order_status_change":
+        const statusColor = orderStatus === 'completed' ? '#059669' : 
+                           orderStatus === 'cancelled' ? '#dc2626' : 
+                           orderStatus === 'processing' ? '#2563eb' : '#f59e0b';
+        subject = `📦 Order ${escapeHtml(orderNumber)} Status Updated: ${formatStatus(orderStatus || '')}`;
+        htmlContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: ${statusColor};">📦 Order Status Updated</h2>
+            <p>Hello ${userName},</p>
+            <p>Your order status has been updated.</p>
+            
+            <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #374151;">Order Details</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Order Number:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${escapeHtml(orderNumber)}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Product:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${productName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;"><strong>Previous Status:</strong></td>
+                  <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">${formatStatus(previousStatus || 'N/A')}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0;"><strong>New Status:</strong></td>
+                  <td style="padding: 8px 0; font-weight: bold; color: ${statusColor};">${formatStatus(orderStatus || '')}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <p>Log in to your dashboard to view the full order details.</p>
+            
+            <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+              This is an automated notification. Please do not reply to this email.
+            </p>
+          </div>
+        `;
+        break;
+
       case "affiliate_order_created":
         subject = `🎉 New Order Created for You - ${escapeHtml(orderNumber)}`;
         htmlContent = `
@@ -250,6 +449,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         `;
         break;
+
       case "payout_approved":
         subject = `✅ Your Payout Request Has Been Approved`;
         htmlContent = `
@@ -272,6 +472,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         `;
         break;
+
       case "payout_rejected":
         subject = `❌ Your Payout Request Was Rejected`;
         htmlContent = `
@@ -294,6 +495,7 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         `;
         break;
+
       case "payout_completed":
         subject = `🎉 Your Payout Has Been Completed`;
         htmlContent = `
@@ -316,8 +518,9 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         `;
         break;
+
       default:
-        subject = "Platform Notification";
+        subject = `${siteName} Notification`;
         htmlContent = `<p>${message}</p>`;
     }
     
@@ -333,7 +536,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Send email using Resend API directly
     const emailPayload = {
-      from: "Platform <onboarding@resend.dev>",
+      from: `${siteName} <onboarding@resend.dev>`,
       to: [toEmail],
       subject,
       html: htmlContent,

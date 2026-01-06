@@ -122,6 +122,13 @@ export const usePayoutRequests = () => {
         );
       }
 
+      // Get user profile for email notification
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('user_id', user?.id)
+        .single();
+
       // Create payout request (wallet balance is adjusted when admin approves/completes)
       const { data, error } = await supabase
         .from('payout_requests')
@@ -140,6 +147,21 @@ export const usePayoutRequests = () => {
       // Log IP for payout request action
       if (user?.id) {
         logIPAction(user.id, 'payout_request');
+      }
+
+      // Send email notification to admin about new payout request
+      try {
+        await supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'new_payout_request_admin',
+            userName: userProfile?.name || 'User',
+            userEmail: userProfile?.email || '',
+            amount: amount,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send payout request notification:', emailError);
+        // Don't fail the payout request if email fails
       }
 
       return data;
