@@ -39,6 +39,13 @@ export const useChat = () => {
     mutationFn: async (message: string) => {
       if (!user?.id) throw new Error('Not authenticated');
 
+      // Get user profile for email notification
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name, email')
+        .eq('user_id', user.id)
+        .single();
+
       const { data, error } = await supabase
         .from('chat_messages')
         .insert({
@@ -50,6 +57,22 @@ export const useChat = () => {
         .single();
 
       if (error) throw error;
+
+      // Send email notification to admin
+      try {
+        await supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'new_chat_message',
+            userName: profile?.name || 'User',
+            userEmail: profile?.email || '',
+            message: message,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send chat notification email:', emailError);
+        // Don't fail the message send if email fails
+      }
+
       return data;
     },
     onSuccess: () => {

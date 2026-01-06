@@ -69,6 +69,7 @@ import { MFASettings } from '@/components/mfa/MFASettings';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { formatDistanceToNow } from 'date-fns';
+import { Send } from 'lucide-react';
 
 const AdminSettings: React.FC = () => {
   const { toast } = useToast();
@@ -113,6 +114,7 @@ const AdminSettings: React.FC = () => {
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(false);
   const [adminEmail, setAdminEmail] = useState('');
   const [isSavingEmailSettings, setIsSavingEmailSettings] = useState(false);
+  const [isSendingTestEmail, setIsSendingTestEmail] = useState(false);
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -337,6 +339,64 @@ const AdminSettings: React.FC = () => {
       });
     } finally {
       setIsSavingBranding(false);
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    if (!adminEmail.trim()) {
+      toast({
+        title: "Admin Email Required",
+        description: "Please enter an admin email address first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!resendApiKey.trim()) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter and save a Resend API key first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!emailNotificationsEnabled) {
+      toast({
+        title: "Notifications Disabled",
+        description: "Please enable email notifications first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingTestEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-notification-email', {
+        body: {
+          type: 'test_email',
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        toast({
+          title: "Test Email Sent!",
+          description: `Check ${adminEmail} for the test email.`,
+        });
+      } else {
+        throw new Error(data?.error || data?.message || 'Failed to send test email');
+      }
+    } catch (error: any) {
+      console.error('Error sending test email:', error);
+      toast({
+        title: "Test Email Failed",
+        description: error.message || "Failed to send test email. Check your settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingTestEmail(false);
     }
   };
 
@@ -1065,17 +1125,29 @@ const AdminSettings: React.FC = () => {
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 text-sm">
                 <p className="font-medium text-emerald-600 mb-2">✓ Email Settings Configured</p>
                 <p className="text-muted-foreground">
-                  Email notifications are ready. When enabled, chat messages will trigger email notifications.
+                  Email notifications are ready. Notifications will be sent for orders, payouts, chat messages, and more.
                 </p>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleClearApiKey}
-                  disabled={isSavingEmailSettings}
-                  className="mt-2 text-destructive hover:text-destructive"
-                >
-                  Clear Settings
-                </Button>
+                <div className="flex gap-2 mt-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleSendTestEmail}
+                    disabled={isSendingTestEmail}
+                    className="gap-2"
+                  >
+                    {isSendingTestEmail ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    Send Test Email
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={handleClearApiKey}
+                    disabled={isSavingEmailSettings}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    Clear Settings
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

@@ -117,7 +117,7 @@ export const useAdminOrders = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, status }: { orderId: string; status: AdminOrder['status'] }) => {
+    mutationFn: async ({ orderId, status, order }: { orderId: string; status: AdminOrder['status']; order?: AdminOrder }) => {
       const updates: Record<string, unknown> = { status };
       
       if (status === 'completed') {
@@ -130,7 +130,29 @@ export const useAdminOrders = () => {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Send email notification to affiliate about status change
+      if (order?.affiliate) {
+        try {
+          await supabase.functions.invoke('send-notification-email', {
+            body: {
+              type: 'order_status_change',
+              userName: order.affiliate.name,
+              userEmail: order.affiliate.email,
+              orderNumber: order.order_number,
+              productName: order.product?.name || 'Product',
+              orderStatus: status,
+              previousStatus: order.status,
+              recipientEmail: order.affiliate.email,
+            },
+          });
+        } catch (emailError) {
+          console.error('Failed to send order status notification:', emailError);
+        }
+      }
+
       // Wallet crediting is handled by database trigger trg_credit_wallet_on_order_completed
+      return { status };
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'], exact: false });
@@ -265,12 +287,30 @@ export const useAdminOrders = () => {
               productName: orderData.productName || 'Product',
               customerName: orderData.customer_name,
               amount: orderData.selling_price * orderData.quantity,
+              recipientEmail: affiliateProfile.email,
             },
           });
         } catch (emailError) {
           console.error('Failed to send affiliate notification:', emailError);
           // Don't fail the order creation if email fails
         }
+      }
+
+      // Also send notification to admin about new order
+      try {
+        await supabase.functions.invoke('send-notification-email', {
+          body: {
+            type: 'admin_new_order',
+            userName: affiliateProfile?.name || 'Affiliate',
+            userEmail: affiliateProfile?.email || '',
+            orderNumber: data.order_number,
+            productName: orderData.productName || 'Product',
+            customerName: orderData.customer_name,
+            amount: orderData.selling_price * orderData.quantity,
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send admin order notification:', emailError);
       }
 
       return data;
